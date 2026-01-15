@@ -39,54 +39,54 @@
 
     <div v-else class="space-y-8 animate-fade-in-up">
       <!-- 1. Summary Cards -->
-      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <!-- Total Sales -->
-        <div class="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 shadow-sm transition-transform hover:-translate-y-1">
+        <div class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1">
           <div class="flex items-start justify-between">
             <div>
               <p class="text-sm font-medium text-blue-600">ยอดขายรวม</p>
-              <h3 class="mt-2 text-3xl font-bold text-gray-900">฿{{ formatCurrency(stats.totalSales) }}</h3>
+              <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">฿{{ formatCurrency(stats.totalSales) }}</h3>
             </div>
-            <div class="rounded-lg bg-blue-100 p-3 text-blue-600">
+            <div class="rounded-lg bg-blue-100 p-2 md:p-3 text-blue-600 hidden sm:block">
               <Wallet class="h-6 w-6" />
             </div>
           </div>
         </div>
 
         <!-- Total Orders -->
-        <div class="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6 shadow-sm transition-transform hover:-translate-y-1">
+        <div class="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1">
           <div class="flex items-start justify-between">
             <div>
               <p class="text-sm font-medium text-indigo-600">จำนวนออเดอร์</p>
-              <h3 class="mt-2 text-3xl font-bold text-gray-900">{{ stats.totalOrders.toLocaleString() }}</h3>
+              <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">{{ stats.totalOrders.toLocaleString() }}</h3>
             </div>
-            <div class="rounded-lg bg-indigo-100 p-3 text-indigo-600">
+            <div class="rounded-lg bg-indigo-100 p-2 md:p-3 text-indigo-600 hidden sm:block">
               <ShoppingBag class="h-6 w-6" />
             </div>
           </div>
         </div>
 
         <!-- Transfer Total -->
-        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 shadow-sm transition-transform hover:-translate-y-1">
+        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1">
           <div class="flex items-start justify-between">
             <div>
               <p class="text-sm font-medium text-emerald-600">ยอดโอน (Transfer)</p>
-              <h3 class="mt-2 text-3xl font-bold text-gray-900">฿{{ formatCurrency(stats.totalTransfer) }}</h3>
+              <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">฿{{ formatCurrency(stats.totalTransfer) }}</h3>
             </div>
-            <div class="rounded-lg bg-emerald-100 p-3 text-emerald-600">
+            <div class="rounded-lg bg-emerald-100 p-2 md:p-3 text-emerald-600 hidden sm:block">
               <ArrowRightLeft class="h-6 w-6" />
             </div>
           </div>
         </div>
 
         <!-- COD Total -->
-        <div class="rounded-2xl border border-orange-100 bg-orange-50/50 p-6 shadow-sm transition-transform hover:-translate-y-1">
+        <div class="rounded-2xl border border-orange-100 bg-orange-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1">
           <div class="flex items-start justify-between">
             <div>
-              <p class="text-sm font-medium text-orange-600">เก็บเงินปลายทาง (COD)</p>
-              <h3 class="mt-2 text-3xl font-bold text-gray-900">฿{{ formatCurrency(stats.totalCOD) }}</h3>
+              <p class="text-sm font-medium text-orange-600">เก็บปลายทาง (COD)</p>
+              <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">฿{{ formatCurrency(stats.totalCOD) }}</h3>
             </div>
-            <div class="rounded-lg bg-orange-100 p-3 text-orange-600">
+            <div class="rounded-lg bg-orange-100 p-2 md:p-3 text-orange-600 hidden sm:block">
               <Truck class="h-6 w-6" />
             </div>
           </div>
@@ -94,9 +94,9 @@
       </div>
 
       <!-- 2. Chart Section -->
-      <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
         <h3 class="mb-6 text-lg font-bold text-gray-800">ยอดขายรายวัน</h3>
-        <div class="h-[350px] w-full">
+        <div class="h-[300px] md:h-[350px] w-full">
           <Bar v-if="chartData.labels" :data="chartData" :options="chartOptions" />
         </div>
       </div>

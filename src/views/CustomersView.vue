@@ -39,11 +39,11 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อลูกค้า</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เบอร์โทรศัพท์</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ที่อยู่จัดส่ง</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมายเหตุ</th>
-              <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">ชื่อลูกค้า</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">เบอร์โทรศัพท์</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">ที่อยู่จัดส่ง</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">หมายเหตุ</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">จัดการ</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
@@ -75,18 +75,20 @@
                 {{ customer.note || '-' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button 
-                  @click="openModal(customer)"
-                  class="text-blue-600 hover:text-blue-900 mr-4"
-                >
-                  แก้ไข
-                </button>
-                <button 
-                  @click="deleteCustomer(customer)"
-                  class="text-red-600 hover:text-red-900"
-                >
-                  ลบ
-                </button>
+                <div class="flex items-center justify-end gap-2">
+                  <button 
+                    @click="openModal(customer)"
+                    class="rounded-lg bg-blue-50 px-3 py-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-900 transition-colors"
+                  >
+                    แก้ไข
+                  </button>
+                  <button 
+                    @click="deleteCustomer(customer)"
+                    class="rounded-lg bg-red-50 px-3 py-1.5 text-red-600 hover:bg-red-100 hover:text-red-900 transition-colors"
+                  >
+                    ลบ
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

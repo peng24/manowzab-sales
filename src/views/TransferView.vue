@@ -11,7 +11,7 @@
         เพิ่มรายการใหม่
       </h2>
       
-      <form @submit.prevent="saveTransfer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <form @submit.prevent="saveTransfer" class="grid gap-6 grid-cols-1 md:grid-cols-2">
         <!-- Date & Time (Thai Format Overlay) -->
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700">วันที่</label>
