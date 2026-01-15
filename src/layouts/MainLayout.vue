@@ -38,11 +38,21 @@
           นำเข้า COD
         </router-link>
 
+        <!-- <router-link to="/all-sales" 
+          class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
+          active-class="bg-blue-600 text-white shadow-md"
+        >
+          <component :is="History" class="mr-3 h-5 w-5" />
+          ประวัติการขาย
+        </router-link> -->
+
         <router-link to="/customers" 
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="Users" class="mr-3 h-5 w-5" />
+          <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
           ข้อมูลลูกค้า
         </router-link>
       </nav>
@@ -110,14 +120,17 @@
       <router-link to="/import-cod" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
         <div class="relative">
              <component :is="FileSpreadsheet" class="h-6 w-6 mb-0.5" />
-             <!-- Badge Example (Optional) -->
-             <!-- <span class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">!</span> -->
         </div>
         <span class="text-[10px]">นำเข้า</span>
       </router-link>
 
+       <router-link to="/all-sales" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
+        <component :is="History" class="h-6 w-6 mb-0.5" />
+        <span class="text-[10px]">ประวัติ</span>
+      </router-link>
+
        <router-link to="/customers" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
-        <component :is="Users" class="h-6 w-6 mb-0.5" />
+        <component :is="User" class="h-6 w-6 mb-0.5" />
         <span class="text-[10px]">ลูกค้า</span>
       </router-link>
 
@@ -137,7 +150,7 @@
 import { useRouter } from 'vue-router'
 import { signOut } from 'firebase/auth'
 import { auth } from '../firebase'
-import { LayoutDashboard, CreditCard, FileSpreadsheet, Users, LogOut } from 'lucide-vue-next'
+import { LayoutDashboard, CreditCard, FileSpreadsheet, Users, LogOut, History, User } from 'lucide-vue-next'
 
 const router = useRouter()
 

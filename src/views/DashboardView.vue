@@ -103,8 +103,11 @@
 
       <!-- 3. Recent Transactions -->
       <div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-        <div class="border-b border-gray-100 px-6 py-4">
+        <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <h3 class="font-bold text-gray-800">รายการล่าสุด</h3>
+          <router-link to="/all-sales" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+            ดูรายการทั้งหมด >
+          </router-link>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-100">

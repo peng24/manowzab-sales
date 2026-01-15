@@ -32,6 +32,11 @@ const routes = [
         path: 'customers',
         name: 'Customers',
         component: () => import('../views/CustomersView.vue')
+      },
+      {
+        path: 'all-sales',
+        name: 'AllSales',
+        component: () => import('../views/AllSalesView.vue')
       }
     ]
   },
