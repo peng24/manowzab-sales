@@ -60,7 +60,12 @@
                     {{ customer.name.charAt(0).toUpperCase() }}
                   </div>
                   <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">{{ customer.name }}</div>
+                    <router-link 
+                      :to="{ name: 'CustomerDetail', params: { name: customer.name } }"
+                      class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {{ customer.name }}
+                    </router-link>
                     <div class="text-xs text-gray-400">อัปเดต: {{ formatDate(customer.lastUpdate) }}</div>
                   </div>
                 </div>

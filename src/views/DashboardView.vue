@@ -135,8 +135,15 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ tx.orderNo || '-' }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {{ tx.customerName || 'ไม่ระบุ' }}
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <router-link 
+                    v-if="tx.customerName" 
+                    :to="{ name: 'CustomerDetail', params: { name: tx.customerName } }"
+                    class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  >
+                    {{ tx.customerName }}
+                  </router-link>
+                  <span v-else class="text-gray-600">ไม่ระบุ</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span 

@@ -34,6 +34,12 @@ const routes = [
         component: () => import('../views/CustomersView.vue')
       },
       {
+        path: 'customer/:name',
+        name: 'CustomerDetail',
+        component: () => import('../views/CustomerDetailView.vue'),
+        props: true
+      },
+      {
         path: 'all-sales',
         name: 'AllSales',
         component: () => import('../views/AllSalesView.vue')

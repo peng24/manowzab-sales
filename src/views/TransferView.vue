@@ -178,8 +178,15 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {{ req.orderNo }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ req.customerName }}
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <router-link 
+                  v-if="req.customerName" 
+                  :to="{ name: 'CustomerDetail', params: { name: req.customerName } }"
+                  class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                >
+                  {{ req.customerName }}
+                </router-link>
+                <span v-else class="text-gray-600">ไม่ระบุ</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold text-green-600">
                 ฿{{ formatCurrency(req.amount) }}
