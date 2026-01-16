@@ -1,5 +1,6 @@
 <template>
-  <div class="container mx-auto px-4 py-8 max-w-7xl">
+  <PullToRefresh :on-refresh="fetchData">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
     <!-- Header & Filter -->
     <div class="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
       <div>
@@ -181,7 +182,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
+  </PullToRefresh>
 </template>
 
 <script setup>
@@ -199,6 +201,9 @@ import { th } from 'date-fns/locale'
 
 // Icons
 import { Wallet, ShoppingBag, ArrowRightLeft, Truck } from 'lucide-vue-next'
+
+// Components
+import PullToRefresh from '../components/PullToRefresh.vue'
 
 // Chart.js
 import {

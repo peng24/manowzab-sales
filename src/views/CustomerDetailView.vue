@@ -1,5 +1,6 @@
 <template>
-  <div class="container mx-auto max-w-6xl px-4 py-8">
+  <PullToRefresh :on-refresh="fetchCustomerSales">
+    <div class="container mx-auto max-w-6xl px-4 py-8">
     <!-- Back Button + Header -->
     <div class="mb-8">
       <!-- Improved Back Button -->
@@ -154,7 +155,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
+  </PullToRefresh>
 </template>
 
 <script setup>
@@ -164,6 +166,9 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
 import { format, subDays, startOfMonth, startOfYear } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { ArrowLeft } from 'lucide-vue-next'
+
+// Components
+import PullToRefresh from '../components/PullToRefresh.vue'
 
 // Props
 const props = defineProps({
