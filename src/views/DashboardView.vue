@@ -4,28 +4,44 @@
     <div class="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
       <div>
         <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p class="text-gray-500">ภาพรวมยอดขายประจำเดือน</p>
+        <p class="text-gray-500">ภาพรวมยอดขาย {{ timeRangeLabel }}</p>
       </div>
 
-      <!-- Date Filter -->
+      <!-- Hybrid Time Range Filter -->
       <div class="flex items-center gap-3 rounded-xl bg-white p-2 shadow-sm border border-gray-200">
         <select 
-          v-model="selectedMonth" 
+          v-model="selectedTimeRange" 
           class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
         >
-          <option v-for="(name, index) in monthNames" :key="index" :value="index">
-            {{ name }}
-          </option>
+          <option value="today">วันนี้ (Today)</option>
+          <option value="thisWeek">สัปดาห์นี้ (This Week)</option>
+          <option value="thisMonth">เดือนนี้ (This Month)</option>
+          <option value="thisYear">ปีนี้ (This Year)</option>
+          <option value="allTime">ทั้งหมด (All Time)</option>
+          <option value="selectMonth">ระบุเดือน (Select Month)</option>
         </select>
-        <span class="text-gray-400">/</span>
-        <select 
-          v-model="selectedYear" 
-          class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
-        >
-          <option v-for="year in yearRange" :key="year" :value="year">
-            {{ year }}
-          </option>
-        </select>
+
+        <!-- Conditional Month/Year Pickers (shown only when "Select Month" is chosen) -->
+        <template v-if="selectedTimeRange === 'selectMonth'">
+          <span class="text-gray-400">/</span>
+          <select 
+            v-model="selectedMonth" 
+            class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option v-for="(name, index) in monthNames" :key="index" :value="index">
+              {{ name }}
+            </option>
+          </select>
+          <span class="text-gray-400">/</span>
+          <select 
+            v-model="selectedYear" 
+            class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option v-for="year in yearRange" :key="year" :value="year">
+              {{ year }}
+            </option>
+          </select>
+        </template>
       </div>
     </div>
 
@@ -95,7 +111,7 @@
 
       <!-- 2. Chart Section -->
       <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
-        <h3 class="mb-6 text-lg font-bold text-gray-800">ยอดขายรายวัน</h3>
+        <h3 class="mb-6 text-lg font-bold text-gray-800">{{ chartTitle }}</h3>
         <div class="h-[300px] md:h-[350px] w-full">
           <Bar v-if="chartData.labels" :data="chartData" :options="chartOptions" />
         </div>
@@ -122,7 +138,7 @@
             </thead>
             <tbody class="divide-y divide-gray-100 bg-white">
               <tr v-if="recentTransactions.length === 0">
-                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-400">ไม่มีรายการในเดือนนี้</td>
+                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-400">ไม่มีรายการในช่วงเวลานี้</td>
               </tr>
               <tr 
                 v-for="tx in recentTransactions" 
@@ -171,8 +187,14 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { db } from '../firebase'
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
-import { startOfMonth, endOfMonth, format } from 'date-fns'
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { 
+  startOfDay, endOfDay,
+  startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth,
+  startOfYear, endOfYear,
+  format, eachDayOfInterval, eachMonthOfInterval
+} from 'date-fns'
 import { th } from 'date-fns/locale'
 
 // Icons
@@ -195,6 +217,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 // --- State ---
 const loading = ref(false)
 const currentDate = new Date()
+const selectedTimeRange = ref('thisMonth') // Default: This Month
 const selectedMonth = ref(currentDate.getMonth())
 const selectedYear = ref(currentDate.getFullYear())
 
@@ -213,6 +236,14 @@ const monthNames = [
   "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
   "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
 ]
+
+const monthNamesShort = [
+  "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+  "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+]
+
+const dayNamesShort = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]
+
 const yearRange = computed(() => {
   const current = new Date().getFullYear()
   const years = []
@@ -222,24 +253,101 @@ const yearRange = computed(() => {
   return years
 })
 
+// --- Computed ---
+const timeRangeLabel = computed(() => {
+  const labels = {
+    today: 'ประจำวันนี้',
+    thisWeek: 'ประจำสัปดาห์นี้',
+    thisMonth: 'ประจำเดือนนี้',
+    thisYear: 'ประจำปีนี้',
+    allTime: 'ตั้งแต่เริ่มต้น',
+    selectMonth: `ประจำ ${monthNames[selectedMonth.value]} ${selectedYear.value}`
+  }
+  return labels[selectedTimeRange.value] || ''
+})
+
+const chartTitle = computed(() => {
+  const titles = {
+    today: 'ยอดขายรายวัน',
+    thisWeek: 'ยอดขายรายวัน',
+    thisMonth: 'ยอดขายรายวัน',
+    selectMonth: 'ยอดขายรายวัน',
+    thisYear: 'ยอดขายรายเดือน',
+    allTime: 'ยอดขายรายเดือน'
+  }
+  return titles[selectedTimeRange.value] || 'ยอดขาย'
+})
+
 // --- Logic ---
+
+// Calculate date range based on selected time range
+const getDateRange = () => {
+  const now = new Date()
+  
+  switch (selectedTimeRange.value) {
+    case 'today':
+      return {
+        start: startOfDay(now),
+        end: endOfDay(now)
+      }
+    case 'thisWeek':
+      return {
+        start: startOfWeek(now, { weekStartsOn: 1 }), // Monday
+        end: endOfWeek(now, { weekStartsOn: 1 })
+      }
+    case 'thisMonth':
+      return {
+        start: startOfMonth(now),
+        end: endOfMonth(now)
+      }
+    case 'selectMonth':
+      const targetDate = new Date(selectedYear.value, selectedMonth.value)
+      return {
+        start: startOfMonth(targetDate),
+        end: endOfMonth(targetDate)
+      }
+    case 'thisYear':
+      return {
+        start: startOfYear(now),
+        end: endOfYear(now)
+      }
+    case 'allTime':
+      return {
+        start: null,
+        end: null
+      }
+    default:
+      return {
+        start: startOfMonth(now),
+        end: endOfMonth(now)
+      }
+  }
+}
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const start = startOfMonth(new Date(selectedYear.value, selectedMonth.value))
-    const end = endOfMonth(new Date(selectedYear.value, selectedMonth.value))
+    const { start, end } = getDateRange()
 
     // Query Firestore
-    // Note: Ensure Firestore Composite Index exists for (dateTime ASC) if needed, 
-    // but for simple range we use 'date' or 'dateTime'
     const salesRef = collection(db, 'sales')
-    const q = query(
-      salesRef, 
-      where('dateTime', '>=', start),
-      where('dateTime', '<=', end),
-      orderBy('dateTime', 'desc')
-    )
+    let q
+
+    if (start && end) {
+      // With date range filter
+      q = query(
+        salesRef, 
+        where('dateTime', '>=', start),
+        where('dateTime', '<=', end),
+        orderBy('dateTime', 'desc')
+      )
+    } else {
+      // All time - no date filter
+      q = query(
+        salesRef,
+        orderBy('dateTime', 'desc')
+      )
+    }
 
     const snapshot = await getDocs(q)
     
@@ -249,14 +357,6 @@ const fetchData = async () => {
     let totalTransfer = 0
     let totalCOD = 0
     
-    const dailyData = {} // Key: day (1-31) -> { COD: 0, Transfer: 0 }
-    const daysInMonth = end.getDate()
-
-    // Initialize daily map
-    for(let i=1; i<=daysInMonth; i++) {
-      dailyData[i] = { COD: 0, Transfer: 0 }
-    }
-
     const txs = []
 
     snapshot.forEach(doc => {
@@ -270,22 +370,16 @@ const fetchData = async () => {
       if (type === 'COD') totalCOD += amt
       else totalTransfer += amt
 
-      // Update Daily Data for Chart
-      // Assuming 'dateTime' is a Timestamp or Date object
+      // Convert dateTime
       let dateObj = data.dateTime && data.dateTime.toDate ? data.dateTime.toDate() : new Date(data.dateTime)
       
-      // Fallback for missing dateTime, use date string
+      // Fallback for missing dateTime
       if (!data.dateTime && data.date) {
         dateObj = new Date(data.date)
       }
 
       if (dateObj instanceof Date && !isNaN(dateObj)) {
-          const day = dateObj.getDate()
-          if (dailyData[day]) {
-            dailyData[day][type] += amt
-          }
-           // Add to transactions list (keep all for now, slice later for table)
-          txs.push({ id: doc.id, ...data, dateTime: dateObj })
+        txs.push({ id: doc.id, ...data, dateTime: dateObj })
       }
     })
 
@@ -293,42 +387,185 @@ const fetchData = async () => {
     stats.value = { totalSales, totalOrders, totalTransfer, totalCOD }
     recentTransactions.value = txs.slice(0, 10) // Top 10 recent
 
-    // Prepare Chart Data
-    const labels = Object.keys(dailyData) // 1...31
-    const dataCOD = labels.map(day => dailyData[day].COD)
-    const dataTransfer = labels.map(day => dailyData[day].Transfer)
-
-    chartData.value = {
-      labels: labels,
-      datasets: [
-        {
-          label: 'โอนเงิน',
-          backgroundColor: '#10b981', // emerald-500
-          data: dataTransfer,
-          borderRadius: 4,
-          stack: 'combined' 
-        },
-        {
-          label: 'COD',
-          backgroundColor: '#f97316', // orange-500
-          data: dataCOD,
-          borderRadius: 4,
-          stack: 'combined'
-        }
-      ]
-    }
+    // Prepare Chart Data based on time range
+    prepareChartData(txs, start, end)
 
   } catch (error) {
     console.error("Error fetching dashboard data:", error)
-    // Optional: Swal error
   } finally {
     loading.value = false
   }
 }
 
+const prepareChartData = (transactions, start, end) => {
+  const range = selectedTimeRange.value
+  
+  if (range === 'thisYear' || range === 'allTime') {
+    // Group by Month
+    prepareMonthlyChart(transactions, start, end)
+  } else {
+    // Group by Day (today, thisWeek, thisMonth, selectMonth)
+    prepareDailyChart(transactions, start, end)
+  }
+}
+
+const prepareMonthlyChart = (transactions, start, end) => {
+  // Determine the range of months
+  let monthsRange
+  
+  if (selectedTimeRange.value === 'allTime') {
+    // Find min and max dates from transactions
+    if (transactions.length === 0) {
+      monthsRange = eachMonthOfInterval({
+        start: startOfYear(new Date()),
+        end: endOfYear(new Date())
+      })
+    } else {
+      const dates = transactions.map(tx => tx.dateTime).filter(d => d)
+      const minDate = new Date(Math.min(...dates))
+      const maxDate = new Date(Math.max(...dates))
+      monthsRange = eachMonthOfInterval({
+        start: startOfMonth(minDate),
+        end: endOfMonth(maxDate)
+      })
+    }
+  } else {
+    // This year
+    monthsRange = eachMonthOfInterval({ start, end })
+  }
+
+  // Initialize monthly data
+  const monthlyData = {}
+  monthsRange.forEach(month => {
+    const key = format(month, 'yyyy-MM')
+    monthlyData[key] = { COD: 0, Transfer: 0 }
+  })
+
+  // Aggregate data
+  transactions.forEach(tx => {
+    const key = format(tx.dateTime, 'yyyy-MM')
+    const type = tx.type === 'COD' ? 'COD' : 'Transfer'
+    const amt = Number(tx.amount) || 0
+    
+    if (monthlyData[key]) {
+      monthlyData[key][type] += amt
+    }
+  })
+
+  // Prepare labels and data
+  const labels = monthsRange.map(month => {
+    const monthIndex = month.getMonth()
+    return monthNamesShort[monthIndex]
+  })
+
+  const dataCOD = monthsRange.map(month => {
+    const key = format(month, 'yyyy-MM')
+    return monthlyData[key].COD
+  })
+
+  const dataTransfer = monthsRange.map(month => {
+    const key = format(month, 'yyyy-MM')
+    return monthlyData[key].Transfer
+  })
+
+  chartData.value = {
+    labels: labels,
+    datasets: [
+      {
+        label: 'โอนเงิน',
+        backgroundColor: '#10b981', // emerald-500
+        data: dataTransfer,
+        borderRadius: 4,
+        stack: 'combined' 
+      },
+      {
+        label: 'COD',
+        backgroundColor: '#f97316', // orange-500
+        data: dataCOD,
+        borderRadius: 4,
+        stack: 'combined'
+      }
+    ]
+  }
+}
+
+const prepareDailyChart = (transactions, start, end) => {
+  const range = selectedTimeRange.value
+  
+  // Generate days in range
+  const daysRange = eachDayOfInterval({ start, end })
+  
+  // Initialize daily data
+  const dailyData = {}
+  daysRange.forEach(day => {
+    const key = format(day, 'yyyy-MM-dd')
+    dailyData[key] = { COD: 0, Transfer: 0 }
+  })
+
+  // Aggregate data
+  transactions.forEach(tx => {
+    const key = format(tx.dateTime, 'yyyy-MM-dd')
+    const type = tx.type === 'COD' ? 'COD' : 'Transfer'
+    const amt = Number(tx.amount) || 0
+    
+    if (dailyData[key]) {
+      dailyData[key][type] += amt
+    }
+  })
+
+  // Prepare labels based on range
+  let labels
+  if (range === 'thisWeek' || range === 'today') {
+    // Show day names (จันทร์, อังคาร...)
+    labels = daysRange.map(day => {
+      const dayIndex = day.getDay()
+      return dayNamesShort[dayIndex]
+    })
+  } else {
+    // This Month / Select Month - show day numbers (1, 2, 3...)
+    labels = daysRange.map(day => day.getDate().toString())
+  }
+
+  const dataCOD = daysRange.map(day => {
+    const key = format(day, 'yyyy-MM-dd')
+    return dailyData[key].COD
+  })
+
+  const dataTransfer = daysRange.map(day => {
+    const key = format(day, 'yyyy-MM-dd')
+    return dailyData[key].Transfer
+  })
+
+  chartData.value = {
+    labels: labels,
+    datasets: [
+      {
+        label: 'โอนเงิน',
+        backgroundColor: '#10b981', // emerald-500
+        data: dataTransfer,
+        borderRadius: 4,
+        stack: 'combined' 
+      },
+      {
+        label: 'COD',
+        backgroundColor: '#f97316', // orange-500
+        data: dataCOD,
+        borderRadius: 4,
+        stack: 'combined'
+      }
+    ]
+  }
+}
+
 // Watchers
-watch([selectedMonth, selectedYear], () => {
+watch(selectedTimeRange, () => {
   fetchData()
+})
+
+watch([selectedMonth, selectedYear], () => {
+  if (selectedTimeRange.value === 'selectMonth') {
+    fetchData()
+  }
 })
 
 onMounted(() => {
