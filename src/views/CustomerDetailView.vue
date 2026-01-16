@@ -158,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { db } from '../firebase'
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
 import { format, subDays, startOfMonth, startOfYear } from 'date-fns'
@@ -288,6 +288,12 @@ const prevPage = () => {
     currentPage.value--
   }
 }
+
+// Watchers
+watch(() => props.name, () => {
+  currentPage.value = 1 // Reset to first page
+  fetchCustomerSales()
+})
 
 // Lifecycle
 onMounted(() => {
