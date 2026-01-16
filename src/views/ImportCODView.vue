@@ -361,11 +361,10 @@ const confirmImport = async () => {
 
     // 2. Loading State
     isSaving.value = true
-    let successCount = 0
     
     Swal.fire({
         title: 'กำลังบันทึกข้อมูล...',
-        html: 'ระบบกำลังบันทึกยอดขายและสร้างฐานข้อมูลลูกค้า<br>กรุณารอสักครู่ ห้ามปิดหน้านี้',
+        html: 'ระบบกำลังบันทึกยอดขายและสร้างฐานข้อมูลลูกค้า<br>กรุณารอสักครู่ ห้ามปิดหน้านี้<br><br><span id="batch-progress">Processing: 0 / ' + previewItems.value.length + '</span>',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
     })
@@ -375,69 +374,100 @@ const confirmImport = async () => {
             throw new Error("Database connection failed (db is undefined). Please check firebase config.")
         }
 
-        const salesCol = collection(db, 'sales')
-        
-        // 3. Loop Save (Sales & Customers)
+        // 3. Prepare all operations
+        const BATCH_SIZE = 500 // Firestore batch limit
+        const allOperations = []
+
+        // Build operations list
         for (const item of previewItems.value) {
-            
-            // --- A. Save Sales Transaction ---
             const dateObj = new Date(item.date)
-            // Even though we have time, let's normalize to noon for day-grouping if desired,
-            // OR if user wants Exact Time from file, we should keep it?
-            // "Requirement said: Date Parsing logic... picked up date" -> likely implies timestamp is important?
-            // But previous logic setHours(12,0,0,0). Let's Stick to keeping the Date part correct.
-            // If the excel has time, it's better to keep it?
-            // Let's keep the exact time from file if available, otherwise 12:00
             
-            // Actually, for reports, usually we group by Day.
-            // Let's create a dateTime field which is exact (or noon if no time)
-            
-            const saveData = {
+            // Sales operation
+            const salesDocId = `COD_${item.orderNo}`
+            const salesData = {
                 type: 'COD',
                 orderNo: item.orderNo,
                 customerName: item.customerName,
                 amount: Number(item.amount),
-                date: item.date, // JS Date Object
-                dateTime: dateObj, // JS Date Object
+                date: item.date,
+                dateTime: dateObj,
                 importedAt: serverTimestamp(),
                 fileName: item.sourceFile
             }
-            
-            // Parallel execution for better performance on single item
-            // 1. Upsert Sales Doc with deterministic ID to prevent duplicates
-            // ID Format: COD_OrderNo (e.g., COD_TH012345678)
-            const salesDocId = `COD_${item.orderNo}`
-            const salesDocRef = doc(db, 'sales', salesDocId)
-            const salesPromise = setDoc(salesDocRef, saveData, { merge: true })
 
-            // 2. Upsert Customer Data (if customer name exists)
-            let customerPromise = Promise.resolve()
+            allOperations.push({
+                type: 'sales',
+                id: salesDocId,
+                data: salesData
+            })
+
+            // Customer operation (if customer name exists)
             if (item.customerName && item.customerName.trim().length > 0) {
-                 const customerId = item.customerName.trim()
-                 const customerData = {
-                     name: customerId,
-                     lastUpdate: serverTimestamp()
-                 }
-                 
-                 // Add optional fields if they exist
-                 if (item.phoneNumber) customerData.phoneNumber = item.phoneNumber
-                 if (item.address) customerData.address = item.address
-                 
-                 const customerRef = doc(db, 'customers', customerId)
-                 // merge: true will update existing or create new
-                 customerPromise = setDoc(customerRef, customerData, { merge: true })
+                const customerId = item.customerName.trim()
+                const customerData = {
+                    name: customerId,
+                    lastUpdate: serverTimestamp()
+                }
+                
+                // Add optional fields if they exist
+                if (item.phoneNumber) customerData.phoneNumber = item.phoneNumber
+                if (item.address) customerData.address = item.address
+                
+                allOperations.push({
+                    type: 'customer',
+                    id: customerId,
+                    data: customerData
+                })
             }
-
-            await Promise.all([salesPromise, customerPromise])
-            
-            successCount++
         }
 
-        // 4. Success & Redirect
+        // 4. Split into chunks and process
+        const chunks = []
+        for (let i = 0; i < allOperations.length; i += BATCH_SIZE) {
+            chunks.push(allOperations.slice(i, i + BATCH_SIZE))
+        }
+
+        console.log(`Processing ${allOperations.length} operations in ${chunks.length} batches`)
+
+        let processedCount = 0
+        
+        // Process each chunk
+        for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+            const chunk = chunks[chunkIndex]
+            const { writeBatch } = await import('firebase/firestore')
+            const batch = writeBatch(db)
+
+            // Add all operations in this chunk to the batch
+            for (const operation of chunk) {
+                if (operation.type === 'sales') {
+                    const docRef = doc(db, 'sales', operation.id)
+                    batch.set(docRef, operation.data, { merge: true })
+                } else if (operation.type === 'customer') {
+                    const docRef = doc(db, 'customers', operation.id)
+                    batch.set(docRef, operation.data, { merge: true })
+                }
+            }
+
+            // Commit this batch
+            await batch.commit()
+            
+            processedCount += chunk.length
+            
+            // Update progress
+            const progressEl = document.getElementById('batch-progress')
+            if (progressEl) {
+                const completedItems = Math.min(processedCount / 2, previewItems.value.length) // Rough estimate (sales + customers)
+                progressEl.textContent = `Processing: ${Math.floor(completedItems)} / ${previewItems.value.length}`
+            }
+            
+            console.log(`Batch ${chunkIndex + 1}/${chunks.length} committed (${processedCount}/${allOperations.length} operations)`)
+        }
+
+        // 5. Success & Redirect
         await Swal.fire({
             icon: 'success',
             title: 'บันทึกสำเร็จ!',
-            text: `บันทึกยอดขาย ${successCount} รายการ และอัปเดตฐานข้อมูลลูกค้าเรียบร้อยแล้ว`,
+            text: `บันทึกยอดขาย ${previewItems.value.length} รายการ และอัปเดตฐานข้อมูลลูกค้าเรียบร้อยแล้ว`,
             timer: 2000,
             showConfirmButton: false
         })
@@ -456,6 +486,7 @@ const confirmImport = async () => {
         isSaving.value = false
     }
 }
+
 
 // --- UTILS ---
 
