@@ -22,6 +22,7 @@
               v-model="formData.date"
               required
               class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
+              @click="$event.target.showPicker ? $event.target.showPicker() : null"
             >
             <!-- Custom Display -->
             <div class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 flex items-center justify-between">
@@ -42,6 +43,7 @@
               v-model="formData.time"
               required
               class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
+              @click="$event.target.showPicker ? $event.target.showPicker() : null"
             >
             <!-- Custom Display -->
              <div class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 flex items-center justify-between">
