@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import MainLayout from "../layouts/MainLayout.vue";
@@ -54,7 +54,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory("/manowzab-sales/"),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes,
 });
 
