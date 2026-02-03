@@ -3,14 +3,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore"; // ต้องมีบรรทัดนี้
 
-// Config เดิมของคุณเป้ง
+// Config using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyAXJOmewNfAMmjgS9Gwq_ciVk-lYS21AQU",
-  authDomain: "salespilot-c9cd1.firebaseapp.com",
-  projectId: "salespilot-c9cd1",
-  storageBucket: "salespilot-c9cd1.firebasestorage.app",
-  messagingSenderId: "676627817045",
-  appId: "1:676627817045:web:81ca137124c4f016eb6adc"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase

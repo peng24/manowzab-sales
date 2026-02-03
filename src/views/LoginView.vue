@@ -1,8 +1,12 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8">
+  <div
+    class="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8"
+  >
     <div class="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg">
       <div class="text-center">
-        <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Sign in to SalesPilot</h2>
+        <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+          Sign in to SalesPilot
+        </h2>
         <p class="mt-2 text-sm text-gray-600">Access your dashboard</p>
       </div>
       <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
@@ -41,10 +45,27 @@
             class="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-3 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-400"
             :disabled="loading"
           >
-            <span v-if="loading" class="absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg class="h-5 w-5 animate-spin text-blue-300" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <span
+              v-if="loading"
+              class="absolute inset-y-0 left-0 flex items-center pl-3"
+            >
+              <svg
+                class="h-5 w-5 animate-spin text-blue-300"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
             </span>
             Sign in
@@ -56,28 +77,56 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../firebase'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import Swal from "sweetalert2";
 
-const router = useRouter()
-const email = ref('')
-const password = ref('')
-const loading = ref(false)
+const router = useRouter();
+const email = ref("");
+const password = ref("");
+const loading = ref(false);
 
 const handleLogin = async () => {
-  if (!email.value || !password.value) return
-  
-  loading.value = true
+  if (!email.value || !password.value) return;
+
+  loading.value = true;
   try {
-    await signInWithEmailAndPassword(auth, email.value, password.value)
-    router.push('/')
+    await signInWithEmailAndPassword(auth, email.value, password.value);
+    router.push("/");
   } catch (error) {
-    console.error('Login error:', error)
-    alert('Failed to sign in: ' + error.message)
+    console.error("Login error:", error);
+
+    // User-friendly error messages
+    let errorMessage = "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
+
+    if (
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/wrong-password"
+    ) {
+      errorMessage = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+    } else if (error.code === "auth/user-not-found") {
+      errorMessage = "ไม่พบผู้ใช้งานในระบบ";
+    } else if (error.code === "auth/invalid-email") {
+      errorMessage = "รูปแบบอีเมลไม่ถูกต้อง";
+    } else if (error.code === "auth/user-disabled") {
+      errorMessage = "บัญชีผู้ใช้นี้ถูกระงับการใช้งาน";
+    } else if (error.code === "auth/too-many-requests") {
+      errorMessage = "มีการพยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในภายหลัง";
+    } else if (error.code === "auth/network-request-failed") {
+      errorMessage = "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้";
+    }
+
+    await Swal.fire({
+      icon: "error",
+      title: "เข้าสู่ระบบไม่สำเร็จ",
+      text: errorMessage,
+      confirmButtonText: "ตลอด",
+      confirmButtonColor: "#3b82f6",
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>

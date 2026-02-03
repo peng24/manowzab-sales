@@ -149,18 +149,7 @@
         </div>
 
         <!-- 2. Chart Section -->
-        <div
-          class="rounded-2xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm"
-        >
-          <h3 class="mb-6 text-lg font-bold text-gray-800">{{ chartTitle }}</h3>
-          <div class="h-[300px] md:h-[350px] w-full">
-            <Bar
-              v-if="chartData.labels"
-              :data="chartData"
-              :options="chartOptions"
-            />
-          </div>
-        </div>
+        <SalesChart :title="chartTitle" :chart-data="chartData" />
 
         <!-- 3. Recent Transactions -->
         <div
@@ -271,8 +260,6 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
-import { db } from "../firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import {
   startOfDay,
   endOfDay,
@@ -288,50 +275,25 @@ import {
 } from "date-fns";
 import { th } from "date-fns/locale";
 
+// Store
+import { useSalesStore } from "../stores/salesStore.js";
+
 // Icons
 import { Wallet, ShoppingBag, ArrowRightLeft, Truck } from "lucide-vue-next";
 
 // Components
 import PullToRefresh from "../components/PullToRefresh.vue";
+import SalesChart from "../components/SalesChart.vue";
 
-// Chart.js
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-} from "chart.js";
-import { Bar } from "vue-chartjs";
-import ChartDataLabels from "chartjs-plugin-datalabels";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ChartDataLabels
-);
+// --- Store ---
+const salesStore = useSalesStore();
 
 // --- State ---
-const loading = ref(false);
 const currentDate = new Date();
 const selectedTimeRange = ref("thisMonth"); // Default: This Month
 const selectedMonth = ref(currentDate.getMonth());
 const selectedYear = ref(currentDate.getFullYear());
 
-const stats = ref({
-  totalSales: 0,
-  totalOrders: 0,
-  totalTransfer: 0,
-  totalCOD: 0,
-});
-
-const recentTransactions = ref([]);
 const chartData = ref({});
 
 // Constants
@@ -377,6 +339,18 @@ const yearRange = computed(() => {
 });
 
 // --- Computed ---
+
+// Use store getters for stats
+const stats = computed(() => ({
+  totalSales: salesStore.totalSales,
+  totalOrders: salesStore.totalOrders,
+  totalTransfer: salesStore.totalTransfer,
+  totalCOD: salesStore.totalCOD,
+}));
+
+const recentTransactions = computed(() => salesStore.recentSales);
+const loading = computed(() => salesStore.loading);
+
 const timeRangeLabel = computed(() => {
   const labels = {
     today: "ประจำวันนี้",
@@ -450,74 +424,49 @@ const getDateRange = () => {
 };
 
 const fetchData = async () => {
-  loading.value = true;
   try {
     const { start, end } = getDateRange();
 
-    // Query Firestore
-    const salesRef = collection(db, "sales");
-    let q;
+    // Prepare filter for salesStore
+    let filter = {};
 
-    if (start && end) {
-      // With date range filter
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc")
-      );
-    } else {
-      // All time - no date filter
-      q = query(salesRef, orderBy("dateTime", "desc"));
+    switch (selectedTimeRange.value) {
+      case "today":
+        filter = { mode: "today" };
+        break;
+      case "thisWeek":
+        filter = { mode: "thisWeek", startDate: start, endDate: end };
+        break;
+      case "thisMonth":
+        filter = { mode: "thisMonth" };
+        break;
+      case "selectMonth":
+        filter = {
+          mode: "selectMonth",
+          month: selectedMonth.value,
+          year: selectedYear.value,
+        };
+        break;
+      case "thisYear":
+        filter = { mode: "thisYear" };
+        break;
+      case "allTime":
+        filter = { mode: "all", limitCount: 500 };
+        break;
+      default:
+        filter = { mode: "thisMonth" };
     }
 
-    const snapshot = await getDocs(q);
+    // Fetch sales using the store
+    await salesStore.fetchSales(filter);
 
-    // Aggregation Variables
-    let totalSales = 0;
-    let totalOrders = 0;
-    let totalTransfer = 0;
-    let totalCOD = 0;
-
-    const txs = [];
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const amt = Number(data.amount) || 0;
-      const type = data.type === "COD" ? "COD" : "Transfer";
-
-      // Update Stats
-      totalSales += amt;
-      totalOrders += 1;
-      if (type === "COD") totalCOD += amt;
-      else totalTransfer += amt;
-
-      // Convert dateTime
-      let dateObj =
-        data.dateTime && data.dateTime.toDate
-          ? data.dateTime.toDate()
-          : new Date(data.dateTime);
-
-      // Fallback for missing dateTime
-      if (!data.dateTime && data.date) {
-        dateObj = new Date(data.date);
-      }
-
-      if (dateObj instanceof Date && !isNaN(dateObj)) {
-        txs.push({ id: doc.id, ...data, dateTime: dateObj });
-      }
-    });
-
-    // Set State
-    stats.value = { totalSales, totalOrders, totalTransfer, totalCOD };
-    recentTransactions.value = txs.slice(0, 10); // Top 10 recent
+    // Get sales with dates from store for charting
+    const txs = salesStore.salesWithDates;
 
     // Prepare Chart Data based on time range
     prepareChartData(txs, start, end);
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -706,89 +655,6 @@ const formatDate = (date) => {
   } catch (e) {
     return "-";
   }
-};
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  layout: {
-    padding: {
-      top: 40, // Prevent data labels from being clipped at the top
-    },
-  },
-  plugins: {
-    legend: {
-      position: "bottom",
-    },
-    tooltip: {
-      callbacks: {
-        label: function (context) {
-          let label = context.dataset.label || "";
-          if (label) {
-            label += ": ";
-          }
-          if (context.parsed.y !== null) {
-            label += new Intl.NumberFormat("th-TH", {
-              style: "currency",
-              currency: "THB",
-            }).format(context.parsed.y);
-          }
-          return label;
-        },
-      },
-    },
-    datalabels: {
-      anchor: "end",
-      align: "end",
-      color: "#4b5563", // gray-600
-      font: {
-        weight: "bold",
-        size: 11,
-      },
-      display: function (ctx) {
-        // Show only on the last dataset to avoid duplicate labels
-        return ctx.datasetIndex === ctx.chart.data.datasets.length - 1;
-      },
-      formatter: (value, ctx) => {
-        // Calculate sum of all datasets for this data index
-        const datasets = ctx.chart.data.datasets;
-        const dataIndex = ctx.dataIndex;
-
-        let sum = 0;
-        datasets.forEach((dataset) => {
-          const val = dataset.data[dataIndex];
-          sum += val || 0;
-        });
-
-        // Hide if sum is 0
-        if (sum === 0) return "";
-
-        // Format as k for thousands (e.g., 1.5k, 10k, 15.5k)
-        if (sum >= 1000) {
-          return (sum / 1000).toFixed(sum % 1000 === 0 ? 0 : 1) + "k";
-        }
-
-        // Show raw number for values < 1000
-        return sum.toString();
-      },
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      stacked: true,
-      ticks: {
-        callback: (value) => {
-          if (value >= 1000) return "฿" + (value / 1000).toFixed(1) + "k";
-          return "฿" + value;
-        },
-      },
-    },
-    x: {
-      stacked: true,
-      grid: { display: false },
-    },
-  },
 };
 </script>
 

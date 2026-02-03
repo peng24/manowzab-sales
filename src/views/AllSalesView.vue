@@ -446,29 +446,16 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 import { ref, computed, onMounted } from "vue";
-import { db } from "../firebase";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
 import Swal from "sweetalert2";
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-  startOfDay,
-  endOfDay,
-} from "date-fns";
+import { format } from "date-fns";
 import { th } from "date-fns/locale";
+
+// Services
+import {
+  getAllSales,
+  updateSale,
+  deleteSale as deleteSaleService,
+} from "../services/salesService.js";
 
 // --- State ---
 const loading = ref(false);
@@ -543,7 +530,7 @@ const codAmount = computed(() => {
 
 // Pagination
 const totalPages = computed(
-  () => Math.ceil(sales.value.length / itemsPerPage) || 1
+  () => Math.ceil(sales.value.length / itemsPerPage) || 1,
 );
 
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
@@ -585,14 +572,8 @@ const fetchSales = async () => {
   sales.value = [];
 
   try {
-    const salesRef = collection(db, "sales");
-    let q;
-
-    if (filterMode.value === "all") {
-      // All Time - with limit to prevent overload
-      q = query(salesRef, orderBy("dateTime", "desc"), limit(200));
-    } else if (filterMode.value === "custom") {
-      // Custom Range
+    if (filterMode.value === "custom") {
+      // Validate custom dates
       if (!customStartDate.value || !customEndDate.value) {
         Swal.fire({
           icon: "warning",
@@ -602,48 +583,17 @@ const fetchSales = async () => {
         loading.value = false;
         return;
       }
-
-      const start = startOfDay(new Date(customStartDate.value));
-      const end = endOfDay(new Date(customEndDate.value));
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc")
-      );
-    } else if (filterMode.value === "month") {
-      // Specific Month
-      const start = startOfMonth(
-        new Date(selectedYear.value, selectedMonth.value)
-      );
-      const end = endOfMonth(new Date(selectedYear.value, selectedMonth.value));
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc")
-      );
-    } else if (filterMode.value === "year") {
-      // Specific Year
-      const start = startOfYear(new Date(selectedYear.value, 0));
-      const end = endOfYear(new Date(selectedYear.value, 0));
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc")
-      );
     }
 
-    const snapshot = await getDocs(q);
-
-    sales.value = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Use the service to fetch sales
+    sales.value = await getAllSales({
+      mode: filterMode.value,
+      startDate: customStartDate.value ? new Date(customStartDate.value) : null,
+      endDate: customEndDate.value ? new Date(customEndDate.value) : null,
+      month: selectedMonth.value,
+      year: selectedYear.value,
+      limitCount: 200,
+    });
   } catch (error) {
     console.error("Error fetching sales:", error);
     Swal.fire("Error", error.message, "error");
@@ -680,7 +630,7 @@ const deleteSale = async (item) => {
 
   if (result.isConfirmed) {
     try {
-      await deleteDoc(doc(db, "sales", item.id));
+      await deleteSaleService(item.id);
       // Remove from local list
       sales.value = sales.value.filter((s) => s.id !== item.id);
       Swal.fire("Deleted!", "ลบรายการสำเร็จ", "success");
@@ -726,7 +676,7 @@ const saveEdit = async () => {
       amount: Number(editForm.value.amount),
     };
 
-    await updateDoc(doc(db, "sales", editingId.value), updateData);
+    await updateSale(editingId.value, updateData);
 
     // Update Local
     const index = sales.value.findIndex((s) => s.id === editingId.value);
