@@ -1,20 +1,26 @@
 <template>
   <div class="flex h-screen bg-gray-50 font-sans">
-    
     <!-- ========================================== -->
     <!-- SIDEBAR (DESKTOP ONLY > 768px)         -->
     <!-- ========================================== -->
-    <aside class="hidden w-64 flex-col bg-slate-900 text-white md:flex transition-all duration-300">
+    <aside
+      class="hidden w-64 flex-col bg-slate-900 text-white md:flex transition-all duration-300"
+    >
       <!-- App Logo/Name -->
-      <div class="flex h-16 items-center justify-center border-b border-slate-800 bg-slate-900">
-        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+      <div
+        class="flex h-16 items-center justify-center border-b border-slate-800 bg-slate-900"
+      >
+        <h1
+          class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
+        >
           ManowZab Sales
         </h1>
       </div>
 
       <!-- Desktop Navigation Links -->
       <nav class="flex-1 space-y-2 px-4 py-6">
-        <router-link to="/" 
+        <router-link
+          to="/"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
@@ -22,7 +28,8 @@
           Dashboard
         </router-link>
 
-        <router-link to="/transfer" 
+        <router-link
+          to="/transfer"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
@@ -30,7 +37,8 @@
           บันทึกยอดโอน
         </router-link>
 
-        <router-link to="/import-cod" 
+        <router-link
+          to="/import-cod"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
@@ -46,20 +54,40 @@
           ประวัติการขาย
         </router-link> -->
 
-        <router-link to="/customers" 
+        <router-link
+          to="/customers"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="mr-3 h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+            />
           </svg>
           ข้อมูลลูกค้า
         </router-link>
       </nav>
 
+      <!-- Version Display (Desktop) -->
+      <div class="px-4 py-2 text-center">
+        <p class="text-xs text-slate-500">Version {{ appVersion }}</p>
+      </div>
+
       <!-- Logout (Desktop) -->
       <div class="border-t border-slate-800 p-4">
-        <button @click="handleLogout" class="flex w-full items-center justify-center rounded-lg bg-red-500/10 py-2 text-sm font-medium text-red-400 hover:bg-red-500 hover:text-white transition-all">
+        <button
+          @click="handleLogout"
+          class="flex w-full items-center justify-center rounded-lg bg-red-500/10 py-2 text-sm font-medium text-red-400 hover:bg-red-500 hover:text-white transition-all"
+        >
           <component :is="LogOut" class="mr-2 h-4 w-4" />
           ออกจากระบบ
         </button>
@@ -70,12 +98,15 @@
     <!-- MAIN CONTENT AREA                          -->
     <!-- ========================================== -->
     <div class="flex flex-1 flex-col h-full overflow-hidden relative">
-      
       <!-- Header -->
-      <header class="flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm md:px-6 z-10">
+      <header
+        class="flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm md:px-6 z-10"
+      >
         <div class="flex items-center">
           <!-- Mobile Logo (Visible only on small screens) -->
-          <span class="md:hidden text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mr-2">
+          <span
+            class="md:hidden text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mr-2"
+          >
             ManowZab
           </span>
           <!-- Desktop Title (Visible only on large screens) -->
@@ -87,55 +118,78 @@
         <!-- Right Side: Date / Profile / Logout (Mobile) -->
         <div class="flex items-center gap-3">
           <span class="hidden text-sm text-gray-500 md:block">
-            {{ new Date().toLocaleDateString('th-TH', { dateStyle: 'long' }) }}
+            {{ new Date().toLocaleDateString("th-TH", { dateStyle: "long" }) }}
           </span>
-          <button @click="handleLogout" class="md:hidden rounded-full p-2 text-gray-500 hover:bg-gray-100">
-             <component :is="LogOut" class="h-5 w-5" />
+          <button
+            @click="handleLogout"
+            class="md:hidden rounded-full p-2 text-gray-500 hover:bg-gray-100"
+          >
+            <component :is="LogOut" class="h-5 w-5" />
           </button>
         </div>
       </header>
 
       <!-- Scrollable Page Content -->
-      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 pb-24 md:pb-6">
+      <main
+        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 pb-24 md:pb-6"
+      >
         <router-view />
       </main>
-
     </div>
 
     <!-- ========================================== -->
     <!-- BOTTOM NAVIGATION (MOBILE ONLY < 768px)    -->
     <!-- ========================================== -->
-    <nav class="fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden pb-safe">
-      
-      <router-link to="/" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
+    <nav
+      class="fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden pb-safe"
+    >
+      <router-link
+        to="/"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
         <component :is="LayoutDashboard" class="h-6 w-6 mb-0.5" />
         <span class="text-[10px]">ภาพรวม</span>
       </router-link>
 
-      <router-link to="/transfer" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
+      <router-link
+        to="/transfer"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
         <component :is="CreditCard" class="h-6 w-6 mb-0.5" />
         <span class="text-[10px]">โอนเงิน</span>
       </router-link>
 
-      <router-link to="/import-cod" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
+      <router-link
+        to="/import-cod"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
         <div class="relative">
-             <component :is="FileSpreadsheet" class="h-6 w-6 mb-0.5" />
+          <component :is="FileSpreadsheet" class="h-6 w-6 mb-0.5" />
         </div>
         <span class="text-[10px]">นำเข้า</span>
       </router-link>
 
-       <router-link to="/all-sales" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
+      <router-link
+        to="/all-sales"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
         <component :is="History" class="h-6 w-6 mb-0.5" />
         <span class="text-[10px]">ประวัติ</span>
       </router-link>
 
-       <router-link to="/customers" class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors" active-class="text-blue-600 font-semibold">
+      <router-link
+        to="/customers"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
         <component :is="User" class="h-6 w-6 mb-0.5" />
         <span class="text-[10px]">ลูกค้า</span>
       </router-link>
-
     </nav>
-
   </div>
 </template>
 
@@ -147,20 +201,34 @@
 </style>
 
 <script setup>
-import { useRouter } from 'vue-router'
-import { signOut } from 'firebase/auth'
-import { auth } from '../firebase'
-import { LayoutDashboard, CreditCard, FileSpreadsheet, Users, LogOut, History, User } from 'lucide-vue-next'
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+import {
+  LayoutDashboard,
+  CreditCard,
+  FileSpreadsheet,
+  Users,
+  LogOut,
+  History,
+  User,
+} from "lucide-vue-next";
 
-const router = useRouter()
+const router = useRouter();
+
+// Access global version constant
+const appVersion = computed(() => {
+  return typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+});
 
 const handleLogout = async () => {
   try {
-    await signOut(auth)
-    router.replace('/login')
+    await signOut(auth);
+    router.replace("/login");
   } catch (error) {
-    console.error('Logout error:', error)
-    alert('Logout failed: ' + error.message)
+    console.error("Logout error:", error);
+    alert("Logout failed: " + error.message);
   }
-}
+};
 </script>

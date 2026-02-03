@@ -72,12 +72,17 @@
           </button>
         </div>
       </form>
+
+      <!-- Version Display -->
+      <div class="mt-6 text-center">
+        <p class="text-xs text-gray-400">Version {{ appVersion }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
@@ -87,6 +92,11 @@ const router = useRouter();
 const email = ref("");
 const password = ref("");
 const loading = ref(false);
+
+// Access global version constant
+const appVersion = computed(() => {
+  return typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+});
 
 const handleLogin = async () => {
   if (!email.value || !password.value) return;
