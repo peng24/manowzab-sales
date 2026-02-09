@@ -1,0 +1,598 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful Login with Valid Credentials",
+    "description": "Verify that users can log in successfully using valid email and password credentials.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter a valid email registered in the system."
+      },
+      {
+        "type": "action",
+        "description": "Enter the correct password associated with the email."
+      },
+      {
+        "type": "action",
+        "description": "Click the login button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the user is authenticated and redirected to the dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Login Failure with Invalid Credentials",
+    "description": "Verify that login fails with incorrect email or password and displays an appropriate error message.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page."
+      },
+      {
+        "type": "action",
+        "description": "Enter an unregistered or invalid email."
+      },
+      {
+        "type": "action",
+        "description": "Enter an incorrect password."
+      },
+      {
+        "type": "action",
+        "description": "Click the login button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that login is denied and an error message indicating invalid credentials is shown."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Access Denied to Protected Routes without Authentication",
+    "description": "Verify that unauthenticated users cannot access protected application routes and are redirected to login.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to navigate directly to a protected route (e.g., Dashboard)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the system redirects to the login page."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Display Real-time Sales Overview on Dashboard",
+    "description": "Verify that the dashboard displays real-time sales data with summary cards, time filters, sales charts, and recent transactions correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in and navigate to the Dashboard view."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that the summary cards show total sales, orders, transfer amount, and COD amount with correct updated values."
+      },
+      {
+        "type": "action",
+        "description": "Apply each time filter: today, last 7 days, last 30 days, this month, last month, and select a custom month."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure sales charts update reflecting the applied time filter with correct data visualization."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the list of recent 10 transactions matches the filtered sales data and shows correct details."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Create Transfer Sales Entry with Valid Data",
+    "description": "Verify that a transfer sale can be added successfully through the form with valid inputs including auto-generated order number and customer autocomplete.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Transfer Sales Entry page."
+      },
+      {
+        "type": "action",
+        "description": "Fill in the date/time picker with a valid date and time."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the order number is automatically generated in correct format TRF-YYYYMMDD-HHMMSS."
+      },
+      {
+        "type": "action",
+        "description": "Enter a partial customer name and select from autocomplete suggestions."
+      },
+      {
+        "type": "action",
+        "description": "Fill in the amount input with a valid positive number."
+      },
+      {
+        "type": "action",
+        "description": "Optionally upload a valid slip URL."
+      },
+      {
+        "type": "action",
+        "description": "Submit the form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify transfer record is saved and listed among the 10 most recent transfer records with correct details."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Transfer Sales Entry Validation Checks",
+    "description": "Verify form validations on Transfer Sales Entry form including required fields and input formats.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Transfer Sales Entry page."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit the form with empty required fields: date/time, customer name, or amount."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that validation error messages are displayed for missing inputs."
+      },
+      {
+        "type": "action",
+        "description": "Input invalid amount values such as negative numbers or non-numeric characters."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that amount field validation prevents submission and shows appropriate errors."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Import COD Excel Files Successfully",
+    "description": "Verify that users can drag-and-drop valid Excel files for COD import, and the system parses, validates, previews data accurately before saving.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the Import COD feature page."
+      },
+      {
+        "type": "action",
+        "description": "Drag and drop multiple valid .xlsx or .xls files into the import area."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that files are parsed correctly with no errors."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that all data rows are validated checking date format, customer names presence, and amount correctness."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate preview screen displays total files processed, total items and aggregated total amount."
+      },
+      {
+        "type": "action",
+        "description": "Confirm the import action to save data."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify COD data is successfully saved in Firebase and reflects in the All Sales Management and dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "COD Import Validation Error Handling",
+    "description": "Verify system behavior when COD Excel files contain invalid data such as malformed dates, missing fields, or invalid amounts.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Import COD feature page."
+      },
+      {
+        "type": "action",
+        "description": "Drag and drop Excel files containing rows with invalid dates, missing customer names, or negative amounts."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation catches errors and highlights problematic rows."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that user is prevented from confirming save until errors are corrected or invalid rows removed."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "All Sales Management - Filter and Pagination",
+    "description": "Verify the advanced filtering options and pagination work correctly in the All Sales Management view.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to All Sales Management page."
+      },
+      {
+        "type": "action",
+        "description": "Apply the 'All' filter and verify that all sales records are listed."
+      },
+      {
+        "type": "action",
+        "description": "Apply custom date range filter and verify the sales list updates correctly to the date range."
+      },
+      {
+        "type": "action",
+        "description": "Apply select month filter and verify displayed records match the month."
+      },
+      {
+        "type": "assertion",
+        "description": "Check summary cards update accordingly with total sales and payment breakdown."
+      },
+      {
+        "type": "action",
+        "description": "Navigate through available pagination controls if record count exceeds page size."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify sales records displayed correspond to the correct pages."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Delete a Sales Record from All Sales View",
+    "description": "Verify that a sales record can be deleted from the All Sales Management view with confirmation and that data updates accordingly.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to All Sales Management page."
+      },
+      {
+        "type": "action",
+        "description": "Select a sales record and click the delete action."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the system prompts for user confirmation before deletion."
+      },
+      {
+        "type": "action",
+        "description": "Confirm the deletion."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that the sales record is removed from the list and underlying database."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that summary cards and charts update to reflect the deletion."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Export Sales Data to Excel",
+    "description": "Verify the export functionality generates an accurate and correctly formatted Excel file from filtered sales data.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to All Sales Management page."
+      },
+      {
+        "type": "action",
+        "description": "Apply filters to sales data."
+      },
+      {
+        "type": "action",
+        "description": "Click the export to Excel button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an Excel file is downloaded."
+      },
+      {
+        "type": "assertion",
+        "description": "Open the Excel file and confirm that all sales records match filtered data with proper formatting and columns."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Customer Management - Add New Customer",
+    "description": "Verify that users can add a new customer with valid data using the modal form and that the customer list updates in real-time.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Customers Management page."
+      },
+      {
+        "type": "action",
+        "description": "Click to open modal for adding new customer."
+      },
+      {
+        "type": "action",
+        "description": "Input valid customer data including name (required), phone number, address, and notes."
+      },
+      {
+        "type": "action",
+        "description": "Submit the form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new customer appears in the customer list instantly."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that data is persisted in Firebase Firestore."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Customer Management - Edit Existing Customer",
+    "description": "Verify that user can edit an existing customer's details via modal form and updates reflect correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Customers Management page."
+      },
+      {
+        "type": "action",
+        "description": "Select an existing customer and open the edit modal form."
+      },
+      {
+        "type": "action",
+        "description": "Modify customer details including optional fields."
+      },
+      {
+        "type": "action",
+        "description": "Submit the form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the edited details are updated in the list and saved in the database."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Customer Management - Delete Customer",
+    "description": "Verify that a customer can be deleted with confirmation and that the list and database update accordingly.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Customers Management page."
+      },
+      {
+        "type": "action",
+        "description": "Select a customer to delete and initiate delete action."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify confirmation prompt appears."
+      },
+      {
+        "type": "action",
+        "description": "Confirm deletion."
+      },
+      {
+        "type": "assertion",
+        "description": "Check customer is removed from the customer list and database."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Customer Management - Real-time Search",
+    "description": "Verify that the search input filters the customer list in real-time based on name matches.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Customers Management page."
+      },
+      {
+        "type": "action",
+        "description": "Type partial or full customer names in search input."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the list filters dynamically showing only matching customers."
+      },
+      {
+        "type": "action",
+        "description": "Clear the search input."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the full customer list is restored."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "View Customer Detail with Purchase Statistics and History",
+    "description": "Verify that detailed customer profile displays personal info, purchase stats including total orders, amount, latest order, and complete purchase history table correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to a customer's detail page."
+      },
+      {
+        "type": "assertion",
+        "description": "Check customer information fields are displayed correctly."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify purchase statistics such as total orders, total purchase amount, and latest order are accurate."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that purchase history table lists all purchases with date, order number, type, and amount."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Responsive Design on Desktop, Tablet, and Mobile",
+    "description": "Verify the application layout adapts correctly and maintains usability across desktop, tablet, and mobile breakpoints.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open the application on desktop screen size."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify sidebar is visible and navigation works."
+      },
+      {
+        "type": "action",
+        "description": "Resize viewport to tablet dimensions."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify layout adjusts properly and navigation remains accessible."
+      },
+      {
+        "type": "action",
+        "description": "Resize viewport to mobile screen size."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify desktop sidebar is replaced by bottom navigation."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify logout and app version are accessible in mobile navigation."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Logout Functionality and Session Termination",
+    "description": "Verify that clicking logout ends user session, clears authentication state, and redirects to login page.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in and navigate to any protected page."
+      },
+      {
+        "type": "action",
+        "description": "Click the logout button from main navigation."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is signed out and redirected to login page."
+      },
+      {
+        "type": "action",
+        "description": "Try accessing protected routes after logout."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied and redirect to login page occurs."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Pull-to-Refresh Component on Mobile Devices",
+    "description": "Verify that the pull-to-refresh component triggers manual data refresh on supported mobile devices.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open the app on a mobile device or emulator."
+      },
+      {
+        "type": "action",
+        "description": "Perform a pull-down gesture on any list view (e.g., Dashboard sales list)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify manual refresh is initiated, loading indicator is shown, and sales data updates upon completion."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Sales Chart Component Data Visualization Accuracy",
+    "description": "Verify that the sales chart component accurately displays stacked bar charts for Transfer and COD amounts with correct data labels.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Dashboard with sample sales data available."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify chart bars correspond to Transfer and COD amounts per selected time period."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify stacked bar labels display accurate summed amounts."
+      },
+      {
+        "type": "action",
+        "description": "Change time range filters."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify chart updates accordingly reflecting new filtered data."
+      }
+    ]
+  }
+]

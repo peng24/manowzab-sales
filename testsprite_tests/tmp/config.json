@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:5173/manowzab-sales/",
+  "loginUser": "peng24@gmail.com",
+  "loginPassword": "peng24@31197012",
+  "executionArgs": {
+    "projectName": "Manowzab-sales",
+    "projectPath": "d:\\Manowzab-sales",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-eJhyRgGCpbcpMp-QUBW2i-hHPWJJjz5R8h5zAfB2msDNhKi3FGxPcg06v72dZ9BU5Zgu_CXnMBD86cDKCDLhmyUgfSw33Im_MjsDBXZgiF2sranBlLlK0RM3bF2eKCXm_kk"
+    }
+  },
+  "serverPort": 52159,
+  "proxy": "http://d223710d-bc3b-4802-b3aa-6d98abd9acd5:wOMfv36uABikYB4FrX8vRjvUptfkqEsU@tun.testsprite.com:8080"
+}

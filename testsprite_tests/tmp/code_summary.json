@@ -1,0 +1,102 @@
+{
+  "tech_stack": [
+    "JavaScript",
+    "Vue 3 (Composition API)",
+    "Vite 7.2.4",
+    "Tailwind CSS 3.4.1",
+    "Firebase 12.7.0 (Firestore + Authentication)",
+    "Pinia 3.0.4",
+    "Vue Router 4.6.4",
+    "Chart.js 4.5.1",
+    "ExcelJS 4.4.0",
+    "SweetAlert2 11.26.17",
+    "date-fns 4.1.0"
+  ],
+  "features": [
+    {
+      "name": "Dashboard",
+      "description": "Real-time sales overview dashboard with summary cards showing total sales, orders, transfer amount, and COD amount. Includes time range filters (today, last 7 days, last 30 days, this month, last month, select month) and sales chart visualization. Displays recent 10 transactions.",
+      "files": [
+        "src/views/DashboardView.vue",
+        "src/components/SalesChart.vue",
+        "src/stores/salesStore.js"
+      ]
+    },
+    {
+      "name": "Transfer Sales Entry",
+      "description": "Form to record transfer payment sales with date/time picker, auto-generated order number (TRF-YYYYMMDD-HHMMSS), customer name with autocomplete suggestions, amount input, and optional slip URL. Shows 10 most recent transfer records.",
+      "files": ["src/views/TransferView.vue", "src/services/salesService.js"]
+    },
+    {
+      "name": "COD Import",
+      "description": "Excel file import feature for COD data with drag-and-drop support. Uses ExcelJS to parse .xlsx/.xls files, validates data (date, customer name, amount), shows preview with summary stats (total items, files processed, total amount), and confirms before saving to Firebase.",
+      "files": ["src/views/ImportCODView.vue", "src/services/salesService.js"]
+    },
+    {
+      "name": "All Sales Management",
+      "description": "Comprehensive sales list view with advanced filtering (all, custom date range, select month). Shows summary cards with total sales and transfer vs COD breakdown. Sales table displays date/time, order number, customer name (clickable), type badge, amount, evidence, and delete action. Supports Excel export.",
+      "files": [
+        "src/views/AllSalesView.vue",
+        "src/stores/salesStore.js",
+        "src/services/salesService.js"
+      ]
+    },
+    {
+      "name": "Customer Management",
+      "description": "Full CRUD operations for customer data. Features include add new customer, edit existing customer, delete customer, and real-time search. Customer data includes name (required), phone number, address, and notes. Uses modal form for create/edit.",
+      "files": ["src/views/CustomersView.vue", "src/services/salesService.js"]
+    },
+    {
+      "name": "Customer Detail",
+      "description": "Detailed customer profile page showing customer information, purchase statistics (total orders, total purchase amount, latest order), and complete purchase history table with date, order number, type, and amount.",
+      "files": [
+        "src/views/CustomerDetailView.vue",
+        "src/services/salesService.js"
+      ]
+    },
+    {
+      "name": "Authentication",
+      "description": "Firebase Email/Password authentication with protected routes. Login page with modern UI, version display, loading state, and error handling. Router guards prevent unauthorized access.",
+      "files": [
+        "src/views/LoginView.vue",
+        "src/router/index.js",
+        "src/firebase/index.js"
+      ]
+    },
+    {
+      "name": "Main Layout",
+      "description": "Responsive main application layout with desktop sidebar navigation and mobile bottom navigation. Shows app version in sidebar. Includes logout functionality.",
+      "files": ["src/layouts/MainLayout.vue"]
+    },
+    {
+      "name": "Pull to Refresh",
+      "description": "Touch-enabled pull-to-refresh component for manual data refresh on mobile devices.",
+      "files": ["src/components/PullToRefresh.vue"]
+    },
+    {
+      "name": "Sales Chart Component",
+      "description": "Reusable bar chart component using Chart.js and vue-chartjs to visualize sales data. Shows stacked bars for Transfer and COD amounts with data labels.",
+      "files": ["src/components/SalesChart.vue"]
+    },
+    {
+      "name": "Sales Store",
+      "description": "Pinia state management store for sales data with state (sales array, loading, filters, lastFetchTime), getters (totalSales, totalOrders, totalTransfer, totalCOD, summaryByDate, recentSales, salesWithDates), and actions (fetchSales, updateFilters, resetFilters, clearSales).",
+      "files": ["src/stores/salesStore.js"]
+    },
+    {
+      "name": "Sales Service",
+      "description": "Firebase Firestore service layer providing functions for sales and customer data operations including getAllSales, createSale, deleteSale, getAllCustomers, createCustomer, updateCustomer, deleteCustomer, and getCustomerSales.",
+      "files": ["src/services/salesService.js"]
+    },
+    {
+      "name": "Firebase Configuration",
+      "description": "Firebase initialization and configuration with Firestore and Authentication setup using environment variables.",
+      "files": ["src/firebase/index.js"]
+    },
+    {
+      "name": "Router Configuration",
+      "description": "Vue Router setup with hash history mode, protected routes using authentication guards, and lazy-loaded components for code splitting.",
+      "files": ["src/router/index.js"]
+    }
+  ]
+}
