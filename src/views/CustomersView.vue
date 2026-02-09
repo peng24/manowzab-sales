@@ -452,18 +452,13 @@ const deleteCustomer = async (customer) => {
       text: `ต้องการลบข้อมูลลูกค้า "${customer.name}" หรือไม่?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
       confirmButtonText: "ลบข้อมูล",
       cancelButtonText: "ยกเลิก",
-      // Add these for better automation compatibility
       allowOutsideClick: true,
       allowEscapeKey: true,
-      // Ensure button has stable attributes
-      customClass: {
-        confirmButton: "swal-confirm-delete",
-        cancelButton: "swal-cancel-delete",
-      },
+      buttonsStyling: true,
     });
 
     if (result.isConfirmed) {

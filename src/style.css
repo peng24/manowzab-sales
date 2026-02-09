@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fix SweetAlert2 button visibility - override Tailwind reset */
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny {
+  display: inline-block !important;
+  padding: 0.625em 1.1em !important;
+  margin: 0.3125em !important;
+  border: 0 !important;
+  border-radius: 0.25em !important;
+  font-size: 1em !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  color: #fff !important;
+  transition: all 0.1s ease-in-out !important;
+}
+
+.swal2-confirm {
+  background-color: #dc2626 !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #b91c1c !important;
+}
+
+.swal2-cancel {
+  background-color: #6b7280 !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #4b5563 !important;
+}
+
+.swal2-actions {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 0.25em !important;
+  margin-top: 1.25em !important;
+}
