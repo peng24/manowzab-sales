@@ -274,16 +274,22 @@
               >
                 หลักฐาน
               </th>
+              <th
+                scope="col"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                จัดการ
+              </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="loading" class="text-center">
-              <td colspan="5" class="py-10 text-gray-500">
+              <td colspan="6" class="py-10 text-gray-500">
                 กำลังโหลดข้อมูล...
               </td>
             </tr>
             <tr v-else-if="requests.length === 0" class="text-center">
-              <td colspan="5" class="py-10 text-gray-500">
+              <td colspan="6" class="py-10 text-gray-500">
                 ไม่พบรายการโอนล่าสุด
               </td>
             </tr>
@@ -343,11 +349,187 @@
                 </a>
                 <span v-else class="text-gray-400">-</span>
               </td>
+              <!-- Actions -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <button
+                    @click="openEditModal(req)"
+                    class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                    title="แก้ไข"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                    แก้ไข
+                  </button>
+                  <button
+                    @click="confirmDelete(req)"
+                    class="inline-flex items-center rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                    title="ลบ"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    ลบ
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!-- Edit Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showEditModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <!-- Backdrop -->
+        <div
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          @click="closeEditModal"
+        ></div>
+        <!-- Modal -->
+        <div
+          class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up"
+        >
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-800">แก้ไขรายการโอน</h3>
+            <button
+              @click="closeEditModal"
+              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="submitEdit" class="space-y-4">
+            <!-- Date -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-700"
+                  >วันที่</label
+                >
+                <input
+                  type="date"
+                  v-model="editData.date"
+                  required
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-700"
+                  >เวลา</label
+                >
+                <input
+                  type="time"
+                  v-model="editData.time"
+                  required
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+
+            <!-- Customer Name -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ชื่อลูกค้า</label
+              >
+              <input
+                type="text"
+                v-model="editData.customerName"
+                required
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <!-- Amount -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ยอดโอน (บาท)</label
+              >
+              <input
+                type="number"
+                v-model.number="editData.amount"
+                step="0.01"
+                min="0"
+                required
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <!-- Slip URL -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ลิงก์สลิป (URL)</label
+              >
+              <input
+                type="url"
+                v-model="editData.slipUrl"
+                placeholder="https://..."
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                @click="closeEditModal"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                :disabled="isEditSubmitting"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+              >
+                <span v-if="isEditSubmitting">กำลังบันทึก...</span>
+                <span v-else>บันทึกการแก้ไข</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -366,9 +548,12 @@ import {
   getDocs,
   setDoc,
   doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { formatThaiDateTime, formatThaiDate } from "../utils/dateUtils.js";
 import Swal from "sweetalert2";
 
 // State
@@ -393,6 +578,18 @@ const showCustomerSuggestions = ref(false);
 const customerInputRef = ref(null);
 
 // Validation State
+// Edit Modal State
+const showEditModal = ref(false);
+const isEditSubmitting = ref(false);
+const editData = ref({
+  id: "",
+  date: "",
+  time: "",
+  customerName: "",
+  amount: "",
+  slipUrl: "",
+});
+
 const validationErrors = ref({
   amount: "",
 });
@@ -510,10 +707,12 @@ const saveTransfer = async () => {
       );
     }
 
-    // Reset Form
+    // Reset Form (keep date & time for consecutive entries)
+    const keepDate = formData.value.date;
+    const keepTime = formData.value.time;
     formData.value = {
-      date: format(new Date(), "yyyy-MM-dd"),
-      time: format(new Date(), "HH:mm"),
+      date: keepDate,
+      time: keepTime,
       orderNo: "",
       customerName: "",
       amount: "",
@@ -542,23 +741,102 @@ const saveTransfer = async () => {
   }
 };
 
-const formatThaiDateTime = (dateField) => {
-  if (!dateField) return "-";
-  const date = dateField.toDate ? dateField.toDate() : new Date(dateField);
-  const dayMonth = format(date, "d MMM", { locale: th });
-  const yearBE = date.getFullYear() + 543;
-  const yearShort = String(yearBE).slice(-2);
-  const time = format(date, "HH:mm", { locale: th });
-  return `${dayMonth} ${yearShort} ${time} น.`;
+// --- Edit Functions ---
+const openEditModal = (req) => {
+  const dateObj =
+    req.dateTime && req.dateTime.toDate
+      ? req.dateTime.toDate()
+      : new Date(req.dateTime);
+
+  editData.value = {
+    id: req.id,
+    date: format(dateObj, "yyyy-MM-dd"),
+    time: format(dateObj, "HH:mm"),
+    customerName: req.customerName || "",
+    amount: req.amount || 0,
+    slipUrl: req.slipUrl || "",
+  };
+  showEditModal.value = true;
 };
 
-const formatThaiDateDisplay = (dateStr) => {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  const dayMonth = format(date, "d MMMM", { locale: th });
-  const yearBE = date.getFullYear() + 543;
-  return `${dayMonth} ${yearBE}`;
+const closeEditModal = () => {
+  showEditModal.value = false;
 };
+
+const submitEdit = async () => {
+  if (isEditSubmitting.value) return;
+  isEditSubmitting.value = true;
+
+  try {
+    const dateObj = new Date(`${editData.value.date}T${editData.value.time}`);
+    const docRef = doc(db, "sales", editData.value.id);
+
+    await updateDoc(docRef, {
+      dateTime: dateObj,
+      customerName: editData.value.customerName,
+      amount: Number(editData.value.amount),
+      slipUrl: editData.value.slipUrl || null,
+    });
+
+    closeEditModal();
+
+    Swal.fire({
+      icon: "success",
+      title: "แก้ไขสำเร็จ",
+      text: "แก้ไขรายการเรียบร้อยแล้ว",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  } catch (error) {
+    console.error("Error updating transfer:", error);
+    Swal.fire({
+      icon: "error",
+      title: "เกิดข้อผิดพลาด",
+      text: error.message,
+    });
+  } finally {
+    isEditSubmitting.value = false;
+  }
+};
+
+// --- Delete Function ---
+const confirmDelete = async (req) => {
+  const result = await Swal.fire({
+    icon: "warning",
+    title: "ยืนยันการลบ",
+    html: `ต้องการลบรายการ <b>${req.orderNo}</b><br>ลูกค้า: <b>${req.customerName || "ไม่ระบุ"}</b> ยอด ฿${formatCurrency(req.amount)}?`,
+    showCancelButton: true,
+    showDenyButton: false,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "ลบรายการ",
+    cancelButtonText: "ยกเลิก",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const docRef = doc(db, "sales", req.id);
+      await deleteDoc(docRef);
+
+      Swal.fire({
+        icon: "success",
+        title: "ลบสำเร็จ",
+        text: "ลบรายการเรียบร้อยแล้ว",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Error deleting transfer:", error);
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: error.message,
+      });
+    }
+  }
+};
+
+const formatThaiDateDisplay = formatThaiDate;
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("th-TH").format(amount);
@@ -599,3 +877,20 @@ onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 </script>
+
+<style>
+.animate-fade-in-up {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

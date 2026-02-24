@@ -109,7 +109,21 @@ export const useSalesStore = defineStore("sales", {
      * Get recent sales (limited to 10)
      */
     recentSales: (state) => {
-      return state.sales.slice(0, 10);
+      return state.sales.slice(0, 10).map((sale) => {
+        let dateObj = null;
+        if (sale.dateTime && sale.dateTime.toDate) {
+          dateObj = sale.dateTime.toDate();
+        } else if (sale.dateTime) {
+          dateObj = new Date(sale.dateTime);
+        } else if (sale.date) {
+          dateObj = new Date(sale.date);
+        }
+
+        return {
+          ...sale,
+          dateTime: dateObj,
+        };
+      });
     },
 
     /**

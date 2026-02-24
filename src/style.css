@@ -40,3 +40,24 @@
   gap: 0.25em !important;
   margin-top: 1.25em !important;
 }
+
+/* Hide deny button globally */
+.swal2-deny {
+  display: none !important;
+}
+
+/* Global modal entrance animation */
+.animate-fade-in-up {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

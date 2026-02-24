@@ -291,21 +291,51 @@
                   {{ sale.type === "COD" ? "COD" : "โอนเงิน" }}
                 </span>
               </td>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-              >
-                <button
-                  @click="openEditModal(sale)"
-                  class="text-indigo-600 hover:text-indigo-900 mr-4"
-                >
-                  แก้ไข
-                </button>
-                <button
-                  @click="deleteSale(sale)"
-                  class="text-red-600 hover:text-red-900"
-                >
-                  ลบ
-                </button>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    @click="openEditModal(sale)"
+                    class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                    title="แก้ไข"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                    แก้ไข
+                  </button>
+                  <button
+                    @click="deleteSale(sale)"
+                    class="inline-flex items-center rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                    title="ลบ"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    ลบ
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -343,99 +373,112 @@
     </div>
 
     <!-- 5. Edit Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="modal-title"
-      role="dialog"
-      aria-modal="true"
-    >
+    <Teleport to="body">
       <div
-        class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        v-if="showModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          aria-hidden="true"
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm"
           @click="closeModal"
         ></div>
-        <span
-          class="hidden sm:inline-block sm:align-middle sm:h-screen"
-          aria-hidden="true"
-          >&#8203;</span
-        >
-
         <div
-          class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+          class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up"
         >
-          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <h3
-              class="text-lg leading-6 font-medium text-gray-900 mb-4"
-              id="modal-title"
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-800">แก้ไขรายการขาย</h3>
+            <button
+              @click="closeModal"
+              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
-              แก้ไขรายการขาย
-            </h3>
-            <div class="space-y-4">
-              <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="saveEdit" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
                 <label class="block text-sm font-medium text-gray-700"
                   >วันที่</label
                 >
                 <input
                   type="date"
                   v-model="editForm.date"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  required
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
               </div>
-              <div>
+              <div class="space-y-1">
                 <label class="block text-sm font-medium text-gray-700"
                   >เวลา</label
                 >
                 <input
                   type="time"
                   v-model="editForm.time"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700"
-                  >ชื่อลูกค้า</label
-                >
-                <input
-                  type="text"
-                  v-model="editForm.customerName"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700"
-                  >ยอดเงิน</label
-                >
-                <input
-                  type="number"
-                  v-model.number="editForm.amount"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  required
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
-          </div>
-          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              @click="saveEdit"
-              type="button"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              บันทึก
-            </button>
-            <button
-              @click="closeModal"
-              type="button"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              ยกเลิก
-            </button>
-          </div>
+
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ชื่อลูกค้า</label
+              >
+              <input
+                type="text"
+                v-model="editForm.customerName"
+                required
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ยอดเงิน (บาท)</label
+              >
+              <input
+                type="number"
+                v-model.number="editForm.amount"
+                step="0.01"
+                min="0"
+                required
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                @click="closeModal"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
+              >
+                บันทึกการแก้ไข
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -449,6 +492,7 @@ import { ref, computed, onMounted } from "vue";
 import Swal from "sweetalert2";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { formatThaiDateTime } from "../utils/dateUtils.js";
 
 // Services
 import {
@@ -619,23 +663,34 @@ const nextPage = () => {
 
 const deleteSale = async (item) => {
   const result = await Swal.fire({
-    title: "ยืนยันการลบ?",
-    text: `ต้องการลบรายการ ${item.orderNo || ""} นี้หรือไม่?`,
     icon: "warning",
+    title: "ยืนยันการลบ",
+    html: `ต้องการลบรายการ <b>${item.orderNo || ""}</b><br>ลูกค้า: <b>${item.customerName || "ไม่ระบุ"}</b> ยอด ฿${formatCurrency(item.amount)}?`,
     showCancelButton: true,
-    confirmButtonColor: "#d33",
-    confirmButtonText: "ลบ",
+    showDenyButton: false,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "ลบรายการ",
     cancelButtonText: "ยกเลิก",
   });
 
   if (result.isConfirmed) {
     try {
       await deleteSaleService(item.id);
-      // Remove from local list
       sales.value = sales.value.filter((s) => s.id !== item.id);
-      Swal.fire("Deleted!", "ลบรายการสำเร็จ", "success");
+      Swal.fire({
+        icon: "success",
+        title: "ลบสำเร็จ",
+        text: "ลบรายการเรียบร้อยแล้ว",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (error) {
-      Swal.fire("Error", error.message, "error");
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: error.message,
+      });
     }
   }
 };
@@ -698,16 +753,7 @@ const saveEdit = async () => {
 };
 
 // --- Utils ---
-const formatDate = (dateField) => {
-  if (!dateField) return "-";
-  try {
-    const d = dateField.toDate ? dateField.toDate() : new Date(dateField);
-    const yearBE = d.getFullYear() + 543;
-    return format(d, `d MMM ${String(yearBE).slice(-2)} HH:mm`, { locale: th });
-  } catch (e) {
-    return "-";
-  }
-};
+const formatDate = formatThaiDateTime;
 
 const formatCurrency = (val) => new Intl.NumberFormat("th-TH").format(val || 0);
 

@@ -150,22 +150,50 @@
               <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                 {{ customer.note || "-" }}
               </td>
-              <td
-                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-              >
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
                 <div class="flex items-center justify-end gap-2">
                   <button
                     @click="openModal(customer)"
-                    class="rounded-lg bg-blue-50 px-3 py-1.5 text-blue-600 hover:bg-blue-100 hover:text-blue-900 transition-colors"
+                    class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                    title="แก้ไข"
                   >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
                     แก้ไข
                   </button>
                   <button
                     @click="deleteCustomer(customer)"
                     data-testid="delete-customer-btn"
                     :data-customer-id="customer.id"
-                    class="rounded-lg bg-red-50 px-3 py-1.5 text-red-600 hover:bg-red-100 hover:text-red-900 transition-colors"
+                    class="inline-flex items-center rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                    title="ลบ"
                   >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
                     ลบ
                   </button>
                 </div>
@@ -177,116 +205,115 @@
     </div>
 
     <!-- Modal Form -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="modal-title"
-      role="dialog"
-      aria-modal="true"
-    >
+    <Teleport to="body">
       <div
-        class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        v-if="showModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
-        <!-- Backdrop -->
         <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          aria-hidden="true"
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm"
           @click="closeModal"
         ></div>
-        <span
-          class="hidden sm:inline-block sm:align-middle sm:h-screen"
-          aria-hidden="true"
-          >&#8203;</span
-        >
-
-        <!-- Panel -->
         <div
-          class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+          class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up"
         >
-          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="sm:flex sm:items-start">
-              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                <h3
-                  class="text-lg leading-6 font-medium text-gray-900"
-                  id="modal-title"
-                >
-                  {{ isEditing ? "แก้ไขข้อมูลลูกค้า" : "เพิ่มลูกค้าใหม่" }}
-                </h3>
-                <div class="mt-4 space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700"
-                      >ชื่อลูกค้า <span class="text-red-500">*</span></label
-                    >
-                    <input
-                      type="text"
-                      v-model="formData.name"
-                      :disabled="isEditing"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
-                      placeholder="ระบุชื่อลูกค้า (Unique)"
-                    />
-                    <p v-if="isEditing" class="text-xs text-gray-400 mt-1">
-                      ชื่อลูกค้าไม่สามารถแก้ไขได้ (ใช้เป็น ID)
-                    </p>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700"
-                      >เบอร์โทรศัพท์</label
-                    >
-                    <input
-                      type="tel"
-                      v-model="formData.phoneNumber"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="08x-xxx-xxxx"
-                    />
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700"
-                      >ที่อยู่จัดส่ง</label
-                    >
-                    <textarea
-                      v-model="formData.address"
-                      rows="3"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="บ้านเลขที่, ถนน, แขวง/เขต..."
-                    ></textarea>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700"
-                      >หมายเหตุ</label
-                    >
-                    <input
-                      type="text"
-                      v-model="formData.note"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Note เพิ่มเติม"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              @click="saveCustomer"
-              type="button"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              บันทึก
-            </button>
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-800">
+              {{ isEditing ? "แก้ไขข้อมูลลูกค้า" : "เพิ่มลูกค้าใหม่" }}
+            </h3>
             <button
               @click="closeModal"
-              type="button"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             >
-              ยกเลิก
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
             </button>
           </div>
+
+          <form @submit.prevent="saveCustomer" class="space-y-4">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ชื่อลูกค้า <span class="text-red-500">*</span></label
+              >
+              <input
+                type="text"
+                v-model="formData.name"
+                :disabled="isEditing"
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                placeholder="ระบุชื่อลูกค้า (Unique)"
+              />
+              <p v-if="isEditing" class="text-xs text-gray-400">
+                ชื่อลูกค้าไม่สามารถแก้ไขได้ (ใช้เป็น ID)
+              </p>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >เบอร์โทรศัพท์</label
+              >
+              <input
+                type="tel"
+                v-model="formData.phoneNumber"
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                placeholder="08x-xxx-xxxx"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >ที่อยู่จัดส่ง</label
+              >
+              <textarea
+                v-model="formData.address"
+                rows="3"
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                placeholder="บ้านเลขที่, ถนน, แขวง/เขต..."
+              ></textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700"
+                >หมายเหตุ</label
+              >
+              <input
+                type="text"
+                v-model="formData.note"
+                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                placeholder="Note เพิ่มเติม"
+              />
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                @click="closeModal"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
+              >
+                {{ isEditing ? "บันทึกการแก้ไข" : "เพิ่มลูกค้า" }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -306,6 +333,7 @@ import {
 import Swal from "sweetalert2";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { formatThaiDateTime } from "../utils/dateUtils.js";
 
 // --- State ---
 const customers = ref([]);
@@ -448,17 +476,15 @@ const deleteCustomer = async (customer) => {
 
   try {
     const result = await Swal.fire({
-      title: "ยืนยันการลบ?",
-      text: `ต้องการลบข้อมูลลูกค้า "${customer.name}" หรือไม่?`,
       icon: "warning",
+      title: "ยืนยันการลบ",
+      html: `ต้องการลบข้อมูลลูกค้า <b>"${customer.name}"</b> หรือไม่?`,
       showCancelButton: true,
-      confirmButtonColor: "#dc2626",
+      showDenyButton: false,
+      confirmButtonColor: "#ef4444",
       cancelButtonColor: "#6b7280",
       confirmButtonText: "ลบข้อมูล",
       cancelButtonText: "ยกเลิก",
-      allowOutsideClick: true,
-      allowEscapeKey: true,
-      buttonsStyling: true,
     });
 
     if (result.isConfirmed) {
@@ -490,12 +516,5 @@ const deleteCustomer = async (customer) => {
 };
 
 // --- Utils ---
-const formatDate = (timestamp) => {
-  if (!timestamp) return "-";
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  const yearBE = date.getFullYear() + 543;
-  return format(date, `d MMM ${String(yearBE).slice(-2)} HH:mm`, {
-    locale: th,
-  });
-};
+const formatDate = formatThaiDateTime;
 </script>
