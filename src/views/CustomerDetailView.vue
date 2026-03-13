@@ -145,9 +145,9 @@
                   <span
                     class="inline-flex rounded-full px-3 py-1 text-xs font-semibold leading-5"
                     :class="{
-                      'bg-orange-100 text-orange-800 border border-orange-200':
+                      'bg-amber-100 text-amber-800 border border-amber-200':
                         sale.type === 'COD',
-                      'bg-emerald-100 text-emerald-800 border border-emerald-200':
+                      'bg-blue-100 text-blue-800 border border-blue-200':
                         sale.type !== 'COD',
                     }"
                   >

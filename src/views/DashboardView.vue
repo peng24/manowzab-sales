@@ -69,17 +69,17 @@
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <!-- Total Sales -->
           <div
-            class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="rounded-2xl border border-violet-100 bg-violet-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-blue-600">ยอดขายรวม</p>
+                <p class="text-sm font-medium text-violet-600">ยอดขายรวม</p>
                 <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
                   ฿{{ formatCurrency(stats.totalSales) }}
                 </h3>
               </div>
               <div
-                class="rounded-lg bg-blue-100 p-2 md:p-3 text-blue-600 hidden sm:block"
+                class="rounded-lg bg-violet-100 p-2 md:p-3 text-violet-600 hidden sm:block"
               >
                 <Wallet class="h-6 w-6" />
               </div>
@@ -88,17 +88,17 @@
 
           <!-- Total Orders -->
           <div
-            class="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-indigo-600">จำนวนออเดอร์</p>
+                <p class="text-sm font-medium text-slate-600">จำนวนออเดอร์</p>
                 <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
                   {{ stats.totalOrders.toLocaleString() }}
                 </h3>
               </div>
               <div
-                class="rounded-lg bg-indigo-100 p-2 md:p-3 text-indigo-600 hidden sm:block"
+                class="rounded-lg bg-slate-200 p-2 md:p-3 text-slate-600 hidden sm:block"
               >
                 <ShoppingBag class="h-6 w-6" />
               </div>
@@ -107,11 +107,11 @@
 
           <!-- Transfer Total -->
           <div
-            class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-emerald-600">
+                <p class="text-sm font-medium text-blue-600">
                   ยอดโอน (Transfer)
                 </p>
                 <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
@@ -119,7 +119,7 @@
                 </h3>
               </div>
               <div
-                class="rounded-lg bg-emerald-100 p-2 md:p-3 text-emerald-600 hidden sm:block"
+                class="rounded-lg bg-blue-100 p-2 md:p-3 text-blue-600 hidden sm:block"
               >
                 <ArrowRightLeft class="h-6 w-6" />
               </div>
@@ -128,11 +128,11 @@
 
           <!-- COD Total -->
           <div
-            class="rounded-2xl border border-orange-100 bg-orange-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-orange-600">
+                <p class="text-sm font-medium text-amber-600">
                   เก็บปลายทาง (COD)
                 </p>
                 <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
@@ -140,7 +140,7 @@
                 </h3>
               </div>
               <div
-                class="rounded-lg bg-orange-100 p-2 md:p-3 text-orange-600 hidden sm:block"
+                class="rounded-lg bg-amber-100 p-2 md:p-3 text-amber-600 hidden sm:block"
               >
                 <Truck class="h-6 w-6" />
               </div>
@@ -236,8 +236,8 @@
                     <span
                       class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
                       :class="{
-                        'bg-orange-100 text-orange-800': tx.type === 'COD',
-                        'bg-emerald-100 text-emerald-800': tx.type !== 'COD',
+                        'bg-amber-100 text-amber-800': tx.type === 'COD',
+                        'bg-blue-100 text-blue-800': tx.type !== 'COD',
                       }"
                     >
                       {{ tx.type || "N/A" }}
@@ -547,14 +547,14 @@ const prepareMonthlyChart = (transactions, start, end) => {
     datasets: [
       {
         label: "โอนเงิน",
-        backgroundColor: "#10b981", // emerald-500
+        backgroundColor: "#3b82f6", // blue-500
         data: dataTransfer,
         borderRadius: 4,
         stack: "combined",
       },
       {
         label: "COD",
-        backgroundColor: "#f97316", // orange-500
+        backgroundColor: "#f59e0b", // amber-500
         data: dataCOD,
         borderRadius: 4,
         stack: "combined",
@@ -618,14 +618,14 @@ const prepareDailyChart = (transactions, start, end) => {
     datasets: [
       {
         label: "โอนเงิน",
-        backgroundColor: "#10b981", // emerald-500
+        backgroundColor: "#3b82f6", // blue-500
         data: dataTransfer,
         borderRadius: 4,
         stack: "combined",
       },
       {
         label: "COD",
-        backgroundColor: "#f97316", // orange-500
+        backgroundColor: "#f59e0b", // amber-500
         data: dataCOD,
         borderRadius: 4,
         stack: "combined",

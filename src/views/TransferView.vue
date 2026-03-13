@@ -320,7 +320,7 @@
                 <span v-else class="text-gray-600">ไม่ระบุ</span>
               </td>
               <td
-                class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold text-green-600"
+                class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600"
               >
                 ฿{{ formatCurrency(req.amount) }}
               </td>

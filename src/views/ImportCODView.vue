@@ -72,15 +72,15 @@
           {{ processedFilesCount }} ไฟล์
         </p>
       </div>
-      <div class="rounded-xl bg-green-50 p-6 border border-green-100">
-        <h3 class="text-sm font-medium text-green-800">จำนวนรายการทั้งหมด</h3>
-        <p class="mt-2 text-3xl font-bold text-green-900">
+      <div class="rounded-xl bg-slate-50 p-6 border border-slate-200">
+        <h3 class="text-sm font-medium text-slate-700">จำนวนรายการทั้งหมด</h3>
+        <p class="mt-2 text-3xl font-bold text-slate-800">
           {{ previewItems.length }} รายการ
         </p>
       </div>
-      <div class="rounded-xl bg-purple-50 p-6 border border-purple-100">
-        <h3 class="text-sm font-medium text-purple-800">ยอดรวมทั้งหมด</h3>
-        <p class="mt-2 text-3xl font-bold text-purple-900">
+      <div class="rounded-xl bg-amber-50 p-6 border border-amber-100">
+        <h3 class="text-sm font-medium text-amber-800">ยอดรวมทั้งหมด</h3>
+        <p class="mt-2 text-3xl font-bold text-amber-900">
           ฿{{ formatCurrency(totalAmount) }}
         </p>
       </div>
@@ -211,7 +211,7 @@
                 </div>
               </td>
               <td
-                class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold"
+                class="px-6 py-4 whitespace-nowrap text-sm text-amber-600 font-semibold"
               >
                 ฿{{ formatCurrency(item.amount) }}
               </td>

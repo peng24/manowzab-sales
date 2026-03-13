@@ -145,14 +145,14 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500 mb-1">ยอดรวมทั้งหมด</p>
-            <p class="text-3xl font-bold text-green-600">
+            <p class="text-3xl font-bold text-violet-600">
               ฿{{ formatCurrency(totalSales) }}
             </p>
           </div>
           <div
-            class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center"
+            class="h-12 w-12 bg-violet-100 rounded-full flex items-center justify-center"
           >
-            <Wallet class="h-6 w-6 text-green-600" />
+            <Wallet class="h-6 w-6 text-violet-600" />
           </div>
         </div>
       </div>
@@ -165,9 +165,9 @@
             <p class="text-3xl font-bold text-gray-700">{{ totalOrders }}</p>
           </div>
           <div
-            class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center"
+            class="h-12 w-12 bg-slate-200 rounded-full flex items-center justify-center"
           >
-            <ShoppingBag class="h-6 w-6 text-blue-600" />
+            <ShoppingBag class="h-6 w-6 text-slate-600" />
           </div>
         </div>
       </div>
@@ -178,13 +178,13 @@
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-600">โอนเงิน:</span>
-            <span class="text-sm font-semibold text-green-600"
+            <span class="text-sm font-semibold text-blue-600"
               >฿{{ formatCurrency(transferAmount) }}</span
             >
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-600">COD:</span>
-            <span class="text-sm font-semibold text-blue-600"
+            <span class="text-sm font-semibold text-amber-600"
               >฿{{ formatCurrency(codAmount) }}</span
             >
           </div>
@@ -284,8 +284,8 @@
                 <span
                   class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
                   :class="{
-                    'bg-blue-100 text-blue-800': sale.type === 'COD',
-                    'bg-green-100 text-green-800': sale.type !== 'COD',
+                    'bg-amber-100 text-amber-800': sale.type === 'COD',
+                    'bg-blue-100 text-blue-800': sale.type !== 'COD',
                   }"
                 >
                   {{ sale.type === "COD" ? "COD" : "โอนเงิน" }}
