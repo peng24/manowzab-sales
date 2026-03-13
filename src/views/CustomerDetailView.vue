@@ -148,7 +148,7 @@
                       'bg-orange-100 text-orange-800 border border-orange-200':
                         sale.type === 'COD',
                       'bg-emerald-100 text-emerald-800 border border-emerald-200':
-                        sale.type === 'TRANSFER',
+                        sale.type !== 'COD',
                     }"
                   >
                     {{ sale.type || "N/A" }}

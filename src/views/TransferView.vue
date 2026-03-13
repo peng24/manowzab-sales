@@ -681,7 +681,7 @@ const saveTransfer = async () => {
 
     // 1. Save Sales Data
     const payload = {
-      type: "TRANSFER",
+      type: "Transfer",
       dateTime: dateObj,
       orderNo: formData.value.orderNo,
       customerName: formData.value.customerName,
@@ -839,7 +839,7 @@ const confirmDelete = async (req) => {
 const formatThaiDateDisplay = formatThaiDate;
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("th-TH").format(amount);
+  return new Intl.NumberFormat("th-TH").format(amount || 0);
 };
 
 // Lifecycle
@@ -851,7 +851,7 @@ onMounted(() => {
   // Real-time listener
   const q = query(
     collection(db, "sales"),
-    where("type", "==", "TRANSFER"),
+    where("type", "==", "Transfer"),
     orderBy("dateTime", "desc"),
     limit(10),
   );

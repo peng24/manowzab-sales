@@ -132,7 +132,7 @@ const handleLogin = async () => {
       icon: "error",
       title: "เข้าสู่ระบบไม่สำเร็จ",
       text: errorMessage,
-      confirmButtonText: "ตลอด",
+      confirmButtonText: "ตกลง",
       confirmButtonColor: "#3b82f6",
     });
   } finally {

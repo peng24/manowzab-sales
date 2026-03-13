@@ -279,9 +279,8 @@ const processFiles = async (files) => {
   previewItems.value = [];
 
   try {
-    const workbook = new ExcelJS.Workbook();
-
     for (const file of files) {
+      const workbook = new ExcelJS.Workbook();
       // 1. Parsing Date from Filename (Fallback)
       let fileDate = parseDateFromFilename(file.name);
       // Note: We don't error out here immediately if invalid, because we might find a date column in the file.

@@ -566,6 +566,9 @@ const prepareMonthlyChart = (transactions, start, end) => {
 const prepareDailyChart = (transactions, start, end) => {
   const range = selectedTimeRange.value;
 
+  // Guard: start and end must be valid dates
+  if (!start || !end) return;
+
   // Generate days in range
   const daysRange = eachDayOfInterval({ start, end });
 

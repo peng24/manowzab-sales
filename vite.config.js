@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
 
 // Read version from package.json
 const packageJson = JSON.parse(

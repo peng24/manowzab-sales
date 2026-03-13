@@ -74,6 +74,7 @@ export const useSalesStore = defineStore("sales", {
           return; // Skip if no valid date
         }
 
+        if (isNaN(dateObj.getTime())) return; // Skip invalid dates
         // Format date as YYYY-MM-DD
         const dateKey = dateObj.toISOString().split("T")[0];
 

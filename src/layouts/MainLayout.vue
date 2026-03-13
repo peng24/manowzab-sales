@@ -22,7 +22,7 @@
         <router-link
           to="/"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
-          active-class="bg-blue-600 text-white shadow-md"
+          exact-active-class="bg-blue-600 text-white shadow-md"
         >
           <component :is="LayoutDashboard" class="mr-3 h-5 w-5" />
           Dashboard
@@ -209,7 +209,6 @@ import {
   LayoutDashboard,
   CreditCard,
   FileSpreadsheet,
-  Users,
   LogOut,
   History,
   User,
