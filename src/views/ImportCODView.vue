@@ -187,8 +187,19 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ index + 1 }}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatDate(item.date) }}
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm"
+                :class="
+                  !item.date || isNaN(new Date(item.date).getTime())
+                    ? 'text-red-600 font-bold bg-red-50'
+                    : 'text-gray-900'
+                "
+              >
+                {{
+                  item.date && !isNaN(new Date(item.date).getTime())
+                    ? formatDate(item.date)
+                    : "วันที่ไม่ถูกต้อง"
+                }}
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
@@ -503,6 +514,16 @@ const processFiles = async (files) => {
 const confirmImport = async () => {
   if (previewItems.value.length === 0) return;
 
+  // Check for invalid dates
+  if (hasInvalidDates.value) {
+    Swal.fire({
+      icon: "error",
+      title: "พบข้อมูลวันที่ไม่ถูกต้อง",
+      text: "กรุณาตรวจสอบข้อมูลวันที่ในตาราง (ตัวอักษรสีแดง) เนื่องจากไม่สามารถระบุวันที่จากชื่อไฟล์หรือคอลัมน์ในไฟล์ได้",
+    });
+    return;
+  }
+
   // 1. Confirm Dialog
   const result = await Swal.fire({
     title: "ยืนยันการบันทึก?",
@@ -545,13 +566,16 @@ const confirmImport = async () => {
     // 3. Prepare all operations
     const BATCH_SIZE = 500; // Firestore batch limit
     const allOperations = [];
+    const customerUpdates = new Map(); // Use Map to de-duplicate customer updates
 
     // Build operations list
     for (const item of previewItems.value) {
       const dateObj = new Date(item.date);
+      const dateSuffix = format(dateObj, "yyyyMMdd");
 
       // Sales operation
-      const salesDocId = `COD_${item.orderNo}`;
+      // Use OrderNo + DateSuffix to prevent collision while maintaining idempotency
+      const salesDocId = `COD_${item.orderNo}_${dateSuffix}`;
       const salesData = {
         type: "COD",
         orderNo: item.orderNo,
@@ -569,7 +593,7 @@ const confirmImport = async () => {
         data: salesData,
       });
 
-      // Customer operation (if customer name exists)
+      // Customer operation (de-duplicated via Map)
       if (item.customerName && item.customerName.trim().length > 0) {
         const customerId = item.customerName.trim();
         const customerData = {
@@ -577,17 +601,22 @@ const confirmImport = async () => {
           lastUpdate: serverTimestamp(),
         };
 
-        // Add optional fields if they exist
         if (item.phoneNumber) customerData.phoneNumber = item.phoneNumber;
         if (item.address) customerData.address = item.address;
 
-        allOperations.push({
-          type: "customer",
-          id: customerId,
-          data: customerData,
-        });
+        // Store in Map - only the last occurrence in the file will be saved
+        customerUpdates.set(customerId, customerData);
       }
     }
+
+    // Add unique customer updates to operations list
+    customerUpdates.forEach((data, id) => {
+      allOperations.push({
+        type: "customer",
+        id: id,
+        data: data,
+      });
+    });
 
     // 4. Split into chunks and process
     const chunks = [];
@@ -600,11 +629,11 @@ const confirmImport = async () => {
     );
 
     let processedCount = 0;
+    const { writeBatch } = await import("firebase/firestore");
 
     // Process each chunk
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
-      const { writeBatch } = await import("firebase/firestore");
       const batch = writeBatch(db);
 
       // Add all operations in this chunk to the batch
@@ -691,5 +720,11 @@ const formatDate = formatThaiDateOptionalTime;
 
 const totalAmount = computed(() => {
   return previewItems.value.reduce((sum, item) => sum + (item.amount || 0), 0);
+});
+
+const hasInvalidDates = computed(() => {
+  return previewItems.value.some(
+    (item) => !item.date || isNaN(new Date(item.date).getTime()),
+  );
 });
 </script>

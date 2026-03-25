@@ -75,8 +75,11 @@ export const useSalesStore = defineStore("sales", {
         }
 
         if (isNaN(dateObj.getTime())) return; // Skip invalid dates
-        // Format date as YYYY-MM-DD
-        const dateKey = dateObj.toISOString().split("T")[0];
+        // Format date as YYYY-MM-DD (Local Time)
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const day = String(dateObj.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
 
         if (!summary[dateKey]) {
           summary[dateKey] = {

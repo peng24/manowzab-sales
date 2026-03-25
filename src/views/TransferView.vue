@@ -551,7 +551,7 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime, formatThaiDate } from "../utils/dateUtils.js";
 import Swal from "sweetalert2";
@@ -677,7 +677,7 @@ const saveTransfer = async () => {
 
   try {
     // Combine Date and Time
-    const dateObj = new Date(`${formData.value.date}T${formData.value.time}`);
+    const dateObj = parseISO(`${formData.value.date}T${formData.value.time}`);
 
     // 1. Save Sales Data
     const payload = {
@@ -768,7 +768,7 @@ const submitEdit = async () => {
   isEditSubmitting.value = true;
 
   try {
-    const dateObj = new Date(`${editData.value.date}T${editData.value.time}`);
+    const dateObj = parseISO(`${editData.value.date}T${editData.value.time}`);
     const docRef = doc(db, "sales", editData.value.id);
 
     await updateDoc(docRef, {

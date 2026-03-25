@@ -53,7 +53,14 @@ export const formatThaiDateOptionalTime = (dateField) => {
   const yearBE = date.getFullYear() + 543;
   const yearShort = String(yearBE).slice(-2);
 
-  const hasTime = date.getHours() !== 0 || date.getMinutes() !== 0;
+  // Show time if it's not exactly 00:00:00, or if we want to be safe, 
+  // check if hours/minutes/seconds are non-zero.
+  // To fix the midnight bug, we'll check if it's a "date only" by convention (00:00:00.000)
+  const hasTime =
+    date.getHours() !== 0 ||
+    date.getMinutes() !== 0 ||
+    date.getSeconds() !== 0;
+
   if (hasTime) {
     const time = format(date, "HH:mm");
     return `${dayMonth} ${yearShort} ${time} น.`;

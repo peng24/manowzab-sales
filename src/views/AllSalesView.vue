@@ -490,7 +490,7 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 import { ref, computed, onMounted } from "vue";
 import Swal from "sweetalert2";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime } from "../utils/dateUtils.js";
 
@@ -722,7 +722,7 @@ const closeModal = () => {
 
 const saveEdit = async () => {
   try {
-    const dateObj = new Date(`${editForm.value.date}T${editForm.value.time}`);
+    const dateObj = parseISO(`${editForm.value.date}T${editForm.value.time}`);
 
     const updateData = {
       dateTime: dateObj,
