@@ -242,18 +242,11 @@ import Swal from "sweetalert2";
 import { format, parse } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateOptionalTime } from "../utils/dateUtils.js";
-
-// Imports to use Firebase
-import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  doc,
-  setDoc,
-} from "firebase/firestore";
+import { formatCurrency, sanitizeCustomerId } from "../utils/formatUtils.js";
+import { useSalesStore } from "../stores/salesStore.js";
 
 const router = useRouter();
+const salesStore = useSalesStore();
 const processing = ref(false);
 const isSaving = ref(false);
 const previewItems = ref([]);
@@ -297,14 +290,12 @@ const processFiles = async (files) => {
       // Note: We don't error out here immediately if invalid, because we might find a date column in the file.
 
       try {
-        console.log(`Reading file ${file.name} with ExcelJS...`);
         const buffer = await readFile(file);
         await workbook.xlsx.load(buffer);
 
         // 2. Select Sheet (Try 'COD Detail' first, else first sheet)
         let worksheet = workbook.getWorksheet("COD Detail");
         if (!worksheet) {
-          console.log("Sheet 'COD Detail' not found, using first sheet.");
           worksheet = workbook.worksheets[0];
         }
 
@@ -318,7 +309,7 @@ const processFiles = async (files) => {
         }
 
         // 3. Scan for Header & Data
-        console.log(`Scanning sheet ${worksheet.name}...`);
+
 
         // Extended Column Map
         let headerRowIndex = -1;
@@ -373,7 +364,6 @@ const processFiles = async (files) => {
               colMap.amount !== -1
             ) {
               headerRowIndex = rowNumber;
-              console.log(`Header found at row ${rowNumber}`, colMap);
             }
             return; // Continue to next row
           }
@@ -462,12 +452,6 @@ const processFiles = async (files) => {
 
             // Debug: Log first valid item found to confirm logic
             if (!hasLoggedFirstItem) {
-              console.log(`[${file.name}] First item extracted:`, {
-                finalOrderNo,
-                customerName,
-                amountVal,
-                itemDate,
-              });
               hasLoggedFirstItem = true;
             }
 
@@ -557,115 +541,24 @@ const confirmImport = async () => {
   });
 
   try {
-    if (!db) {
-      throw new Error(
-        "Database connection failed (db is undefined). Please check firebase config.",
-      );
-    }
+    // Prepare sales items and sanitize names
+    const salesItems = previewItems.value.map((item) => ({
+      orderNo: item.orderNo,
+      customerName: sanitizeCustomerId(item.customerName),
+      amount: Number(item.amount),
+      date: item.date,
+      phoneNumber: item.phoneNumber,
+      address: item.address,
+      sourceFile: item.sourceFile,
+    }));
 
-    // 3. Prepare all operations
-    const BATCH_SIZE = 500; // Firestore batch limit
-    const allOperations = [];
-    const customerUpdates = new Map(); // Use Map to de-duplicate customer updates
-
-    // Build operations list
-    for (const item of previewItems.value) {
-      const dateObj = new Date(item.date);
-      const dateSuffix = format(dateObj, "yyyyMMdd");
-
-      // Sales operation
-      // Use OrderNo + DateSuffix to prevent collision while maintaining idempotency
-      const salesDocId = `COD_${item.orderNo}_${dateSuffix}`;
-      const salesData = {
-        type: "COD",
-        orderNo: item.orderNo,
-        customerName: item.customerName,
-        amount: Number(item.amount),
-        date: item.date,
-        dateTime: dateObj,
-        importedAt: serverTimestamp(),
-        fileName: item.sourceFile,
-      };
-
-      allOperations.push({
-        type: "sales",
-        id: salesDocId,
-        data: salesData,
-      });
-
-      // Customer operation (de-duplicated via Map)
-      if (item.customerName && item.customerName.trim().length > 0) {
-        const customerId = item.customerName.trim();
-        const customerData = {
-          name: customerId,
-          lastUpdate: serverTimestamp(),
-        };
-
-        if (item.phoneNumber) customerData.phoneNumber = item.phoneNumber;
-        if (item.address) customerData.address = item.address;
-
-        // Store in Map - only the last occurrence in the file will be saved
-        customerUpdates.set(customerId, customerData);
-      }
-    }
-
-    // Add unique customer updates to operations list
-    customerUpdates.forEach((data, id) => {
-      allOperations.push({
-        type: "customer",
-        id: id,
-        data: data,
-      });
-    });
-
-    // 4. Split into chunks and process
-    const chunks = [];
-    for (let i = 0; i < allOperations.length; i += BATCH_SIZE) {
-      chunks.push(allOperations.slice(i, i + BATCH_SIZE));
-    }
-
-    console.log(
-      `Processing ${allOperations.length} operations in ${chunks.length} batches`,
-    );
-
-    let processedCount = 0;
-    const { writeBatch } = await import("firebase/firestore");
-
-    // Process each chunk
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      const chunk = chunks[chunkIndex];
-      const batch = writeBatch(db);
-
-      // Add all operations in this chunk to the batch
-      for (const operation of chunk) {
-        if (operation.type === "sales") {
-          const docRef = doc(db, "sales", operation.id);
-          batch.set(docRef, operation.data, { merge: true });
-        } else if (operation.type === "customer") {
-          const docRef = doc(db, "customers", operation.id);
-          batch.set(docRef, operation.data, { merge: true });
-        }
-      }
-
-      // Commit this batch
-      await batch.commit();
-
-      processedCount += chunk.length;
-
-      // Update progress
+    // Perform batch import through the store
+    await salesStore.importCODSales(salesItems, (completedCount, totalItems) => {
       const progressEl = document.getElementById("batch-progress");
       if (progressEl) {
-        const completedItems = Math.min(
-          processedCount / 2,
-          previewItems.value.length,
-        ); // Rough estimate (sales + customers)
-        progressEl.textContent = `Processing: ${Math.floor(completedItems)} / ${previewItems.value.length}`;
+        progressEl.textContent = `Processing: ${completedCount} / ${totalItems}`;
       }
-
-      console.log(
-        `Batch ${chunkIndex + 1}/${chunks.length} committed (${processedCount}/${allOperations.length} operations)`,
-      );
-    }
+    });
 
     // 5. Success & Redirect
     await Swal.fire({
@@ -712,9 +605,7 @@ const clearData = () => {
   processedFilesCount.value = 0;
 };
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("th-TH").format(amount || 0);
-};
+
 
 const formatDate = formatThaiDateOptionalTime;
 

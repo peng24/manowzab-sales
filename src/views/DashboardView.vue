@@ -275,6 +275,7 @@ import {
 } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime } from "../utils/dateUtils.js";
+import { formatCurrency } from "../utils/formatUtils.js";
 
 // Store
 import { useSalesStore } from "../stores/salesStore.js";
@@ -650,7 +651,6 @@ onMounted(() => {
 });
 
 // Utilities
-const formatCurrency = (val) => new Intl.NumberFormat("th-TH").format(val || 0);
 
 const formatDate = formatThaiDateTime;
 </script>

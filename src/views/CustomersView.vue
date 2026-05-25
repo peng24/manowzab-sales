@@ -334,6 +334,7 @@ import Swal from "sweetalert2";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime } from "../utils/dateUtils.js";
+import { sanitizeCustomerId } from "../utils/formatUtils.js";
 
 // --- State ---
 const customers = ref([]);
@@ -420,7 +421,7 @@ const saveCustomer = async () => {
   }
 
   try {
-    const customerId = formData.value.name.trim();
+    const customerId = sanitizeCustomerId(formData.value.name);
     const customerRef = doc(db, "customers", customerId);
 
     const payload = {

@@ -137,13 +137,29 @@ const defaultOptions = {
   },
 };
 
+// Simple deep merge helper
+function deepMerge(target, source) {
+  const output = { ...target };
+  if (target && typeof target === "object" && source && typeof source === "object") {
+    Object.keys(source).forEach((key) => {
+      if (source[key] && typeof source[key] === "object") {
+        if (!(key in target)) {
+          Object.assign(output, { [key]: source[key] });
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        Object.assign(output, { [key]: source[key] });
+      }
+    });
+  }
+  return output;
+}
+
 // Merge custom options with default options
 const computedOptions = computed(() => {
   if (props.customOptions) {
-    return {
-      ...defaultOptions,
-      ...props.customOptions,
-    };
+    return deepMerge(defaultOptions, props.customOptions);
   }
   return defaultOptions;
 });

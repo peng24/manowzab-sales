@@ -5,7 +5,7 @@ import { th } from "date-fns/locale";
  * Convert any date-like value to a JS Date.
  * Handles: Firebase Timestamp (.toDate()), Date objects, date strings.
  */
-const toDate = (dateField) => {
+export const toDate = (dateField) => {
   if (!dateField) return null;
   if (dateField.toDate) return dateField.toDate(); // Firebase Timestamp
   const d = new Date(dateField);

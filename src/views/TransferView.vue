@@ -441,29 +441,79 @@
           </div>
 
           <form @submit.prevent="submitEdit" class="space-y-4">
-            <!-- Date -->
+            <!-- Date & Time (Thai Format Overlay) -->
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="block text-sm font-medium text-gray-700"
                   >วันที่</label
                 >
-                <input
-                  type="date"
-                  v-model="editData.date"
-                  required
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                />
+                <div class="relative">
+                  <!-- Hidden Native Input -->
+                  <input
+                    type="date"
+                    v-model="editData.date"
+                    required
+                    class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
+                    @click="
+                      $event.target.showPicker ? $event.target.showPicker() : null
+                    "
+                  />
+                  <!-- Custom Display -->
+                  <div
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 flex items-center justify-between"
+                  >
+                    <span class="text-gray-900 text-sm">{{
+                      formatThaiDateDisplay(editData.date)
+                    }}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 text-gray-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
               <div class="space-y-1">
                 <label class="block text-sm font-medium text-gray-700"
                   >เวลา</label
                 >
-                <input
-                  type="time"
-                  v-model="editData.time"
-                  required
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                />
+                <div class="relative">
+                  <!-- Hidden Native Input -->
+                  <input
+                    type="time"
+                    v-model="editData.time"
+                    required
+                    class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
+                    @click="
+                      $event.target.showPicker ? $event.target.showPicker() : null
+                    "
+                  />
+                  <!-- Custom Display -->
+                  <div
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 flex items-center justify-between"
+                  >
+                    <span class="text-gray-900 text-sm">{{ editData.time ? editData.time + ' น.' : '-' }}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 text-gray-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -534,27 +584,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { db } from "../firebase";
 import {
   collection,
-  addDoc,
-  serverTimestamp,
   query,
   where,
   orderBy,
   limit,
   onSnapshot,
   getDocs,
-  setDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import { format, parseISO } from "date-fns";
-import { th } from "date-fns/locale";
 import { formatThaiDateTime, formatThaiDate } from "../utils/dateUtils.js";
+import { formatCurrency, sanitizeCustomerId } from "../utils/formatUtils.js";
+import { useSalesStore } from "../stores/salesStore.js";
 import Swal from "sweetalert2";
+
+const salesStore = useSalesStore();
 
 // State
 const formData = ref({
@@ -678,34 +725,19 @@ const saveTransfer = async () => {
   try {
     // Combine Date and Time
     const dateObj = parseISO(`${formData.value.date}T${formData.value.time}`);
+    const sanitizedCustomerName = sanitizeCustomerId(formData.value.customerName);
 
-    // 1. Save Sales Data
+    // 1. Save Sales Data & Upsert Customer via store
     const payload = {
       type: "Transfer",
       dateTime: dateObj,
       orderNo: formData.value.orderNo,
-      customerName: formData.value.customerName,
+      customerName: sanitizedCustomerName,
       amount: Number(formData.value.amount),
       slipUrl: formData.value.slipUrl || null,
-      timestamp: serverTimestamp(),
     };
 
-    const salesRef = collection(db, "sales");
-    await addDoc(salesRef, payload);
-
-    // 2. Upsert Customer Data
-    if (formData.value.customerName) {
-      const customerId = formData.value.customerName.trim();
-      const customerRef = doc(db, "customers", customerId);
-      await setDoc(
-        customerRef,
-        {
-          name: customerId,
-          lastUpdate: serverTimestamp(),
-        },
-        { merge: true },
-      );
-    }
+    await salesStore.createSale(payload);
 
     // Reset Form (keep date & time for consecutive entries)
     const keepDate = formData.value.date;
@@ -769,11 +801,11 @@ const submitEdit = async () => {
 
   try {
     const dateObj = parseISO(`${editData.value.date}T${editData.value.time}`);
-    const docRef = doc(db, "sales", editData.value.id);
+    const sanitizedCustomerName = sanitizeCustomerId(editData.value.customerName);
 
-    await updateDoc(docRef, {
+    await salesStore.updateSale(editData.value.id, {
       dateTime: dateObj,
-      customerName: editData.value.customerName,
+      customerName: sanitizedCustomerName,
       amount: Number(editData.value.amount),
       slipUrl: editData.value.slipUrl || null,
     });
@@ -815,8 +847,7 @@ const confirmDelete = async (req) => {
 
   if (result.isConfirmed) {
     try {
-      const docRef = doc(db, "sales", req.id);
-      await deleteDoc(docRef);
+      await salesStore.deleteSale(req.id);
 
       Swal.fire({
         icon: "success",
@@ -838,9 +869,7 @@ const confirmDelete = async (req) => {
 
 const formatThaiDateDisplay = formatThaiDate;
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("th-TH").format(amount || 0);
-};
+
 
 // Lifecycle
 onMounted(() => {
@@ -878,7 +907,7 @@ onUnmounted(() => {
 });
 </script>
 
-<style>
+<style scoped>
 .animate-fade-in-up {
   animation: fadeInUp 0.2s ease-out;
 }

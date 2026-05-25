@@ -231,6 +231,7 @@ import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { format, subDays, startOfMonth, startOfYear } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime } from "../utils/dateUtils.js";
+import { formatCurrency } from "../utils/formatUtils.js";
 import { ArrowLeft } from "lucide-vue-next";
 
 // Components
@@ -335,10 +336,7 @@ const fetchCustomerSales = async () => {
   }
 };
 
-const formatCurrency = (amount) => {
-  const val = parseFloat(amount);
-  return new Intl.NumberFormat("th-TH").format(isNaN(val) ? 0 : val);
-};
+
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {

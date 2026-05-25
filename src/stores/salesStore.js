@@ -1,6 +1,14 @@
 // src/stores/salesStore.js
 import { defineStore } from "pinia";
-import { getAllSales } from "../services/salesService.js";
+import {
+  getAllSales,
+  createSale as createSaleService,
+  updateSale as updateSaleService,
+  deleteSale as deleteSaleService,
+  batchImportCODSales,
+  upsertCustomer,
+} from "../services/salesService.js";
+import { toDate } from "../utils/dateUtils.js";
 
 export const useSalesStore = defineStore("sales", {
   state: () => ({
@@ -63,18 +71,9 @@ export const useSalesStore = defineStore("sales", {
 
       state.sales.forEach((sale) => {
         // Convert dateTime to Date object
-        let dateObj;
-        if (sale.dateTime && sale.dateTime.toDate) {
-          dateObj = sale.dateTime.toDate();
-        } else if (sale.dateTime) {
-          dateObj = new Date(sale.dateTime);
-        } else if (sale.date) {
-          dateObj = new Date(sale.date);
-        } else {
-          return; // Skip if no valid date
-        }
+        const dateObj = toDate(sale.dateTime || sale.date);
+        if (!dateObj || isNaN(dateObj.getTime())) return; // Skip invalid dates
 
-        if (isNaN(dateObj.getTime())) return; // Skip invalid dates
         // Format date as YYYY-MM-DD (Local Time)
         const year = dateObj.getFullYear();
         const month = String(dateObj.getMonth() + 1).padStart(2, "0");
@@ -114,15 +113,7 @@ export const useSalesStore = defineStore("sales", {
      */
     recentSales: (state) => {
       return state.sales.slice(0, 10).map((sale) => {
-        let dateObj = null;
-        if (sale.dateTime && sale.dateTime.toDate) {
-          dateObj = sale.dateTime.toDate();
-        } else if (sale.dateTime) {
-          dateObj = new Date(sale.dateTime);
-        } else if (sale.date) {
-          dateObj = new Date(sale.date);
-        }
-
+        const dateObj = toDate(sale.dateTime || sale.date);
         return {
           ...sale,
           dateTime: dateObj,
@@ -136,27 +127,11 @@ export const useSalesStore = defineStore("sales", {
     salesWithDates: (state) => {
       return state.sales
         .filter((sale) => {
-          let dateObj;
-          if (sale.dateTime && sale.dateTime.toDate) {
-            dateObj = sale.dateTime.toDate();
-          } else if (sale.dateTime) {
-            dateObj = new Date(sale.dateTime);
-          } else if (sale.date) {
-            dateObj = new Date(sale.date);
-          }
-
+          const dateObj = toDate(sale.dateTime || sale.date);
           return dateObj instanceof Date && !isNaN(dateObj);
         })
         .map((sale) => {
-          let dateObj;
-          if (sale.dateTime && sale.dateTime.toDate) {
-            dateObj = sale.dateTime.toDate();
-          } else if (sale.dateTime) {
-            dateObj = new Date(sale.dateTime);
-          } else {
-            dateObj = new Date(sale.date);
-          }
-
+          const dateObj = toDate(sale.dateTime || sale.date);
           return {
             ...sale,
             dateTime: dateObj,
@@ -167,9 +142,21 @@ export const useSalesStore = defineStore("sales", {
 
   actions: {
     /**
-     * Fetch sales from Firestore based on current filters
+     * Fetch sales from Firestore based on current filters.
+     * Uses cache if filters match and data was fetched within 5 minutes.
      */
     async fetchSales(customFilters = null) {
+      const isSameFilter = !customFilters || JSON.stringify(customFilters) === JSON.stringify(this.filters);
+      const cacheTimeout = 5 * 60 * 1000; // 5 minutes in ms
+      const isCacheValid = 
+        this.sales.length > 0 && 
+        this.lastFetchTime && 
+        (new Date() - this.lastFetchTime < cacheTimeout);
+
+      if (isSameFilter && isCacheValid) {
+        return this.sales;
+      }
+
       this.loading = true;
 
       try {
@@ -184,6 +171,94 @@ export const useSalesStore = defineStore("sales", {
         return salesData;
       } catch (error) {
         console.error("Error fetching sales in store:", error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Invalidate sales cache
+     */
+    invalidateCache() {
+      this.lastFetchTime = null;
+    },
+
+    /**
+     * Create a new sale and upsert customer profile if name is provided
+     */
+    async createSale(saleData) {
+      this.loading = true;
+      try {
+        const created = await createSaleService(saleData);
+
+        // Upsert customer if name is provided
+        if (saleData.customerName) {
+          await upsertCustomer({
+            name: saleData.customerName,
+          });
+        }
+
+        this.invalidateCache();
+        return created;
+      } catch (error) {
+        console.error("Error creating sale in store:", error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Update an existing sale
+     */
+    async updateSale(id, updateData) {
+      this.loading = true;
+      try {
+        await updateSaleService(id, updateData);
+
+        // Upsert customer if name is being updated
+        if (updateData.customerName) {
+          await upsertCustomer({
+            name: updateData.customerName,
+          });
+        }
+
+        this.invalidateCache();
+      } catch (error) {
+        console.error("Error updating sale in store:", error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Delete a sale
+     */
+    async deleteSale(id) {
+      this.loading = true;
+      try {
+        await deleteSaleService(id);
+        this.invalidateCache();
+      } catch (error) {
+        console.error("Error deleting sale in store:", error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Import a batch of COD sales
+     */
+    async importCODSales(salesItems, onProgress = null) {
+      this.loading = true;
+      try {
+        await batchImportCODSales(salesItems, onProgress);
+        this.invalidateCache();
+      } catch (error) {
+        console.error("Error importing COD sales in store:", error);
         throw error;
       } finally {
         this.loading = false;
@@ -219,6 +294,7 @@ export const useSalesStore = defineStore("sales", {
      */
     clearSales() {
       this.sales = [];
+      this.invalidateCache();
     },
   },
 });

@@ -11,8 +11,10 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import {
+  format,
   startOfDay,
   endOfDay,
   startOfMonth,
@@ -223,6 +225,139 @@ export async function deleteSale(id) {
     await deleteDoc(saleDoc);
   } catch (error) {
     console.error("Error deleting sale:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create or update customer info
+ * @param {Object} customerData - Customer data
+ * @param {string} customerData.name - Customer name (sanitized)
+ * @param {string} customerData.phoneNumber - Phone number (optional)
+ * @param {string} customerData.address - Address (optional)
+ * @param {string} customerData.note - Note (optional)
+ * @returns {Promise<void>}
+ */
+export async function upsertCustomer(customerData) {
+  try {
+    const { name, ...otherData } = customerData;
+    if (!name) throw new Error("Customer name is required");
+
+    const { serverTimestamp } = await import("firebase/firestore");
+    const customerRef = doc(db, "customers", name);
+    await setDoc(
+      customerRef,
+      {
+        name,
+        ...otherData,
+        lastUpdate: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Error upserting customer:", error);
+    throw error;
+  }
+}
+
+/**
+ * Import a batch of COD sales and upsert customer profiles.
+ * Safe chunking: 200 items (max 400 operations) per batch.
+ * @param {Array} salesItems - Array of raw sale objects to import
+ * @param {Function} onProgress - Progress callback (index, total)
+ * @returns {Promise<void>}
+ */
+export async function batchImportCODSales(salesItems, onProgress = null) {
+  try {
+    const { writeBatch, serverTimestamp } = await import("firebase/firestore");
+    const BATCH_SIZE = 200; // Safe chunk size (200 sales + 200 customer updates = 400 ops max)
+
+    const allOperations = [];
+    const customerUpdates = new Map();
+
+    // 1. Prepare operations
+    for (const item of salesItems) {
+      const dateObj = new Date(item.date);
+      const dateSuffix = format(dateObj, "yyyyMMdd");
+
+      // Sales operation
+      const salesDocId = `COD_${item.orderNo}_${dateSuffix}`;
+      const salesData = {
+        type: "COD",
+        orderNo: item.orderNo,
+        customerName: item.customerName,
+        amount: Number(item.amount),
+        date: item.date,
+        dateTime: dateObj,
+        importedAt: serverTimestamp(),
+        fileName: item.sourceFile,
+      };
+
+      allOperations.push({
+        type: "sales",
+        id: salesDocId,
+        data: salesData,
+      });
+
+      // Customer operation
+      if (item.customerName && item.customerName.trim().length > 0) {
+        const customerId = item.customerName; // Assume already sanitized by caller
+        const customerData = {
+          name: customerId,
+          lastUpdate: serverTimestamp(),
+        };
+
+        if (item.phoneNumber) customerData.phoneNumber = item.phoneNumber;
+        if (item.address) customerData.address = item.address;
+
+        customerUpdates.set(customerId, customerData);
+      }
+    }
+
+    // Add unique customer updates
+    customerUpdates.forEach((data, id) => {
+      allOperations.push({
+        type: "customer",
+        id: id,
+        data: data,
+      });
+    });
+
+    // 2. Process in chunks
+    const chunks = [];
+    for (let i = 0; i < allOperations.length; i += BATCH_SIZE) {
+      chunks.push(allOperations.slice(i, i + BATCH_SIZE));
+    }
+
+    let processedCount = 0;
+    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      const chunk = chunks[chunkIndex];
+      const batch = writeBatch(db);
+
+      for (const op of chunk) {
+        if (op.type === "sales") {
+          const docRef = doc(db, "sales", op.id);
+          batch.set(docRef, op.data, { merge: true });
+        } else if (op.type === "customer") {
+          const docRef = doc(db, "customers", op.id);
+          batch.set(docRef, op.data, { merge: true });
+        }
+      }
+
+      await batch.commit();
+      processedCount += chunk.length;
+
+      if (onProgress) {
+        // Report approximate items count (half of total operations processed)
+        const completedItems = Math.min(
+          processedCount / 2,
+          salesItems.length
+        );
+        onProgress(Math.floor(completedItems), salesItems.length);
+      }
+    }
+  } catch (error) {
+    console.error("Error in batchImportCODSales service:", error);
     throw error;
   }
 }
