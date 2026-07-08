@@ -563,7 +563,7 @@ const confirmImport = async () => {
     // 5. Success & Redirect
     await Swal.fire({
       icon: "success",
-      title: "บันทึกสำเร็จ!",
+      title: "บันทึกสำเร็จ! (COD Import Successful)",
       text: `บันทึกยอดขาย ${previewItems.value.length} รายการ และอัปเดตฐานข้อมูลลูกค้าเรียบร้อยแล้ว`,
       timer: 2000,
       showConfirmButton: false,

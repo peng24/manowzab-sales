@@ -1,5 +1,23 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+
+# Vite & Bundler cache
+.vite/
+.rollup.cache/
+.parcel-cache/
+.turbo/
+.nuxt/
+.next/
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,30 +25,60 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Env files
+# Environment files (never commit secrets)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.local
 
-# OS metadata
+# Editor & IDE specific files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.history/
+.vs/
+.eslintcache
+
+# Testing & Coverage
+coverage/
+*.lcov
+.nyc_output/
+.pytest_cache/
+test-results/
+playwright-report/
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+
+# Test Reports (testsprite and general reports)
+testsprite-mcp-test-report.html
+testsprite-mcp-test-report.md
+*-report.html
+*-report.md
+
+# Python specific (for testsprite_tests or python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# System & OS files
+.DS_Store
 Thumbs.db
 Desktop.ini
+
+# Temporary files
+tmp/
+temp/
+testsprite_tests/tmp/
+
 

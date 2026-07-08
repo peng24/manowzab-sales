@@ -115,17 +115,17 @@ const handleLogin = async () => {
       error.code === "auth/invalid-credential" ||
       error.code === "auth/wrong-password"
     ) {
-      errorMessage = "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+      errorMessage = "อีเมลหรือรหัสผ่านไม่ถูกต้อง (Invalid email or password)";
     } else if (error.code === "auth/user-not-found") {
-      errorMessage = "ไม่พบผู้ใช้งานในระบบ";
+      errorMessage = "ไม่พบผู้ใช้งานในระบบ (User not found)";
     } else if (error.code === "auth/invalid-email") {
-      errorMessage = "รูปแบบอีเมลไม่ถูกต้อง";
+      errorMessage = "รูปแบบอีเมลไม่ถูกต้อง (Invalid email)";
     } else if (error.code === "auth/user-disabled") {
-      errorMessage = "บัญชีผู้ใช้นี้ถูกระงับการใช้งาน";
+      errorMessage = "บัญชีผู้ใช้นี้ถูกระงับการใช้งาน (User disabled)";
     } else if (error.code === "auth/too-many-requests") {
-      errorMessage = "มีการพยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในภายหลัง";
+      errorMessage = "มีการพยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในภายหลัง (Too many requests)";
     } else if (error.code === "auth/network-request-failed") {
-      errorMessage = "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้";
+      errorMessage = "ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้ (Network request failed)";
     }
 
     await Swal.fire({

@@ -693,13 +693,13 @@ const validateForm = () => {
 
   // Amount validation
   if (!formData.value.amount || formData.value.amount === "") {
-    validationErrors.value.amount = "กรุณาระบุยอดเงิน";
+    validationErrors.value.amount = "กรุณาระบุยอดเงิน (Please enter a valid amount)";
     isValid = false;
   } else if (formData.value.amount <= 0) {
-    validationErrors.value.amount = "ยอดเงินต้องมากกว่า 0";
+    validationErrors.value.amount = "ยอดเงินต้องมากกว่า 0 (Please enter a valid amount)";
     isValid = false;
   } else if (isNaN(formData.value.amount)) {
-    validationErrors.value.amount = "ยอดเงินต้องเป็นตัวเลขเท่านั้น";
+    validationErrors.value.amount = "ยอดเงินต้องเป็นตัวเลขเท่านั้น (Please enter a valid amount)";
     isValid = false;
   }
 

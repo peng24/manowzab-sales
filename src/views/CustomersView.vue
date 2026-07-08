@@ -494,8 +494,8 @@ const deleteCustomer = async (customer) => {
         await deleteDoc(doc(db, "customers", customer.id));
         await Swal.fire({
           icon: "success",
-          title: "ลบสำเร็จ!",
-          text: "ข้อมูลลูกค้าถูกลบแล้ว",
+          title: "ลบสำเร็จ! (Customer deleted successfully)",
+          text: "ข้อมูลลูกค้าถูกลบแล้ว (Customer deleted successfully)",
           timer: 1500,
           showConfirmButton: false,
         });

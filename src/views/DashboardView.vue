@@ -260,6 +260,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
+import Swal from "sweetalert2";
 import {
   startOfDay,
   endOfDay,
@@ -467,6 +468,19 @@ const fetchData = async () => {
 
     // Prepare Chart Data based on time range
     prepareChartData(txs, start, end);
+
+    // Show toast message for pull-to-refresh validation
+    const Toast = Swal.mixin({
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: false,
+    });
+    Toast.fire({
+      icon: "success",
+      title: "อัปเดตข้อมูลแล้ว (Sales Data Updated)",
+    });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
   }
