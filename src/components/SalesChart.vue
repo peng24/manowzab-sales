@@ -1,6 +1,15 @@
 <template>
   <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
-    <h3 class="mb-6 text-lg font-bold text-gray-800">{{ title }}</h3>
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <h3 class="text-lg font-bold text-gray-800">{{ title }}</h3>
+      <div v-if="lastUpdated" class="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 w-fit">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span>อัปเดตล่าสุด: {{ lastUpdated }}</span>
+      </div>
+    </div>
     <div class="h-[300px] md:h-[350px] w-full">
       <Bar
         v-if="chartData.labels"
@@ -50,6 +59,10 @@ const props = defineProps({
   customOptions: {
     type: Object,
     default: null,
+  },
+  lastUpdated: {
+    type: String,
+    default: "",
   },
 });
 
