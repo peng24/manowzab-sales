@@ -41,7 +41,7 @@ export async function getAllSales(filter = {}) {
     endDate = null,
     month = null,
     year = null,
-    limitCount = 200,
+    limitCount = null,
   } = filter;
 
   try {
@@ -49,8 +49,12 @@ export async function getAllSales(filter = {}) {
     let q;
 
     if (mode === "all") {
-      // All Time - with limit to prevent overload
-      q = query(salesRef, orderBy("dateTime", "desc"), limit(limitCount));
+      // All Time
+      if (limitCount) {
+        q = query(salesRef, orderBy("dateTime", "desc"), limit(limitCount));
+      } else {
+        q = query(salesRef, orderBy("dateTime", "desc"));
+      }
     } else if (mode === "custom" && startDate && endDate) {
       // Custom Range
       const start = startOfDay(new Date(startDate));
@@ -137,8 +141,12 @@ export async function getAllSales(filter = {}) {
         orderBy("dateTime", "desc"),
       );
     } else {
-      // Fallback to all with limit
-      q = query(salesRef, orderBy("dateTime", "desc"), limit(limitCount));
+      // Fallback to all
+      if (limitCount) {
+        q = query(salesRef, orderBy("dateTime", "desc"), limit(limitCount));
+      } else {
+        q = query(salesRef, orderBy("dateTime", "desc"));
+      }
     }
 
     const snapshot = await getDocs(q);

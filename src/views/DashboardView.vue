@@ -473,7 +473,7 @@ const fetchData = async () => {
         filter = { mode: "thisYear" };
         break;
       case "allTime":
-        filter = { mode: "all", limitCount: 500 };
+        filter = { mode: "all" };
         break;
       default:
         filter = { mode: "thisMonth" };

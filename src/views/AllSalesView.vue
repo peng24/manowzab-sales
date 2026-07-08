@@ -691,7 +691,7 @@ const fetchSales = async () => {
       endDate: customEndDate.value ? new Date(customEndDate.value) : null,
       month: selectedMonth.value,
       year: selectedYear.value,
-      limitCount: 200,
+      limitCount: filterMode.value === "all" ? null : 200,
     });
   } catch (error) {
     console.error("Error fetching sales:", error);
