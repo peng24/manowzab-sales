@@ -7,7 +7,6 @@
       >
         <div>
           <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
-          <p class="text-gray-500">ภาพรวมยอดขาย {{ timeRangeLabel }}</p>
         </div>
 
         <!-- Hybrid Time Range Filter -->
@@ -31,7 +30,7 @@
             <span class="text-gray-400">/</span>
             <select
               v-model="selectedMonth"
-              class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
+              class="rounded-lg border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer shadow-sm hover:bg-blue-100/50 transition-colors"
             >
               <option
                 v-for="(name, index) in monthNames"
@@ -44,7 +43,7 @@
             <span class="text-gray-400">/</span>
             <select
               v-model="selectedYear"
-              class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
+              class="rounded-lg border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer shadow-sm hover:bg-blue-100/50 transition-colors"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
                 {{ year }}
@@ -65,6 +64,15 @@
       </div>
 
       <div v-else class="space-y-8 animate-fade-in-up">
+        <!-- Centered, Large Month/Year Display -->
+        <div class="flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">ภาพรวมยอดขาย</span>
+          <h2 class="mt-2 text-2xl font-extrabold text-gray-900 md:text-3xl lg:text-4xl flex items-center gap-3 justify-center">
+            <Calendar class="h-7 w-7 md:h-8 md:w-8 text-blue-500" />
+            {{ timeRangeLabel }}
+          </h2>
+        </div>
+
         <!-- 1. Summary Cards -->
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <!-- Total Sales -->
@@ -282,7 +290,7 @@ import { formatCurrency } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
 
 // Icons
-import { Wallet, ShoppingBag, ArrowRightLeft, Truck } from "lucide-vue-next";
+import { Wallet, ShoppingBag, ArrowRightLeft, Truck, Calendar } from "lucide-vue-next";
 
 // Components
 import PullToRefresh from "../components/PullToRefresh.vue";
@@ -358,12 +366,10 @@ const timeRangeLabel = computed(() => {
   const labels = {
     today: "ประจำวันนี้",
     thisWeek: "ประจำสัปดาห์นี้",
-    thisMonth: "ประจำเดือนนี้",
-    thisYear: "ประจำปีนี้",
+    thisMonth: `ประจำเดือน${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`,
+    thisYear: `ประจำปี ${currentDate.getFullYear()}`,
     allTime: "ตั้งแต่เริ่มต้น",
-    selectMonth: `ประจำ ${monthNames[selectedMonth.value]} ${
-      selectedYear.value
-    }`,
+    selectMonth: `ประจำเดือน${monthNames[selectedMonth.value]} ${selectedYear.value}`,
   };
   return labels[selectedTimeRange.value] || "";
 });
