@@ -22,6 +22,7 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
+import { toDate } from "../utils/dateUtils.js";
 
 /**
  * Get all sales with optional filtering
@@ -369,3 +370,56 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
     throw error;
   }
 }
+
+/**
+ * Get the latest data import / creation date and time from all sales
+ * @returns {Promise<Date|null>}
+ */
+export async function getLatestImportTime() {
+  try {
+    const salesRef = collection(db, "sales");
+
+    // 1. Query latest COD sale (which has importedAt)
+    const codQuery = query(
+      salesRef,
+      orderBy("importedAt", "desc"),
+      limit(1)
+    );
+
+    // 2. Query latest Transfer sale (which has createdAt)
+    const transferQuery = query(
+      salesRef,
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+
+    const [codSnap, transferSnap] = await Promise.all([
+      getDocs(codQuery),
+      getDocs(transferQuery),
+    ]);
+
+    let latestTime = null;
+
+    if (!codSnap.empty) {
+      const docData = codSnap.docs[0].data();
+      const t = toDate(docData.importedAt);
+      if (t) latestTime = t;
+    }
+
+    if (!transferSnap.empty) {
+      const docData = transferSnap.docs[0].data();
+      const t = toDate(docData.createdAt);
+      if (t) {
+        if (!latestTime || t > latestTime) {
+          latestTime = t;
+        }
+      }
+    }
+
+    return latestTime;
+  } catch (error) {
+    console.error("Error fetching latest import time:", error);
+    return null;
+  }
+}
+

@@ -7,6 +7,7 @@ import {
   deleteSale as deleteSaleService,
   batchImportCODSales,
   upsertCustomer,
+  getLatestImportTime,
 } from "../services/salesService.js";
 import { toDate } from "../utils/dateUtils.js";
 
@@ -23,7 +24,9 @@ export const useSalesStore = defineStore("sales", {
       limitCount: 200,
     },
     lastFetchTime: null,
+    lastImportedTime: null,
   }),
+
 
   getters: {
     /**
@@ -167,6 +170,10 @@ export const useSalesStore = defineStore("sales", {
 
         this.sales = salesData;
         this.lastFetchTime = new Date();
+
+        // Fetch latest import time (both Transfer and COD)
+        const latestTime = await getLatestImportTime();
+        this.lastImportedTime = latestTime;
 
         return salesData;
       } catch (error) {

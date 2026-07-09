@@ -367,12 +367,8 @@ const recentTransactions = computed(() => salesStore.recentSales);
 const loading = computed(() => salesStore.loading);
 
 const lastUpdatedText = computed(() => {
-  const txs = salesStore.salesWithDates;
-  if (!txs || txs.length === 0) return "";
-  const dates = txs.map(tx => tx.dateTime.getTime());
-  if (dates.length === 0) return "";
-  const maxDateVal = Math.max(...dates);
-  return formatThaiDateTime(new Date(maxDateVal));
+  if (!salesStore.lastImportedTime) return "";
+  return formatThaiDateTime(salesStore.lastImportedTime);
 });
 
 const timeRangeLabel = computed(() => {
