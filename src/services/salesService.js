@@ -423,3 +423,102 @@ export async function getLatestImportTime() {
   }
 }
 
+/**
+ * Merge two customer records in Firestore.
+ * - Updates all sales documents where customerName == sourceName to targetName.
+ * - Deletes the source customer document.
+ * - Merges phone number, address, and notes to the target customer if they are missing.
+ *
+ * @param {string} sourceName - The customer name to merge FROM (will be deleted)
+ * @param {string} targetName - The customer name to merge INTO (will be kept)
+ * @returns {Promise<{salesCount: number}>} Number of sales updated
+ */
+export async function mergeCustomers(sourceName, targetName) {
+  try {
+    const { writeBatch, doc, getDoc, getDocs, collection, query, where } = await import("firebase/firestore");
+    
+    if (!sourceName || !targetName) {
+      throw new Error("ทั้งชื่อลูกค้าต้นทางและปลายทางมีความจำเป็น");
+    }
+    if (sourceName === targetName) {
+      throw new Error("ชื่อลูกค้าต้นทางและปลายทางไม่สามารถเป็นชื่อเดียวกันได้");
+    }
+
+    const sourceRef = doc(db, "customers", sourceName);
+    const targetRef = doc(db, "customers", targetName);
+
+    const [sourceSnap, targetSnap] = await Promise.all([
+      getDoc(sourceRef),
+      getDoc(targetRef),
+    ]);
+
+    if (!sourceSnap.exists()) {
+      throw new Error(`ไม่พบข้อมูลลูกค้าต้นทาง: ${sourceName}`);
+    }
+    if (!targetSnap.exists()) {
+      throw new Error(`ไม่พบข้อมูลลูกค้าปลายทาง: ${targetName}`);
+    }
+
+    const sourceData = sourceSnap.data();
+    const targetData = targetSnap.data();
+
+    // Fetch all sales for source customer
+    const salesRef = collection(db, "sales");
+    const salesQuery = query(salesRef, where("customerName", "==", sourceName));
+    const salesSnap = await getDocs(salesQuery);
+    const salesDocs = salesSnap.docs;
+
+    // Prepare target customer merged data
+    const updatedTargetData = {};
+    if (!targetData.phoneNumber && sourceData.phoneNumber) {
+      updatedTargetData.phoneNumber = sourceData.phoneNumber;
+    }
+    if (!targetData.address && sourceData.address) {
+      updatedTargetData.address = sourceData.address;
+    }
+    
+    // Notes merging logic
+    const tNote = (targetData.note || "").trim();
+    const sNote = (sourceData.note || "").trim();
+    if (sNote) {
+      if (!tNote) {
+        updatedTargetData.note = sNote;
+      } else if (tNote !== sNote && !tNote.includes(sNote)) {
+        updatedTargetData.note = `${tNote} | ${sNote}`;
+      }
+    }
+    updatedTargetData.lastUpdate = new Date();
+
+    const BATCH_SIZE = 400; // Safe size to fit inside 500 limit
+    let batch = writeBatch(db);
+    batch.update(targetRef, updatedTargetData);
+    batch.delete(sourceRef);
+
+    let operationsInBatch = 2; // target update + source delete
+
+    for (let i = 0; i < salesDocs.length; i++) {
+      if (operationsInBatch >= BATCH_SIZE) {
+        await batch.commit();
+        batch = writeBatch(db);
+        operationsInBatch = 0;
+      }
+      const saleDocRef = doc(db, "sales", salesDocs[i].id);
+      batch.update(saleDocRef, {
+        customerName: targetName,
+        updatedAt: new Date(),
+      });
+      operationsInBatch++;
+    }
+
+    if (operationsInBatch > 0) {
+      await batch.commit();
+    }
+
+    return { salesCount: salesDocs.length };
+  } catch (error) {
+    console.error("Error merging customers in service:", error);
+    throw error;
+  }
+}
+
+

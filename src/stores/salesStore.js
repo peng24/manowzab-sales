@@ -8,6 +8,7 @@ import {
   batchImportCODSales,
   upsertCustomer,
   getLatestImportTime,
+  mergeCustomers as mergeCustomersService,
 } from "../services/salesService.js";
 import { toDate } from "../utils/dateUtils.js";
 
@@ -302,6 +303,23 @@ export const useSalesStore = defineStore("sales", {
     clearSales() {
       this.sales = [];
       this.invalidateCache();
+    },
+
+    /**
+     * Merge two customers and invalidate cache
+     */
+    async mergeCustomers(sourceName, targetName) {
+      this.loading = true;
+      try {
+        const result = await mergeCustomersService(sourceName, targetName);
+        this.invalidateCache();
+        return result;
+      } catch (error) {
+        console.error("Error merging customers in store:", error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     },
   },
 });
