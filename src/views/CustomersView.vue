@@ -241,6 +241,18 @@
           </tbody>
         </table>
       </div>
+      
+      <!-- Load More Button -->
+      <div v-if="!searchQuery.trim() && customerStore.hasMore" class="mt-6 flex justify-center">
+        <button
+          @click="loadMoreCustomers"
+          :disabled="loading"
+          class="rounded-lg border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          <span v-if="loading" class="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent"></span>
+          โหลดเพิ่มเติม (Load More)
+        </button>
+      </div>
     </div>
 
     <!-- Modal Form -->
@@ -580,12 +592,14 @@ import { sanitizeCustomerId } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
 
 // --- State ---
-const customers = ref([]);
-const loading = ref(true);
+import { useCustomerStore } from "../stores/customerStore.js";
+
+const customerStore = useCustomerStore();
+const customers = computed(() => customerStore.customers);
+const loading = computed(() => customerStore.loading);
 const searchQuery = ref("");
 const showModal = ref(false);
 const isEditing = ref(false);
-let unsubscribe = null;
 
 const formData = ref({
   name: "",
@@ -613,13 +627,8 @@ const loadingSalesCount = ref(false);
 
 // --- Computed ---
 const filteredCustomers = computed(() => {
-  if (!searchQuery.value) return customers.value;
-  const lowerQuery = searchQuery.value.toLowerCase();
-  return customers.value.filter(
-    (c) =>
-      c.name.toLowerCase().includes(lowerQuery) ||
-      (c.phoneNumber && c.phoneNumber.includes(lowerQuery)),
-  );
+  if (!searchQuery.value.trim()) return customers.value;
+  return customerStore.searchResults;
 });
 
 const filteredSourceOptions = computed(() => {
@@ -668,6 +677,20 @@ const mergedTargetPreview = computed(() => {
   };
 });
 
+// --- Watcher for Search Query with Debounce ---
+let searchTimeout = null;
+watch(searchQuery, (newVal) => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+  const cleaned = newVal.trim();
+  if (!cleaned) {
+    customerStore.clearSearchResults();
+    return;
+  }
+  searchTimeout = setTimeout(() => {
+    customerStore.searchCustomers(cleaned);
+  }, 300);
+});
+
 // --- Watcher for Sales Count ---
 watch(mergeSource, async (newVal) => {
   if (!newVal) {
@@ -690,26 +713,14 @@ watch(mergeSource, async (newVal) => {
 
 // --- Fetch Data ---
 onMounted(() => {
-  const q = collection(db, "customers");
-  unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      customers.value = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      loading.value = false;
-    },
-    (error) => {
-      console.error("Error fetching customers:", error);
-      loading.value = false;
-    },
-  );
+  if (customerStore.customers.length === 0) {
+    customerStore.fetchCustomers(true);
+  }
 });
 
-onUnmounted(() => {
-  if (unsubscribe) unsubscribe();
-});
+const loadMoreCustomers = () => {
+  customerStore.fetchCustomers(false);
+};
 
 // --- Actions ---
 
@@ -791,6 +802,7 @@ const saveCustomer = async () => {
     }
 
     closeModal();
+    await customerStore.fetchCustomers(true); // Refresh customer list
   } catch (error) {
     console.error("Error saving customer:", error);
     Swal.fire({ icon: "error", title: "บันทึกไม่สำเร็จ", text: error.message });
@@ -815,9 +827,9 @@ const deleteCustomer = async (customer) => {
     });
 
     if (result.isConfirmed) {
-      loading.value = true;
       try {
         await deleteDoc(doc(db, "customers", customer.id));
+        await customerStore.fetchCustomers(true); // Refresh customer list
         await Swal.fire({
           icon: "success",
           title: "ลบสำเร็จ! (Customer deleted successfully)",
@@ -832,13 +844,10 @@ const deleteCustomer = async (customer) => {
           title: "Error",
           text: "ลบข้อมูลไม่สำเร็จ: " + error.message,
         });
-      } finally {
-        loading.value = false;
       }
     }
   } catch (error) {
     console.error("Unexpected error in deleteCustomer:", error);
-    loading.value = false;
   }
 };
 
@@ -902,6 +911,7 @@ const handleMergeSubmit = async () => {
   isMerging.value = true;
   try {
     const res = await salesStore.mergeCustomers(mergeSource.value, mergeTarget.value);
+    await customerStore.fetchCustomers(true); // Refresh customer list
     await Swal.fire({
       icon: "success",
       title: "รวมข้อมูลลูกค้าสำเร็จ",

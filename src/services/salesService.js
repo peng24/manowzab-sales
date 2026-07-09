@@ -12,6 +12,8 @@ import {
   updateDoc,
   deleteDoc,
   setDoc,
+  getDoc,
+  startAfter,
 } from "firebase/firestore";
 import {
   format,
@@ -22,7 +24,51 @@ import {
   startOfYear,
   endOfYear,
 } from "date-fns";
-import { toDate } from "../utils/dateUtils.js";
+import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
+
+/**
+ * Get sales for a specific customer with optional date filtering and server-side pagination
+ * @param {string} customerName - Name of the customer
+ * @param {Object} options - Options
+ * @param {Date} options.cutoffDate - Fetch sales on or after this date
+ * @param {number} options.limitCount - Limit count
+ * @param {DocumentSnapshot} options.lastDoc - Last document snapshot for pagination
+ * @returns {Promise<{items: Array, lastDoc: DocumentSnapshot|null}>}
+ */
+export async function getSalesByCustomerName(customerName, options = {}) {
+  const { cutoffDate = null, limitCount = 10, lastDoc = null } = options;
+  try {
+    const salesRef = collection(db, "sales");
+    let q = query(
+      salesRef,
+      where("customerName", "==", customerName),
+      orderBy("dateTime", "desc")
+    );
+
+    if (cutoffDate) {
+      q = query(q, where("dateTime", ">=", cutoffDate));
+    }
+
+    if (lastDoc) {
+      q = query(q, startAfter(lastDoc));
+    }
+
+    q = query(q, limit(limitCount));
+
+    const snapshot = await getDocs(q);
+    const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
+    const items = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return { items, lastDoc: lastVisible };
+  } catch (error) {
+    console.error("Error in getSalesByCustomerName service:", error);
+    throw error;
+  }
+}
+
 
 /**
  * Get all sales with optional filtering
@@ -188,15 +234,29 @@ export async function getSalesByDateRange(startDate, endDate) {
  */
 export async function createSale(saleData) {
   try {
+    const timestamp = toFirestoreTimestamp(saleData.dateTime || saleData.date);
+
+    if (saleData.customerName) {
+      const customerRef = doc(db, "customers", saleData.customerName);
+      const cSnap = await getDoc(customerRef);
+      if (cSnap.exists() && cSnap.data().isMerging) {
+        throw new Error(`ไม่สามารถเพิ่มรายการขายได้ เนื่องจากลูกค้า "${saleData.customerName}" อยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
+      }
+    }
+
     const salesRef = collection(db, "sales");
     const docRef = await addDoc(salesRef, {
       ...saleData,
+      dateTime: timestamp,
+      date: timestamp,
       createdAt: new Date(),
     });
 
     return {
       id: docRef.id,
       ...saleData,
+      dateTime: timestamp ? (timestamp.toDate ? timestamp.toDate() : timestamp) : null,
+      date: timestamp ? (timestamp.toDate ? timestamp.toDate() : timestamp) : null,
     };
   } catch (error) {
     console.error("Error creating sale:", error);
@@ -212,9 +272,25 @@ export async function createSale(saleData) {
  */
 export async function updateSale(id, data) {
   try {
+    const updatePayload = { ...data };
+    
+    if (data.dateTime || data.date) {
+      const ts = toFirestoreTimestamp(data.dateTime || data.date);
+      updatePayload.dateTime = ts;
+      updatePayload.date = ts;
+    }
+
+    if (data.customerName) {
+      const customerRef = doc(db, "customers", data.customerName);
+      const cSnap = await getDoc(customerRef);
+      if (cSnap.exists() && cSnap.data().isMerging) {
+        throw new Error(`ไม่สามารถแก้ไขรายการขายได้ เนื่องจากลูกค้า "${data.customerName}" อยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
+      }
+    }
+
     const saleDoc = doc(db, "sales", id);
     await updateDoc(saleDoc, {
-      ...data,
+      ...updatePayload,
       updatedAt: new Date(),
     });
   } catch (error) {
@@ -252,8 +328,15 @@ export async function upsertCustomer(customerData) {
     const { name, ...otherData } = customerData;
     if (!name) throw new Error("Customer name is required");
 
-    const { serverTimestamp } = await import("firebase/firestore");
     const customerRef = doc(db, "customers", name);
+    
+    // Read customer first to check if they are merging
+    const customerSnap = await getDoc(customerRef);
+    if (customerSnap.exists() && customerSnap.data().isMerging) {
+      throw new Error(`ไม่สามารถอัปเดตข้อมูลลูกค้า ${name} ได้ในขณะนี้ เนื่องจากกำลังอยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
+    }
+
+    const { serverTimestamp } = await import("firebase/firestore");
     await setDoc(
       customerRef,
       {
@@ -447,29 +530,51 @@ export async function mergeCustomers(sourceName, targetName) {
     const sourceRef = doc(db, "customers", sourceName);
     const targetRef = doc(db, "customers", targetName);
 
-    const [sourceSnap, targetSnap] = await Promise.all([
-      getDoc(sourceRef),
-      getDoc(targetRef),
-    ]);
+    // 1. Lock both customers by setting isMerging: true using a batch
+    const lockBatch = writeBatch(db);
+    lockBatch.update(sourceRef, { isMerging: true });
+    lockBatch.update(targetRef, { isMerging: true });
+    await lockBatch.commit();
 
-    if (!sourceSnap.exists()) {
-      throw new Error(`ไม่พบข้อมูลลูกค้าต้นทาง: ${sourceName}`);
+    let salesDocs = [];
+    let sourceData = {};
+    let targetData = {};
+
+    try {
+      const [sourceSnap, targetSnap] = await Promise.all([
+        getDoc(sourceRef),
+        getDoc(targetRef),
+      ]);
+
+      if (!sourceSnap.exists()) {
+        throw new Error(`ไม่พบข้อมูลลูกค้าต้นทาง: ${sourceName}`);
+      }
+      if (!targetSnap.exists()) {
+        throw new Error(`ไม่พบข้อมูลลูกค้าปลายทาง: ${targetName}`);
+      }
+
+      sourceData = sourceSnap.data();
+      targetData = targetSnap.data();
+
+      // Fetch all sales for source customer
+      const salesRef = collection(db, "sales");
+      const salesQuery = query(salesRef, where("customerName", "==", sourceName));
+      const salesSnap = await getDocs(salesQuery);
+      salesDocs = salesSnap.docs;
+    } catch (err) {
+      // If error occurs, attempt to unlock both and rethrow
+      const unlockBatch = writeBatch(db);
+      unlockBatch.update(sourceRef, { isMerging: false });
+      unlockBatch.update(targetRef, { isMerging: false });
+      await unlockBatch.commit().catch(() => {});
+      throw err;
     }
-    if (!targetSnap.exists()) {
-      throw new Error(`ไม่พบข้อมูลลูกค้าปลายทาง: ${targetName}`);
-    }
-
-    const sourceData = sourceSnap.data();
-    const targetData = targetSnap.data();
-
-    // Fetch all sales for source customer
-    const salesRef = collection(db, "sales");
-    const salesQuery = query(salesRef, where("customerName", "==", sourceName));
-    const salesSnap = await getDocs(salesQuery);
-    const salesDocs = salesSnap.docs;
 
     // Prepare target customer merged data
-    const updatedTargetData = {};
+    const updatedTargetData = {
+      isMerging: false, // Unlock target
+      lastUpdate: new Date(),
+    };
     if (!targetData.phoneNumber && sourceData.phoneNumber) {
       updatedTargetData.phoneNumber = sourceData.phoneNumber;
     }
@@ -487,7 +592,6 @@ export async function mergeCustomers(sourceName, targetName) {
         updatedTargetData.note = `${tNote} | ${sNote}`;
       }
     }
-    updatedTargetData.lastUpdate = new Date();
 
     const BATCH_SIZE = 400; // Safe size to fit inside 500 limit
     let batch = writeBatch(db);

@@ -85,7 +85,7 @@
           class="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4"
         >
           <h3 class="text-lg font-bold text-gray-800">
-            📋 ประวัติการสั่งซื้อ ({{ filteredTransactions.length }} รายการ)
+            📋 ประวัติการสั่งซื้อ ({{ totalOrders }} รายการ)
           </h3>
         </div>
 
@@ -129,7 +129,7 @@
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
               <tr
-                v-for="sale in paginatedSales"
+                v-for="sale in sales"
                 :key="sale.id"
                 class="hover:bg-blue-50/50 transition-colors"
               >
@@ -226,13 +226,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import { db } from "../firebase";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { format, subDays, startOfMonth, startOfYear } from "date-fns";
-import { th } from "date-fns/locale";
+import { subDays, startOfMonth, startOfYear } from "date-fns";
 import { formatThaiDateTime } from "../utils/dateUtils.js";
 import { formatCurrency } from "../utils/formatUtils.js";
 import { ArrowLeft } from "lucide-vue-next";
+import { getSalesByCustomerName } from "../services/salesService.js";
 
 // Components
 import PullToRefresh from "../components/PullToRefresh.vue";
@@ -251,6 +249,12 @@ const sales = ref([]);
 const currentPage = ref(1);
 const pageSize = 10;
 const selectedFilter = ref("all");
+const totalSpent = ref(0);
+const totalOrders = ref(0);
+
+// Pagination Cursors
+const pageCursors = ref({ 1: null });
+const hasMore = ref(true);
 
 // Date Filter Options
 const dateFilters = [
@@ -266,69 +270,59 @@ const dateFilterLabel = computed(() => {
   return filter ? filter.label : "ทั้งหมด";
 });
 
-const filteredTransactions = computed(() => {
-  if (selectedFilter.value === "all") {
-    return sales.value;
-  }
-
-  const now = new Date();
-  let cutoffDate;
-
-  switch (selectedFilter.value) {
-    case "7days":
-      cutoffDate = subDays(now, 7);
-      break;
-    case "month":
-      cutoffDate = startOfMonth(now);
-      break;
-    case "year":
-      cutoffDate = startOfYear(now);
-      break;
-    default:
-      return sales.value;
-  }
-
-  return sales.value.filter((sale) => {
-    const saleDate = sale.dateTime?.toDate
-      ? sale.dateTime.toDate()
-      : new Date(sale.dateTime);
-    return saleDate >= cutoffDate;
-  });
-});
-
-const totalSpent = computed(() => {
-  return filteredTransactions.value.reduce((sum, sale) => {
-    const val = parseFloat(sale.amount);
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
-});
-
 const totalPages = computed(() => {
-  return Math.ceil(filteredTransactions.value.length / pageSize);
-});
-
-const paginatedSales = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  const end = start + pageSize;
-  return filteredTransactions.value.slice(start, end);
+  return Math.ceil(totalOrders.value / pageSize) || 1;
 });
 
 // Methods
-const fetchCustomerSales = async () => {
+const fetchCustomerSales = async (isRefresh = false) => {
   loading.value = true;
-  try {
-    const salesRef = collection(db, "sales");
-    const q = query(
-      salesRef,
-      where("customerName", "==", props.name),
-      orderBy("dateTime", "desc"),
-    );
+  if (isRefresh) {
+    currentPage.value = 1;
+    pageCursors.value = { 1: null };
+    hasMore.value = true;
+  }
 
-    const snapshot = await getDocs(q);
-    sales.value = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+  try {
+    const now = new Date();
+    let cutoffDate = null;
+
+    switch (selectedFilter.value) {
+      case "7days":
+        cutoffDate = subDays(now, 7);
+        break;
+      case "month":
+        cutoffDate = startOfMonth(now);
+        break;
+      case "year":
+        cutoffDate = startOfYear(now);
+        break;
+    }
+
+    // 1. Fetch total spent and count with a limit of 200 for safety/speed
+    const { items: allItems } = await getSalesByCustomerName(props.name, {
+      cutoffDate,
+      limitCount: 200,
+    });
+    totalOrders.value = allItems.length;
+    totalSpent.value = allItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+    // 2. Fetch paginated sales
+    const { items, lastDoc } = await getSalesByCustomerName(props.name, {
+      cutoffDate,
+      limitCount: pageSize,
+      lastDoc: pageCursors.value[currentPage.value],
+    });
+
+    sales.value = items;
+
+    // Save next page cursor if we have full page of items
+    if (lastDoc && items.length === pageSize) {
+      pageCursors.value[currentPage.value + 1] = lastDoc;
+      hasMore.value = true;
+    } else {
+      hasMore.value = false;
+    }
   } catch (error) {
     console.error("Error fetching customer sales:", error);
   } finally {
@@ -336,26 +330,29 @@ const fetchCustomerSales = async () => {
   }
 };
 
-
-
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
+  if (currentPage.value < totalPages.value && hasMore.value) {
     currentPage.value++;
+    fetchCustomerSales();
   }
 };
 
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
+    fetchCustomerSales();
   }
 };
 
 // Watchers
+watch(selectedFilter, () => {
+  fetchCustomerSales(true);
+});
+
 watch(
   () => props.name,
   () => {
-    currentPage.value = 1; // Reset to first page
-    fetchCustomerSales();
+    fetchCustomerSales(true);
   },
 );
 

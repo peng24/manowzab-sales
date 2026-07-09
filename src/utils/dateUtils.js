@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { Timestamp } from "firebase/firestore";
 
 /**
  * Convert any date-like value to a JS Date.
@@ -10,6 +11,18 @@ export const toDate = (dateField) => {
   if (dateField.toDate) return dateField.toDate(); // Firebase Timestamp
   const d = new Date(dateField);
   return isNaN(d.getTime()) ? null : d;
+};
+
+/**
+ * Convert any date-like value to a Firebase Timestamp.
+ * Handles: Firebase Timestamp, Date objects, date strings.
+ */
+export const toFirestoreTimestamp = (dateField) => {
+  if (!dateField) return null;
+  if (typeof dateField === "object" && dateField.toDate) return dateField; // Already a Timestamp
+  const date = toDate(dateField);
+  if (!date) return null;
+  return Timestamp.fromDate(date);
 };
 
 /**

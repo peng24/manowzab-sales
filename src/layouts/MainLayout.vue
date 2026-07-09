@@ -192,6 +192,8 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
+import { useSalesStore } from "../stores/salesStore.js";
+import { useCustomerStore } from "../stores/customerStore.js";
 import {
   LayoutDashboard,
   CreditCard,
@@ -202,6 +204,8 @@ import {
 } from "lucide-vue-next";
 
 const router = useRouter();
+const salesStore = useSalesStore();
+const customerStore = useCustomerStore();
 
 // Access global version constant
 const appVersion = computed(() => {
@@ -210,6 +214,10 @@ const appVersion = computed(() => {
 
 const handleLogout = async () => {
   try {
+    // Clean up store data and unsubscribe listeners
+    customerStore.unsubscribeCustomers();
+    salesStore.clearSales();
+
     await signOut(auth);
     router.replace("/login");
   } catch (error) {

@@ -584,7 +584,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { db } from "../firebase";
 import {
   collection,
@@ -593,15 +593,16 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  getDocs,
 } from "firebase/firestore";
 import { format, parseISO } from "date-fns";
-import { formatThaiDateTime, formatThaiDate } from "../utils/dateUtils.js";
+import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils.js";
 import { formatCurrency, sanitizeCustomerId } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
+import { useCustomerStore } from "../stores/customerStore.js";
 import Swal from "sweetalert2";
 
 const salesStore = useSalesStore();
+const customerStore = useCustomerStore();
 
 // State
 const formData = ref({
@@ -619,8 +620,7 @@ const requests = ref([]);
 let unsubscribe = null;
 
 // Autocomplete State
-const customerOptions = ref([]);
-const filteredCustomers = ref([]);
+const filteredCustomers = computed(() => customerStore.searchResults);
 const showCustomerSuggestions = ref(false);
 const customerInputRef = ref(null);
 
@@ -650,28 +650,19 @@ const generateOrderNo = () => {
 };
 
 // --- Customer Autocomplete ---
-const fetchCustomers = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "customers"));
-    customerOptions.value = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      name: doc.data().name,
-      phoneNumber: doc.data().phoneNumber || "",
-    }));
-  } catch (error) {
-    console.error("Error fetching customers:", error);
-  }
-};
-
+let searchTimeout = null;
 const filterCustomers = () => {
-  const search = formData.value.customerName.toLowerCase();
+  const search = formData.value.customerName.trim();
+  if (searchTimeout) clearTimeout(searchTimeout);
+
   if (!search) {
-    filteredCustomers.value = [];
+    customerStore.clearSearchResults();
     return;
   }
-  filteredCustomers.value = customerOptions.value
-    .filter((c) => c.name.toLowerCase().includes(search))
-    .slice(0, 5); // Limit to 5 suggestions
+
+  searchTimeout = setTimeout(() => {
+    customerStore.searchCustomers(search);
+  }, 300); // 300ms debounce
 };
 
 const selectCustomer = (name) => {
@@ -775,10 +766,7 @@ const saveTransfer = async () => {
 
 // --- Edit Functions ---
 const openEditModal = (req) => {
-  const dateObj =
-    req.dateTime && req.dateTime.toDate
-      ? req.dateTime.toDate()
-      : new Date(req.dateTime);
+  const dateObj = toDate(req.dateTime);
 
   editData.value = {
     id: req.id,
@@ -874,7 +862,6 @@ const formatThaiDateDisplay = formatThaiDate;
 // Lifecycle
 onMounted(() => {
   generateOrderNo();
-  fetchCustomers();
   document.addEventListener("click", handleClickOutside);
 
   // Real-time listener

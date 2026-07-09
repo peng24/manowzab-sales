@@ -26,6 +26,7 @@ export const useSalesStore = defineStore("sales", {
     },
     lastFetchTime: null,
     lastImportedTime: null,
+    loadedFilters: null,
   }),
 
 
@@ -150,7 +151,8 @@ export const useSalesStore = defineStore("sales", {
      * Uses cache if filters match and data was fetched within 5 minutes.
      */
     async fetchSales(customFilters = null) {
-      const isSameFilter = !customFilters || JSON.stringify(customFilters) === JSON.stringify(this.filters);
+      const filters = customFilters || this.filters;
+      const isSameFilter = this.loadedFilters && JSON.stringify(filters) === JSON.stringify(this.loadedFilters);
       const cacheTimeout = 5 * 60 * 1000; // 5 minutes in ms
       const isCacheValid = 
         this.sales.length > 0 && 
@@ -164,13 +166,11 @@ export const useSalesStore = defineStore("sales", {
       this.loading = true;
 
       try {
-        // Use custom filters if provided, otherwise use store filters
-        const filters = customFilters || this.filters;
-
         const salesData = await getAllSales(filters);
 
         this.sales = salesData;
         this.lastFetchTime = new Date();
+        this.loadedFilters = JSON.parse(JSON.stringify(filters));
 
         // Fetch latest import time (both Transfer and COD)
         const latestTime = await getLatestImportTime();
@@ -190,6 +190,7 @@ export const useSalesStore = defineStore("sales", {
      */
     invalidateCache() {
       this.lastFetchTime = null;
+      this.loadedFilters = null;
     },
 
     /**

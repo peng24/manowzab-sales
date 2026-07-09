@@ -543,7 +543,7 @@ import { ref, computed, onMounted } from "vue";
 import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
-import { formatThaiDateTime, formatThaiDate } from "../utils/dateUtils.js";
+import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils.js";
 import { formatCurrency } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
 
@@ -755,12 +755,7 @@ const openEditModal = (item) => {
   editingId.value = item.id;
 
   // Parse Date Time
-  let d = new Date();
-  if (item.dateTime && item.dateTime.toDate) {
-    d = item.dateTime.toDate();
-  } else if (item.date) {
-    d = new Date(item.date);
-  }
+  let d = toDate(item.dateTime || item.date) || new Date();
 
   editForm.value = {
     date: format(d, "yyyy-MM-dd"),
