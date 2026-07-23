@@ -209,12 +209,12 @@
           <div
             v-for="item in expenseStore.expensesByCategory"
             :key="item.category"
-            class="space-y-1 cursor-pointer p-2 rounded-lg hover:bg-rose-50/50 transition-colors"
+            class="space-y-1 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors"
             @click="setCategoryFilter(item.category)"
           >
             <div class="flex justify-between text-sm">
               <span class="font-medium text-gray-700 flex items-center gap-1.5">
-                <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                <span class="h-2.5 w-2.5 rounded-full" :class="getCategoryColor(item.category).dot"></span>
                 {{ item.category }}
               </span>
               <span class="font-semibold text-gray-900">
@@ -224,7 +224,8 @@
             </div>
             <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
               <div
-                class="h-full bg-rose-500 rounded-full transition-all duration-500"
+                class="h-full rounded-full transition-all duration-500"
+                :class="getCategoryColor(item.category).bar"
                 :style="{ width: `${item.percentage}%` }"
               ></div>
             </div>
@@ -314,7 +315,14 @@
                   {{ formatThaiShortDate(item.dateTime) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
-                  <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 border border-rose-100">
+                  <span
+                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border"
+                    :class="[
+                      getCategoryColor(item.category).bg,
+                      getCategoryColor(item.category).text,
+                      getCategoryColor(item.category).border
+                    ]"
+                  >
                     {{ item.category }}
                   </span>
                 </td>
@@ -519,6 +527,95 @@ watch(
     }
   }
 );
+
+const CATEGORY_COLORS = [
+  {
+    bg: "bg-amber-50",
+    text: "text-amber-800",
+    border: "border-amber-200",
+    dot: "bg-amber-500",
+    bar: "bg-amber-500",
+  },
+  {
+    bg: "bg-blue-50",
+    text: "text-blue-800",
+    border: "border-blue-200",
+    dot: "bg-blue-500",
+    bar: "bg-blue-500",
+  },
+  {
+    bg: "bg-emerald-50",
+    text: "text-emerald-800",
+    border: "border-emerald-200",
+    dot: "bg-emerald-500",
+    bar: "bg-emerald-500",
+  },
+  {
+    bg: "bg-purple-50",
+    text: "text-purple-800",
+    border: "border-purple-200",
+    dot: "bg-purple-500",
+    bar: "bg-purple-500",
+  },
+  {
+    bg: "bg-rose-50",
+    text: "text-rose-800",
+    border: "border-rose-200",
+    dot: "bg-rose-500",
+    bar: "bg-rose-500",
+  },
+  {
+    bg: "bg-cyan-50",
+    text: "text-cyan-800",
+    border: "border-cyan-200",
+    dot: "bg-cyan-500",
+    bar: "bg-cyan-500",
+  },
+  {
+    bg: "bg-indigo-50",
+    text: "text-indigo-800",
+    border: "border-indigo-200",
+    dot: "bg-indigo-500",
+    bar: "bg-indigo-500",
+  },
+  {
+    bg: "bg-orange-50",
+    text: "text-orange-800",
+    border: "border-orange-200",
+    dot: "bg-orange-500",
+    bar: "bg-orange-500",
+  },
+  {
+    bg: "bg-teal-50",
+    text: "text-teal-800",
+    border: "border-teal-200",
+    dot: "bg-teal-500",
+    bar: "bg-teal-500",
+  },
+  {
+    bg: "bg-fuchsia-50",
+    text: "text-fuchsia-800",
+    border: "border-fuchsia-200",
+    dot: "bg-fuchsia-500",
+    bar: "bg-fuchsia-500",
+  },
+];
+
+const getCategoryColor = (categoryName) => {
+  if (!categoryName) return CATEGORY_COLORS[0];
+
+  const idx = expenseStore.categories.findIndex((c) => c.name === categoryName);
+  if (idx !== -1) {
+    return CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+  }
+
+  let hash = 0;
+  for (let i = 0; i < categoryName.length; i++) {
+    hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colorIndex = Math.abs(hash) % CATEGORY_COLORS.length;
+  return CATEGORY_COLORS[colorIndex];
+};
 
 const filteredExpenses = computed(() => {
   let list = expenseStore.expenses;
