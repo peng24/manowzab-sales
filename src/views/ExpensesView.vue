@@ -297,7 +297,7 @@
           <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-xs font-semibold uppercase text-gray-500 border-b">
               <tr>
-                <th class="px-4 py-3">วัน-เวลา</th>
+                <th class="px-4 py-3">วันที่</th>
                 <th class="px-4 py-3">หมวดหมู่</th>
                 <th class="px-4 py-3">รายการ / หมายเหตุ</th>
                 <th class="px-4 py-3 text-right">จำนวนเงิน</th>
@@ -311,7 +311,7 @@
                 class="hover:bg-gray-50/80 transition-colors"
               >
                 <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
-                  {{ formatThaiDateTime(item.dateTime) }}
+                  {{ formatThaiShortDate(item.dateTime) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
                   <span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 border border-rose-100">
@@ -452,7 +452,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useExpenseStore } from "../stores/expenseStore";
-import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils";
+import { formatThaiDateTime, formatThaiDate, formatThaiShortDate, toDate } from "../utils/dateUtils";
 import Swal from "sweetalert2";
 import {
   Receipt,

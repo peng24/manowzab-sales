@@ -26,6 +26,20 @@ export const toFirestoreTimestamp = (dateField) => {
 };
 
 /**
+ * Format date in short Thai style without time.
+ * Output: "24 ก.พ. 69"
+ */
+export const formatThaiShortDate = (dateField) => {
+  const date = toDate(dateField);
+  if (!date) return "-";
+
+  const dayMonth = format(date, "d MMM", { locale: th });
+  const yearBE = date.getFullYear() + 543;
+  const yearShort = String(yearBE).slice(-2);
+  return `${dayMonth} ${yearShort}`;
+};
+
+/**
  * Format date/time in Thai style for table rows.
  * Output: "24 ก.พ. 69 12:34 น."
  */
