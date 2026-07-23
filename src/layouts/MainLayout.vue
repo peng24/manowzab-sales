@@ -55,6 +55,15 @@
         </router-link>
 
         <router-link
+          to="/expenses"
+          class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
+          active-class="bg-blue-600 text-white shadow-md"
+        >
+          <component :is="Receipt" class="mr-3 h-5 w-5" />
+          บันทึกรายจ่าย
+        </router-link>
+
+        <router-link
           to="/customers"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
@@ -169,6 +178,15 @@
       </router-link>
 
       <router-link
+        to="/expenses"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
+        <component :is="Receipt" class="h-6 w-6 mb-0.5" />
+        <span class="text-[10px]">รายจ่าย</span>
+      </router-link>
+
+      <router-link
         to="/customers"
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
@@ -201,6 +219,7 @@ import {
   LogOut,
   History,
   User,
+  Receipt,
 } from "lucide-vue-next";
 
 const router = useRouter();

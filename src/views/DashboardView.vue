@@ -156,6 +156,62 @@
           </div>
         </div>
 
+        <!-- 1.5 Expenses & Net Profit Cards -->
+        <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <!-- Total Expenses -->
+          <div class="rounded-2xl border border-rose-100 bg-rose-50/50 p-4 md:p-6 shadow-sm">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-medium text-rose-600">รายจ่ายรวม (Expenses)</p>
+                <h3 class="mt-2 text-2xl md:text-3xl font-bold text-rose-900">
+                  ฿{{ formatCurrency(expenseStore.totalExpenses) }}
+                </h3>
+                <p class="text-xs text-rose-500 mt-1">
+                  {{ expenseStore.totalCount }} รายการบันทึก
+                </p>
+              </div>
+              <div class="rounded-lg bg-rose-100 p-3 text-rose-600 hidden sm:block">
+                <Receipt class="h-6 w-6" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Net Profit -->
+          <div
+            class="rounded-2xl border p-4 md:p-6 shadow-sm"
+            :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'border-emerald-100 bg-emerald-50/50' : 'border-red-100 bg-red-50/50'"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <p
+                  class="text-sm font-medium"
+                  :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'text-emerald-600' : 'text-red-600'"
+                >
+                  กำไรสุทธิ (Net Profit)
+                </p>
+                <h3
+                  class="mt-2 text-2xl md:text-3xl font-bold"
+                  :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'text-emerald-900' : 'text-red-900'"
+                >
+                  ฿{{ formatCurrency(stats.totalSales - expenseStore.totalExpenses) }}
+                </h3>
+                <p
+                  class="text-xs mt-1 font-medium"
+                  :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'text-emerald-600' : 'text-red-600'"
+                >
+                  ยอดขาย - รายจ่าย
+                </p>
+              </div>
+              <div
+                class="rounded-lg p-3 hidden sm:block"
+                :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'"
+              >
+                <component :is="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? TrendingUp : TrendingDown" class="h-6 w-6" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 2. Chart Section -->
         <SalesChart
           :title="chartTitle"
@@ -292,9 +348,10 @@ import { formatCurrency } from "../utils/formatUtils.js";
 
 // Store
 import { useSalesStore } from "../stores/salesStore.js";
+import { useExpenseStore } from "../stores/expenseStore.js";
 
 // Icons
-import { Wallet, ShoppingBag, ArrowRightLeft, Truck, Calendar } from "lucide-vue-next";
+import { Wallet, ShoppingBag, ArrowRightLeft, Truck, Calendar, Receipt, TrendingUp, TrendingDown } from "lucide-vue-next";
 
 // Components
 import PullToRefresh from "../components/PullToRefresh.vue";
@@ -302,6 +359,7 @@ import SalesChart from "../components/SalesChart.vue";
 
 // --- Store ---
 const salesStore = useSalesStore();
+const expenseStore = useExpenseStore();
 
 // --- State ---
 const currentDate = new Date();
@@ -477,6 +535,8 @@ const fetchData = async () => {
 
     // Fetch sales using the store
     await salesStore.fetchSales(filter);
+    // Fetch expenses using the store
+    await expenseStore.setFilter(filter);
 
     // Get sales with dates from store for charting
     const txs = salesStore.salesWithDates;
