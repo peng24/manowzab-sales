@@ -136,7 +136,7 @@
 
       <!-- Scrollable Page Content -->
       <main
-        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 pb-24 md:pb-6"
+        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 px-4 md:px-6 pt-2.5 md:pt-3 pb-24 md:pb-6"
       >
         <router-view />
       </main>

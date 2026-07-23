@@ -1,6 +1,6 @@
 <template>
   <PullToRefresh :on-refresh="fetchData">
-    <div class="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+    <div class="container mx-auto max-w-7xl py-1 md:py-2">
       <!-- Header & Filter Card -->
       <div
         class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"

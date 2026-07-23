@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto max-w-7xl px-4 py-8">
+  <div class="container mx-auto max-w-7xl py-1 md:py-2">
     <h1 class="mb-8 text-2xl font-bold text-gray-800">
       นำเข้า COD (Preview Mode)
     </h1>

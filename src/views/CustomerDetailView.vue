@@ -1,6 +1,6 @@
 <template>
   <PullToRefresh :on-refresh="fetchCustomerSales">
-    <div class="container mx-auto max-w-6xl px-4 py-8">
+    <div class="container mx-auto max-w-6xl py-1 md:py-2">
       <!-- Back Button + Header -->
       <div class="mb-8">
         <!-- Improved Back Button -->
