@@ -64,6 +64,15 @@
         </router-link>
 
         <router-link
+          to="/compare"
+          class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
+          active-class="bg-blue-600 text-white shadow-md"
+        >
+          <component :is="TrendingUp" class="mr-3 h-5 w-5" />
+          เปรียบเทียบยอดขาย
+        </router-link>
+
+        <router-link
           to="/customers"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
@@ -187,6 +196,15 @@
       </router-link>
 
       <router-link
+        to="/compare"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
+        <component :is="TrendingUp" class="h-6 w-6 mb-0.5" />
+        <span class="text-[10px]">เปรียบเทียบ</span>
+      </router-link>
+
+      <router-link
         to="/customers"
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
@@ -221,6 +239,7 @@ import {
   History,
   User,
   Receipt,
+  TrendingUp,
 } from "lucide-vue-next";
 
 const router = useRouter();
