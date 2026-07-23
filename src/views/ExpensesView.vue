@@ -540,8 +540,9 @@ const formatCurrency = (val) => {
 };
 
 const resetForm = () => {
+  const keepDate = formData.date;
   formData.id = null;
-  formData.date = new Date().toISOString().split("T")[0];
+  formData.date = keepDate || new Date().toISOString().split("T")[0];
   formData.title = "";
   formData.category = expenseStore.categories.length > 0 ? expenseStore.categories[0].name : "";
   formData.amount = null;
