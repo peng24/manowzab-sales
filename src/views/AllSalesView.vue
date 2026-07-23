@@ -59,21 +59,43 @@
               <label class="block text-xs text-gray-500 mb-1"
                 >วันที่เริ่มต้น</label
               >
-              <input
-                type="date"
-                v-model="customStartDate"
-                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <div class="relative">
+                <input
+                  type="date"
+                  v-model="customStartDate"
+                  class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
+                  @click="
+                    $event.target.showPicker ? $event.target.showPicker() : null
+                  "
+                />
+                <div
+                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm flex items-center justify-between font-medium text-gray-900 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+                >
+                  <span>{{ formatThaiDateDisplay(customStartDate) }}</span>
+                  <Calendar class="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
             </div>
             <div class="flex-1">
               <label class="block text-xs text-gray-500 mb-1"
                 >วันที่สิ้นสุด</label
               >
-              <input
-                type="date"
-                v-model="customEndDate"
-                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <div class="relative">
+                <input
+                  type="date"
+                  v-model="customEndDate"
+                  class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
+                  @click="
+                    $event.target.showPicker ? $event.target.showPicker() : null
+                  "
+                />
+                <div
+                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm flex items-center justify-between font-medium text-gray-900 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+                >
+                  <span>{{ formatThaiDateDisplay(customEndDate) }}</span>
+                  <Calendar class="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -535,7 +557,7 @@
 
 <script setup>
 // Icons
-import { Wallet, ShoppingBag, ArrowLeft } from "lucide-vue-next";
+import { Wallet, ShoppingBag, ArrowLeft, Calendar } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -806,6 +828,10 @@ const saveEdit = async () => {
 
 // --- Utils ---
 const formatDate = formatThaiDateTime;
+const formatThaiDateDisplay = (dateStr) => {
+  if (!dateStr) return "เลือกวันที่";
+  return formatThaiDate(new Date(dateStr));
+};
 
 // Init
 onMounted(() => {

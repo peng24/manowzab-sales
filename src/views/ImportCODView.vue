@@ -89,9 +89,8 @@
     <!-- Confirm Action -->
     <div v-if="previewItems.length > 0" class="mb-8 flex justify-center gap-4">
       <button
-        class="rounded-lg bg-gray-200 px-6 py-3 text-lg font-bold text-gray-700 hover:bg-gray-300 transition-colors disabled:opacity-50"
         @click="clearData"
-        :disabled="isSaving"
+        class="rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-xs hover:bg-gray-50 transition-colors"
       >
         ล้างข้อมูล
       </button>
@@ -99,7 +98,7 @@
       <button
         @click="confirmImport"
         :disabled="isSaving"
-        class="bg-green-600 text-white font-bold py-2 px-4 rounded shadow hover:bg-green-700 transition duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+        class="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         <svg
           v-if="isSaving"

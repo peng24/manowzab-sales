@@ -143,15 +143,15 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
-                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold leading-5"
+                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold"
                     :class="{
-                      'bg-amber-100 text-amber-800 border border-amber-200':
+                      'bg-amber-50 text-amber-700 border border-amber-200/60':
                         sale.type === 'COD',
-                      'bg-blue-100 text-blue-800 border border-blue-200':
+                      'bg-indigo-50 text-indigo-700 border border-indigo-200/60':
                         sale.type !== 'COD',
                     }"
                   >
-                    {{ sale.type || "N/A" }}
+                    {{ sale.type === 'COD' ? '📦 เก็บปลายทาง (COD)' : '💳 โอนเงิน (Transfer)' }}
                   </span>
                 </td>
                 <td
