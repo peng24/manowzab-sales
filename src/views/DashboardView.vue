@@ -1,55 +1,88 @@
 <template>
   <PullToRefresh :on-refresh="fetchData">
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
-      <!-- Header & Filter -->
+    <div class="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+      <!-- Header & Filter Card -->
       <div
-        class="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center"
+        class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
       >
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <div class="flex items-center gap-3.5">
+          <div
+            class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+          >
+            <Calendar class="h-6 w-6" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              ภาพรวมยอดขาย
+            </p>
+            <h1 class="text-xl md:text-2xl font-black text-gray-900">
+              {{ timeRangeLabel }}
+            </h1>
+          </div>
         </div>
 
-        <!-- Hybrid Time Range Filter -->
-        <div
-          class="flex items-center gap-3 rounded-xl bg-white p-2 shadow-sm border border-gray-200"
-        >
-          <select
-            v-model="selectedTimeRange"
-            class="rounded-lg border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="today">วันนี้ (Today)</option>
-            <option value="thisWeek">สัปดาห์นี้ (This Week)</option>
-            <option value="thisMonth">เดือนนี้ (This Month)</option>
-            <option value="thisYear">ปีนี้ (This Year)</option>
-            <option value="allTime">ทั้งหมด (All Time)</option>
-            <option value="selectMonth">ระบุเดือน (Select Month)</option>
-          </select>
+        <!-- Filter Presets & Dropdown -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Quick Presets -->
+          <div class="flex rounded-xl bg-gray-100 p-1 text-xs font-medium">
+            <button
+              v-for="range in [
+                { key: 'today', label: 'วันนี้' },
+                { key: 'thisWeek', label: 'สัปดาห์นี้' },
+                { key: 'thisMonth', label: 'เดือนนี้' },
+                { key: 'thisYear', label: 'ปีนี้' },
+                { key: 'allTime', label: 'ทั้งหมด' }
+              ]"
+              :key="range.key"
+              @click="selectedTimeRange = range.key"
+              class="rounded-lg px-3 py-1.5 transition-all duration-150 cursor-pointer"
+              :class="
+                selectedTimeRange === range.key
+                  ? 'bg-white font-bold text-blue-600 shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
+              "
+            >
+              {{ range.label }}
+            </button>
+          </div>
 
-          <!-- Conditional Month/Year Pickers (shown only when "Select Month" is chosen) -->
-          <template v-if="selectedTimeRange === 'selectMonth'">
-            <span class="text-gray-400">/</span>
+          <!-- Select Month Dropdown -->
+          <div class="flex items-center gap-2 border-l border-gray-200 pl-2">
             <select
-              v-model="selectedMonth"
-              class="rounded-lg border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer shadow-sm hover:bg-blue-100/50 transition-colors"
+              v-model="selectedTimeRange"
+              class="rounded-lg border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
-              <option
-                v-for="(name, index) in monthNames"
-                :key="index"
-                :value="index"
+              <option value="selectMonth">📅 เลือกเดือนเฉพาะ...</option>
+              <option value="today">วันนี้ (Today)</option>
+              <option value="thisWeek">สัปดาห์นี้ (This Week)</option>
+              <option value="thisMonth">เดือนนี้ (This Month)</option>
+              <option value="thisYear">ปีนี้ (This Year)</option>
+              <option value="allTime">ทั้งหมด (All Time)</option>
+            </select>
+
+            <template v-if="selectedTimeRange === 'selectMonth'">
+              <select
+                v-model="selectedMonth"
+                class="rounded-lg border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700"
               >
-                {{ name }}
-              </option>
-            </select>
-            <span class="text-gray-400">/</span>
-            <select
-              v-model="selectedYear"
-              class="rounded-lg border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer shadow-sm hover:bg-blue-100/50 transition-colors"
-            >
-              <option v-for="year in yearRange" :key="year" :value="year">
-                {{ year }}
-              </option>
-            </select>
-          </template>
+                <option
+                  v-for="(name, index) in monthNames"
+                  :key="index"
+                  :value="index"
+                >
+                  {{ name }}
+                </option>
+              </select>
+              <select
+                v-model="selectedYear"
+                class="rounded-lg border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700"
+              >
+                <option v-for="year in yearRange" :key="year" :value="year">
+                  {{ year }}
+                </option>
+              </select>
+            </template>
+          </div>
         </div>
       </div>
 
@@ -59,155 +92,185 @@
           <div
             class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
           ></div>
-          <p class="text-gray-500 text-sm">กำลังโหลดข้อมูล...</p>
+          <p class="text-sm text-gray-500">กำลังโหลดข้อมูล...</p>
         </div>
       </div>
 
-      <div v-else class="space-y-8 animate-fade-in-up">
-        <!-- Centered, Large Month/Year Display -->
-        <div class="flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">ภาพรวมยอดขาย</span>
-          <h2 class="mt-2 text-2xl font-extrabold text-gray-900 md:text-3xl lg:text-4xl flex items-center gap-3 justify-center">
-            <Calendar class="h-7 w-7 md:h-8 md:w-8 text-blue-500" />
-            {{ timeRangeLabel }}
-          </h2>
-        </div>
-
-        <!-- 1. Summary Cards -->
-        <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <!-- Total Sales -->
+      <div v-else class="space-y-6 animate-fade-in-up">
+        <!-- 1. KPI Cards Grid (3x2 Layout) -->
+        <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- Hero Card 1: Net Profit (กำไรสุทธิ) -->
           <div
-            class="rounded-2xl border border-violet-100 bg-violet-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="relative overflow-hidden rounded-2xl p-6 transition-all duration-200 hover:shadow-lg"
+            :class="
+              netProfit >= 0
+                ? 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-md shadow-emerald-600/15'
+                : 'bg-gradient-to-br from-rose-600 via-rose-700 to-red-800 text-white shadow-md shadow-rose-600/15'
+            "
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-violet-600">ยอดขายรวม</p>
-                <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
+                <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100/80">
+                  กำไรสุทธิ (Net Profit)
+                </span>
+                <h3 class="mt-2 text-3xl font-black tracking-tight text-white">
+                  ฿{{ formatCurrency(netProfit) }}
+                </h3>
+              </div>
+              <div class="rounded-xl bg-white/10 p-3 backdrop-blur-xs">
+                <component :is="netProfit >= 0 ? TrendingUp : TrendingDown" class="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <div
+              class="group relative mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-white/80 font-medium cursor-help"
+              :title="`คิดจาก: (กำไรสุทธิ ฿${formatCurrency(netProfit)} ÷ ยอดขายรวม ฿${formatCurrency(stats.totalSales)}) × 100 = ${netProfitMargin}%`"
+            >
+              <span class="flex items-center gap-1">
+                อัตรากำไร (Margin)
+                <HelpCircle class="h-3.5 w-3.5 text-white/70 group-hover:text-white transition-colors" />
+              </span>
+              <span class="rounded-full bg-white/20 px-2.5 py-0.5 font-bold text-white shadow-xs">
+                {{ netProfitMargin }}%
+              </span>
+
+              <!-- Hover Tooltip -->
+              <div class="absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 group-hover:flex flex-col items-center z-20 pointer-events-none w-64 text-center">
+                <div class="rounded-xl bg-gray-900/95 text-white p-3 text-xs shadow-xl backdrop-blur-xs border border-white/10">
+                  <p class="font-bold text-emerald-400 mb-1 flex items-center justify-center gap-1">
+                    💡 สูตรคำนวณ Margin
+                  </p>
+                  <p class="text-gray-200">(กำไรสุทธิ ÷ ยอดขายรวม) × 100</p>
+                  <p class="mt-1 text-[11px] text-gray-300 border-t border-gray-700/80 pt-1.5">
+                    (฿{{ formatCurrency(netProfit) }} ÷ ฿{{ formatCurrency(stats.totalSales) }}) × 100 = <span class="font-bold text-white">{{ netProfitMargin }}%</span>
+                  </p>
+                </div>
+                <div class="w-2.5 h-2.5 -mt-1 bg-gray-900/95 rotate-45 border-r border-b border-white/10"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Card 2: Total Sales (ยอดขายรวม) -->
+          <div
+            class="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                  ยอดขายรวม (Total Revenue)
+                </span>
+                <h3 class="mt-2 text-3xl font-black tracking-tight text-gray-900">
                   ฿{{ formatCurrency(stats.totalSales) }}
                 </h3>
               </div>
-              <div
-                class="rounded-lg bg-violet-100 p-2 md:p-3 text-violet-600 hidden sm:block"
-              >
+              <div class="rounded-xl bg-indigo-50 p-3 text-indigo-600">
                 <Wallet class="h-6 w-6" />
               </div>
             </div>
-          </div>
-
-          <!-- Total Orders -->
-          <div
-            class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
-          >
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-sm font-medium text-slate-600">จำนวนออเดอร์</p>
-                <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
-                  {{ stats.totalOrders.toLocaleString() }}
-                </h3>
-              </div>
-              <div
-                class="rounded-lg bg-slate-200 p-2 md:p-3 text-slate-600 hidden sm:block"
-              >
-                <ShoppingBag class="h-6 w-6" />
-              </div>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+              <span>สัดส่วนยอดโอน / COD</span>
+              <span class="font-bold text-gray-800">
+                {{ transferPercent }}% / {{ codPercent }}%
+              </span>
             </div>
           </div>
 
-          <!-- Transfer Total -->
+          <!-- Card 3: Transfer (ยอดโอน) -->
           <div
-            class="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-blue-600">
+                <span class="text-xs font-bold uppercase tracking-wider text-blue-600">
                   ยอดโอน (Transfer)
-                </p>
-                <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
+                </span>
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
                   ฿{{ formatCurrency(stats.totalTransfer) }}
                 </h3>
               </div>
-              <div
-                class="rounded-lg bg-blue-100 p-2 md:p-3 text-blue-600 hidden sm:block"
-              >
+              <div class="rounded-xl bg-blue-50 p-3 text-blue-600">
                 <ArrowRightLeft class="h-6 w-6" />
               </div>
             </div>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+              <span>คิดเป็นสัดส่วนยอดขาย</span>
+              <span class="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-700">
+                {{ transferPercent }}%
+              </span>
+            </div>
           </div>
 
-          <!-- COD Total -->
+          <!-- Card 4: COD (เก็บปลายทาง) -->
           <div
-            class="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 md:p-6 shadow-sm transition-transform hover:-translate-y-1"
+            class="rounded-2xl border border-amber-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm font-medium text-amber-600">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-600">
                   เก็บปลายทาง (COD)
-                </p>
-                <h3 class="mt-2 text-2xl md:text-3xl font-bold text-gray-900">
+                </span>
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
                   ฿{{ formatCurrency(stats.totalCOD) }}
                 </h3>
               </div>
-              <div
-                class="rounded-lg bg-amber-100 p-2 md:p-3 text-amber-600 hidden sm:block"
-              >
+              <div class="rounded-xl bg-amber-50 p-3 text-amber-600">
                 <Truck class="h-6 w-6" />
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 1.5 Expenses & Net Profit Cards -->
-        <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
-          <!-- Total Expenses -->
-          <div class="rounded-2xl border border-rose-100 bg-rose-50/50 p-4 md:p-6 shadow-sm">
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-sm font-medium text-rose-600">รายจ่ายรวม (Expenses)</p>
-                <h3 class="mt-2 text-2xl md:text-3xl font-bold text-rose-900">
-                  ฿{{ formatCurrency(expenseStore.totalExpenses) }}
-                </h3>
-                <p class="text-xs text-rose-500 mt-1">
-                  {{ expenseStore.totalCount }} รายการบันทึก
-                </p>
-              </div>
-              <div class="rounded-lg bg-rose-100 p-3 text-rose-600 hidden sm:block">
-                <Receipt class="h-6 w-6" />
-              </div>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+              <span>คิดเป็นสัดส่วนยอดขาย</span>
+              <span class="rounded-full bg-amber-50 px-2 py-0.5 font-bold text-amber-700">
+                {{ codPercent }}%
+              </span>
             </div>
           </div>
 
-          <!-- Net Profit -->
+          <!-- Card 5: Expenses (รายจ่ายรวม) -->
           <div
-            class="rounded-2xl border p-4 md:p-6 shadow-sm"
-            :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'border-emerald-100 bg-emerald-50/50' : 'border-red-100 bg-red-50/50'"
+            class="rounded-2xl border border-rose-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <p
-                  class="text-sm font-medium"
-                  :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'text-emerald-600' : 'text-red-600'"
-                >
-                  กำไรสุทธิ (Net Profit)
-                </p>
-                <h3
-                  class="mt-2 text-2xl md:text-3xl font-bold"
-                  :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'text-emerald-900' : 'text-red-900'"
-                >
-                  ฿{{ formatCurrency(stats.totalSales - expenseStore.totalExpenses) }}
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-600">
+                  รายจ่ายรวม (Expenses)
+                </span>
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-rose-950">
+                  ฿{{ formatCurrency(expenseStore.totalExpenses) }}
                 </h3>
-                <p
-                  class="text-xs mt-1 font-medium"
-                  :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'text-emerald-600' : 'text-red-600'"
-                >
-                  ยอดขาย - รายจ่าย
-                </p>
               </div>
-              <div
-                class="rounded-lg p-3 hidden sm:block"
-                :class="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'"
-              >
-                <component :is="(stats.totalSales - expenseStore.totalExpenses) >= 0 ? TrendingUp : TrendingDown" class="h-6 w-6" />
+              <div class="rounded-xl bg-rose-50 p-3 text-rose-600">
+                <Receipt class="h-6 w-6" />
               </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+              <span>จำนวนรายการ</span>
+              <span class="font-bold text-rose-600">
+                {{ expenseStore.totalCount }} รายการ
+              </span>
+            </div>
+          </div>
+
+          <!-- Card 6: Total Orders (จำนวนออเดอร์) -->
+          <div
+            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  จำนวนออเดอร์ (Total Orders)
+                </span>
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
+                  {{ stats.totalOrders.toLocaleString() }}
+                </h3>
+              </div>
+              <div class="rounded-xl bg-slate-100 p-3 text-slate-600">
+                <ShoppingBag class="h-6 w-6" />
+              </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+              <span>เฉลี่ยต่อออเดอร์</span>
+              <span class="font-bold text-gray-700">
+                ฿{{ formatCurrency(avgOrderValue) }}
+              </span>
             </div>
           </div>
         </div>
@@ -219,48 +282,44 @@
           :last-updated="lastUpdatedText"
         />
 
-        <!-- 3. Recent Transactions -->
+        <!-- 3. Recent Transactions Section -->
         <div
           class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"
         >
           <div
             class="flex items-center justify-between border-b border-gray-100 px-6 py-4"
           >
-            <h3 class="font-bold text-gray-800">รายการล่าสุด</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-gray-900">รายการขายล่าสุด</h3>
+              <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-600">
+                {{ recentTransactions.length }} รายการ
+              </span>
+            </div>
             <router-link
               to="/all-sales"
-              class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
             >
-              ดูรายการทั้งหมด >
+              ดูทั้งหมด →
             </router-link>
           </div>
+
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-100">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50/70">
                 <tr>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                  >
-                    วันที่
+                  <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                    วันที่ & เวลา
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                  >
-                    Order No
+                  <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                    เลขที่ออเดอร์
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                  >
+                  <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
                     ลูกค้า
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                  >
-                    ประเภท
+                  <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                    ประเภทการชำระ
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                  >
+                  <th class="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-gray-500">
                     ยอดเงิน
                   </th>
                 </tr>
@@ -269,7 +328,7 @@
                 <tr v-if="recentTransactions.length === 0">
                   <td
                     colspan="5"
-                    class="px-6 py-8 text-center text-sm text-gray-400"
+                    class="px-6 py-12 text-center text-sm text-gray-400"
                   >
                     ไม่มีรายการในช่วงเวลานี้
                   </td>
@@ -277,14 +336,12 @@
                 <tr
                   v-for="tx in recentTransactions"
                   :key="tx.id"
-                  class="hover:bg-gray-50 transition-colors"
+                  class="hover:bg-slate-50/80 transition-colors"
                 >
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td class="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-600">
                     {{ formatDate(tx.dateTime) }}
                   </td>
-                  <td
-                    class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                  >
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                     {{ tx.orderNo || "-" }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -294,26 +351,24 @@
                         name: 'CustomerDetail',
                         params: { name: tx.customerName },
                       }"
-                      class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                      class="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
                     >
                       {{ tx.customerName }}
                     </router-link>
-                    <span v-else class="text-gray-600">ไม่ระบุ</span>
+                    <span v-else class="text-gray-400">ไม่ระบุ</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
-                      class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
+                      class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold"
                       :class="{
-                        'bg-amber-100 text-amber-800': tx.type === 'COD',
-                        'bg-blue-100 text-blue-800': tx.type !== 'COD',
+                        'bg-amber-50 text-amber-700 border border-amber-200/60': tx.type === 'COD',
+                        'bg-indigo-50 text-indigo-700 border border-indigo-200/60': tx.type !== 'COD',
                       }"
                     >
-                      {{ tx.type || "N/A" }}
+                      {{ tx.type === 'COD' ? '📦 เก็บปลายทาง (COD)' : '💳 โอนเงิน (Transfer)' }}
                     </span>
                   </td>
-                  <td
-                    class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700"
-                  >
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-black text-gray-900">
                     ฿{{ formatCurrency(tx.amount) }}
                   </td>
                 </tr>
@@ -351,7 +406,7 @@ import { useSalesStore } from "../stores/salesStore.js";
 import { useExpenseStore } from "../stores/expenseStore.js";
 
 // Icons
-import { Wallet, ShoppingBag, ArrowRightLeft, Truck, Calendar, Receipt, TrendingUp, TrendingDown } from "lucide-vue-next";
+import { Wallet, ShoppingBag, ArrowRightLeft, Truck, Calendar, Receipt, TrendingUp, TrendingDown, HelpCircle } from "lucide-vue-next";
 
 // Components
 import PullToRefresh from "../components/PullToRefresh.vue";
@@ -420,6 +475,32 @@ const stats = computed(() => ({
   totalTransfer: salesStore.totalTransfer,
   totalCOD: salesStore.totalCOD,
 }));
+
+const netProfit = computed(
+  () => stats.value.totalSales - expenseStore.totalExpenses
+);
+
+const netProfitMargin = computed(() => {
+  if (stats.value.totalSales <= 0) return 0;
+  return Math.round((netProfit.value / stats.value.totalSales) * 100);
+});
+
+const transferPercent = computed(() => {
+  if (stats.value.totalSales <= 0) return 0;
+  return Math.round(
+    (stats.value.totalTransfer / stats.value.totalSales) * 100
+  );
+});
+
+const codPercent = computed(() => {
+  if (stats.value.totalSales <= 0) return 0;
+  return Math.round((stats.value.totalCOD / stats.value.totalSales) * 100);
+});
+
+const avgOrderValue = computed(() => {
+  if (stats.value.totalOrders <= 0) return 0;
+  return Math.round(stats.value.totalSales / stats.value.totalOrders);
+});
 
 const recentTransactions = computed(() => salesStore.recentSales);
 const loading = computed(() => salesStore.loading);
@@ -654,23 +735,23 @@ const prepareMonthlyChart = (transactions, start, end) => {
     datasets: [
       {
         label: "โอนเงิน",
-        backgroundColor: "#3b82f6", // blue-500
+        backgroundColor: "#4f46e5", // Indigo-600
         data: dataTransfer,
-        borderRadius: 4,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
         stack: "sales",
       },
       {
         label: "COD",
-        backgroundColor: "#f59e0b", // amber-500
+        backgroundColor: "#f59e0b", // Amber-500
         data: dataCOD,
-        borderRadius: 4,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
         stack: "sales",
       },
       {
         label: "รายจ่าย",
-        backgroundColor: "#f43f5e", // rose-500
+        backgroundColor: "#f43f5e", // Rose-500
         data: dataExpense,
-        borderRadius: 4,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
         stack: "expenses",
       },
     ],
@@ -749,23 +830,23 @@ const prepareDailyChart = (transactions, start, end) => {
     datasets: [
       {
         label: "โอนเงิน",
-        backgroundColor: "#3b82f6", // blue-500
+        backgroundColor: "#4f46e5", // Indigo-600
         data: dataTransfer,
-        borderRadius: 4,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
         stack: "sales",
       },
       {
         label: "COD",
-        backgroundColor: "#f59e0b", // amber-500
+        backgroundColor: "#f59e0b", // Amber-500
         data: dataCOD,
-        borderRadius: 4,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
         stack: "sales",
       },
       {
         label: "รายจ่าย",
-        backgroundColor: "#f43f5e", // rose-500
+        backgroundColor: "#f43f5e", // Rose-500
         data: dataExpense,
-        borderRadius: 4,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
         stack: "expenses",
       },
     ],
