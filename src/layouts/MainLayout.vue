@@ -113,8 +113,8 @@
 
         <!-- Right Side: Date / Profile / Logout (Mobile) -->
         <div class="flex items-center gap-3">
-          <span class="hidden text-sm text-gray-500 md:block">
-            {{ new Date().toLocaleDateString("th-TH", { dateStyle: "long" }) }}
+          <span class="hidden text-sm font-semibold text-gray-600 md:block">
+            📅 {{ todayThaiDate }}
           </span>
           <button
             @click="handleLogout"
@@ -212,6 +212,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useSalesStore } from "../stores/salesStore.js";
 import { useCustomerStore } from "../stores/customerStore.js";
+import { formatThaiDate } from "../utils/dateUtils.js";
 import {
   LayoutDashboard,
   CreditCard,
@@ -225,6 +226,8 @@ import {
 const router = useRouter();
 const salesStore = useSalesStore();
 const customerStore = useCustomerStore();
+
+const todayThaiDate = computed(() => formatThaiDate(new Date()));
 
 // Access global version constant
 const appVersion = computed(() => {

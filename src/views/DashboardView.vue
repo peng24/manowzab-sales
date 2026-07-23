@@ -78,7 +78,7 @@
                 class="rounded-lg border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700"
               >
                 <option v-for="year in yearRange" :key="year" :value="year">
-                  {{ year }}
+                  พ.ศ. {{ year + 543 }}
                 </option>
               </select>
             </template>
@@ -514,10 +514,10 @@ const timeRangeLabel = computed(() => {
   const labels = {
     today: "ประจำวันนี้",
     thisWeek: "ประจำสัปดาห์นี้",
-    thisMonth: `ประจำเดือน${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`,
-    thisYear: `ประจำปี ${currentDate.getFullYear()}`,
+    thisMonth: `ประจำเดือน${monthNames[currentDate.getMonth()]} พ.ศ. ${currentDate.getFullYear() + 543}`,
+    thisYear: `ประจำปี พ.ศ. ${currentDate.getFullYear() + 543}`,
     allTime: "ตั้งแต่เริ่มต้น",
-    selectMonth: `ประจำเดือน${monthNames[selectedMonth.value]} ${selectedYear.value}`,
+    selectMonth: `ประจำเดือน${monthNames[selectedMonth.value]} พ.ศ. ${selectedYear.value + 543}`,
   };
   return labels[selectedTimeRange.value] || "";
 });

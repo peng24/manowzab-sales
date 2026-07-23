@@ -99,7 +99,7 @@
               class="flex-1 rounded-lg border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
-                {{ year }}
+                พ.ศ. {{ year + 543 }}
               </option>
             </select>
           </div>
@@ -111,7 +111,7 @@
               class="w-full rounded-lg border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
-                {{ year }}
+                พ.ศ. {{ year + 543 }}
               </option>
             </select>
           </div>
