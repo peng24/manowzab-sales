@@ -40,24 +40,8 @@
       <form @submit.prevent="handleSaveExpense" class="grid gap-6 grid-cols-1 md:grid-cols-3">
         <!-- Date -->
         <div class="space-y-1">
-          <label class="block text-sm font-medium text-gray-700">วันที่</label>
-          <div class="relative">
-            <!-- Hidden Native Input -->
-            <input
-              type="date"
-              v-model="formData.date"
-              required
-              class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
-              @click="$event.target.showPicker ? $event.target.showPicker() : null"
-            />
-            <!-- Custom Thai Display -->
-            <div
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm flex items-center justify-between font-medium text-gray-900 focus-within:border-rose-500 focus-within:ring-1 focus-within:ring-rose-500"
-            >
-              <span>{{ formatThaiDateDisplay(formData.date) }}</span>
-              <component :is="Calendar" class="h-4 w-4 text-gray-400" />
-            </div>
-          </div>
+          <label class="block text-sm font-semibold text-gray-700">วันที่</label>
+          <ThaiDatePicker v-model="formData.date" />
         </div>
 
         <!-- Category -->
@@ -480,6 +464,7 @@ import {
   ChevronDown,
   Calendar,
 } from "lucide-vue-next";
+import ThaiDatePicker from "../components/ThaiDatePicker.vue";
 
 const expenseStore = useExpenseStore();
 

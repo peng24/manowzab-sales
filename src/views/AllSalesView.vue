@@ -431,79 +431,15 @@
           </div>
 
           <form @submit.prevent="saveEdit" class="space-y-4">
-            <!-- Date & Time (Thai Format Overlay) -->
+            <!-- Date & Time (Thai Pickers) -->
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-1">
-                <label class="block text-sm font-medium text-gray-700"
-                  >วันที่</label
-                >
-                <div class="relative">
-                  <!-- Hidden Native Input -->
-                  <input
-                    type="date"
-                    v-model="editForm.date"
-                    required
-                    class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
-                    @click="
-                      $event.target.showPicker ? $event.target.showPicker() : null
-                    "
-                  />
-                  <!-- Custom Display -->
-                  <div
-                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 flex items-center justify-between"
-                  >
-                    <span class="text-gray-900 text-sm">{{
-                      formatThaiDate(editForm.date)
-                    }}</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4 text-gray-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                </div>
+                <label class="block text-sm font-semibold text-gray-700">วันที่</label>
+                <ThaiDatePicker v-model="editForm.date" />
               </div>
               <div class="space-y-1">
-                <label class="block text-sm font-medium text-gray-700"
-                  >เวลา</label
-                >
-                <div class="relative">
-                  <!-- Hidden Native Input -->
-                  <input
-                    type="time"
-                    v-model="editForm.time"
-                    required
-                    class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
-                    @click="
-                      $event.target.showPicker ? $event.target.showPicker() : null
-                    "
-                  />
-                  <!-- Custom Display -->
-                  <div
-                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 flex items-center justify-between"
-                  >
-                    <span class="text-gray-900 text-sm">{{ editForm.time ? editForm.time + ' น.' : '-' }}</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-4 w-4 text-gray-400"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                </div>
+                <label class="block text-sm font-semibold text-gray-700">เวลา</label>
+                <ThaiTimePicker v-model="editForm.time" />
               </div>
             </div>
 
@@ -566,8 +502,9 @@ import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils.js";
-import { formatCurrency } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
+import ThaiDatePicker from "../components/ThaiDatePicker.vue";
+import ThaiTimePicker from "../components/ThaiTimePicker.vue";
 
 // Services
 import {
