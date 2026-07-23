@@ -343,7 +343,7 @@ import {
   eachMonthOfInterval,
 } from "date-fns";
 import { th } from "date-fns/locale";
-import { formatThaiDateTime } from "../utils/dateUtils.js";
+import { formatThaiDateTime, toDate } from "../utils/dateUtils.js";
 import { formatCurrency } from "../utils/formatUtils.js";
 
 // Store
@@ -443,14 +443,14 @@ const timeRangeLabel = computed(() => {
 
 const chartTitle = computed(() => {
   const titles = {
-    today: "ยอดขายรายวัน",
-    thisWeek: "ยอดขายรายวัน",
-    thisMonth: "ยอดขายรายวัน",
-    selectMonth: "ยอดขายรายวัน",
-    thisYear: "ยอดขายรายเดือน",
-    allTime: "ยอดขายรายเดือน",
+    today: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
+    thisWeek: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
+    thisMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
+    selectMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
+    thisYear: "เปรียบเทียบยอดขายและรายจ่ายรายเดือน",
+    allTime: "เปรียบเทียบยอดขายและรายจ่ายรายเดือน",
   };
-  return titles[selectedTimeRange.value] || "ยอดขาย";
+  return titles[selectedTimeRange.value] || "ยอดขายและรายจ่าย";
 });
 
 // --- Logic ---
@@ -602,10 +602,10 @@ const prepareMonthlyChart = (transactions, start, end) => {
   const monthlyData = {};
   monthsRange.forEach((month) => {
     const key = format(month, "yyyy-MM");
-    monthlyData[key] = { COD: 0, Transfer: 0 };
+    monthlyData[key] = { COD: 0, Transfer: 0, Expense: 0 };
   });
 
-  // Aggregate data
+  // Aggregate sales data
   transactions.forEach((tx) => {
     const key = format(tx.dateTime, "yyyy-MM");
     const type = tx.type === "COD" ? "COD" : "Transfer";
@@ -613,6 +613,18 @@ const prepareMonthlyChart = (transactions, start, end) => {
 
     if (monthlyData[key]) {
       monthlyData[key][type] += amt;
+    }
+  });
+
+  // Aggregate expenses data
+  expenseStore.expenses.forEach((exp) => {
+    const d = toDate(exp.dateTime);
+    if (!d || isNaN(d.getTime())) return;
+    const key = format(d, "yyyy-MM");
+    const amt = Number(exp.amount) || 0;
+
+    if (monthlyData[key]) {
+      monthlyData[key].Expense += amt;
     }
   });
 
@@ -632,6 +644,11 @@ const prepareMonthlyChart = (transactions, start, end) => {
     return monthlyData[key].Transfer;
   });
 
+  const dataExpense = monthsRange.map((month) => {
+    const key = format(month, "yyyy-MM");
+    return monthlyData[key].Expense;
+  });
+
   chartData.value = {
     labels: labels,
     datasets: [
@@ -640,14 +657,21 @@ const prepareMonthlyChart = (transactions, start, end) => {
         backgroundColor: "#3b82f6", // blue-500
         data: dataTransfer,
         borderRadius: 4,
-        stack: "combined",
+        stack: "sales",
       },
       {
         label: "COD",
         backgroundColor: "#f59e0b", // amber-500
         data: dataCOD,
         borderRadius: 4,
-        stack: "combined",
+        stack: "sales",
+      },
+      {
+        label: "รายจ่าย",
+        backgroundColor: "#f43f5e", // rose-500
+        data: dataExpense,
+        borderRadius: 4,
+        stack: "expenses",
       },
     ],
   };
@@ -666,10 +690,10 @@ const prepareDailyChart = (transactions, start, end) => {
   const dailyData = {};
   daysRange.forEach((day) => {
     const key = format(day, "yyyy-MM-dd");
-    dailyData[key] = { COD: 0, Transfer: 0 };
+    dailyData[key] = { COD: 0, Transfer: 0, Expense: 0 };
   });
 
-  // Aggregate data
+  // Aggregate sales data
   transactions.forEach((tx) => {
     const key = format(tx.dateTime, "yyyy-MM-dd");
     const type = tx.type === "COD" ? "COD" : "Transfer";
@@ -677,6 +701,18 @@ const prepareDailyChart = (transactions, start, end) => {
 
     if (dailyData[key]) {
       dailyData[key][type] += amt;
+    }
+  });
+
+  // Aggregate expense data
+  expenseStore.expenses.forEach((exp) => {
+    const d = toDate(exp.dateTime);
+    if (!d || isNaN(d.getTime())) return;
+    const key = format(d, "yyyy-MM-dd");
+    const amt = Number(exp.amount) || 0;
+
+    if (dailyData[key]) {
+      dailyData[key].Expense += amt;
     }
   });
 
@@ -703,6 +739,11 @@ const prepareDailyChart = (transactions, start, end) => {
     return dailyData[key].Transfer;
   });
 
+  const dataExpense = daysRange.map((day) => {
+    const key = format(day, "yyyy-MM-dd");
+    return dailyData[key].Expense;
+  });
+
   chartData.value = {
     labels: labels,
     datasets: [
@@ -711,14 +752,21 @@ const prepareDailyChart = (transactions, start, end) => {
         backgroundColor: "#3b82f6", // blue-500
         data: dataTransfer,
         borderRadius: 4,
-        stack: "combined",
+        stack: "sales",
       },
       {
         label: "COD",
         backgroundColor: "#f59e0b", // amber-500
         data: dataCOD,
         borderRadius: 4,
-        stack: "combined",
+        stack: "sales",
+      },
+      {
+        label: "รายจ่าย",
+        backgroundColor: "#f43f5e", // rose-500
+        data: dataExpense,
+        borderRadius: 4,
+        stack: "expenses",
       },
     ],
   };

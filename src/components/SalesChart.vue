@@ -105,18 +105,31 @@ const defaultOptions = {
         size: 11,
       },
       display: function (ctx) {
-        // Show only on the last dataset to avoid duplicate labels
-        return ctx.datasetIndex === ctx.chart.data.datasets.length - 1;
+        const datasets = ctx.chart.data.datasets;
+        const currentDataset = datasets[ctx.datasetIndex];
+        const currentStack = currentDataset?.stack;
+
+        // Find the last dataset index for this stack
+        let lastInStackIndex = -1;
+        for (let i = 0; i < datasets.length; i++) {
+          if (!currentStack || datasets[i].stack === currentStack) {
+            lastInStackIndex = i;
+          }
+        }
+        return ctx.datasetIndex === lastInStackIndex;
       },
       formatter: (value, ctx) => {
-        // Calculate sum of all datasets for this data index
         const datasets = ctx.chart.data.datasets;
+        const currentDataset = datasets[ctx.datasetIndex];
+        const currentStack = currentDataset?.stack;
         const dataIndex = ctx.dataIndex;
 
         let sum = 0;
         datasets.forEach((dataset) => {
-          const val = dataset.data[dataIndex];
-          sum += val || 0;
+          if (!currentStack || dataset.stack === currentStack) {
+            const val = dataset.data[dataIndex];
+            sum += val || 0;
+          }
         });
 
         // Hide if sum is 0
