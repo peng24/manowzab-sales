@@ -450,7 +450,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useExpenseStore } from "../stores/expenseStore";
 import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils";
 import Swal from "sweetalert2";
@@ -510,6 +510,15 @@ const topCategory = computed(() => {
     ? expenseStore.expensesByCategory[0]
     : null;
 });
+
+watch(
+  () => formData.category,
+  (newCat) => {
+    if (!isEditing.value && newCat === "ค่าขนส่ง/บรรจุภัณฑ์") {
+      formData.title = "ค่าส่งของ Flash Express";
+    }
+  }
+);
 
 const filteredExpenses = computed(() => {
   let list = expenseStore.expenses;
