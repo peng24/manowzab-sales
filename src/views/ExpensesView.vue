@@ -550,10 +550,11 @@ const formatCurrency = (val) => {
 
 const resetForm = () => {
   const keepDate = formData.date;
+  const keepCategory = formData.category;
   formData.id = null;
   formData.date = keepDate || new Date().toISOString().split("T")[0];
-  formData.title = "";
-  formData.category = expenseStore.categories.length > 0 ? expenseStore.categories[0].name : "";
+  formData.category = keepCategory || (expenseStore.categories.length > 0 ? expenseStore.categories[0].name : "");
+  formData.title = formData.category === "ค่าขนส่ง/บรรจุภัณฑ์" ? "ค่าส่งของ Flash Express" : "";
   formData.amount = null;
   formData.paymentMethod = "Transfer";
   formData.note = "";
