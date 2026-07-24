@@ -23,6 +23,7 @@ import {
   endOfMonth,
   startOfYear,
   endOfYear,
+  subMonths,
 } from "date-fns";
 import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
 
@@ -158,6 +159,18 @@ export async function getAllSales(filter = {}) {
       // This Month
       const start = startOfMonth(new Date());
       const end = endOfMonth(new Date());
+
+      q = query(
+        salesRef,
+        where("dateTime", ">=", start),
+        where("dateTime", "<=", end),
+        orderBy("dateTime", "desc"),
+      );
+    } else if (mode === "lastMonth") {
+      // Last Month
+      const prevMonth = subMonths(new Date(), 1);
+      const start = startOfMonth(prevMonth);
+      const end = endOfMonth(prevMonth);
 
       q = query(
         salesRef,

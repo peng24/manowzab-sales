@@ -30,6 +30,7 @@
                 { key: 'today', label: 'วันนี้' },
                 { key: 'thisWeek', label: 'สัปดาห์นี้' },
                 { key: 'thisMonth', label: 'เดือนนี้' },
+                { key: 'lastMonth', label: 'เดือนก่อน' },
                 { key: 'thisYear', label: 'ปีนี้' },
                 { key: 'allTime', label: 'ทั้งหมด' }
               ]"
@@ -56,6 +57,7 @@
               <option value="today">วันนี้ (Today)</option>
               <option value="thisWeek">สัปดาห์นี้ (This Week)</option>
               <option value="thisMonth">เดือนนี้ (This Month)</option>
+              <option value="lastMonth">เดือนก่อน (Last Month)</option>
               <option value="thisYear">ปีนี้ (This Year)</option>
               <option value="allTime">ทั้งหมด (All Time)</option>
             </select>
@@ -396,6 +398,7 @@ import {
   format,
   eachDayOfInterval,
   eachMonthOfInterval,
+  subMonths,
 } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime, toDate } from "../utils/dateUtils.js";
@@ -511,10 +514,12 @@ const lastUpdatedText = computed(() => {
 });
 
 const timeRangeLabel = computed(() => {
+  const prevMonthDate = subMonths(currentDate, 1);
   const labels = {
     today: "ประจำวันนี้",
     thisWeek: "ประจำสัปดาห์นี้",
     thisMonth: `ประจำเดือน${monthNames[currentDate.getMonth()]} พ.ศ. ${currentDate.getFullYear() + 543}`,
+    lastMonth: `ประจำเดือน${monthNames[prevMonthDate.getMonth()]} พ.ศ. ${prevMonthDate.getFullYear() + 543}`,
     thisYear: `ประจำปี พ.ศ. ${currentDate.getFullYear() + 543}`,
     allTime: "ตั้งแต่เริ่มต้น",
     selectMonth: `ประจำเดือน${monthNames[selectedMonth.value]} พ.ศ. ${selectedYear.value + 543}`,
@@ -527,6 +532,7 @@ const chartTitle = computed(() => {
     today: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
     thisWeek: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
     thisMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
+    lastMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
     selectMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
     thisYear: "เปรียบเทียบยอดขายและรายจ่ายรายเดือน",
     allTime: "เปรียบเทียบยอดขายและรายจ่ายรายเดือน",
@@ -555,6 +561,12 @@ const getDateRange = () => {
       return {
         start: startOfMonth(now),
         end: endOfMonth(now),
+      };
+    case "lastMonth":
+      const prevMonth = subMonths(now, 1);
+      return {
+        start: startOfMonth(prevMonth),
+        end: endOfMonth(prevMonth),
       };
     case "selectMonth":
       const targetDate = new Date(selectedYear.value, selectedMonth.value);
@@ -596,6 +608,9 @@ const fetchData = async () => {
         break;
       case "thisMonth":
         filter = { mode: "thisMonth" };
+        break;
+      case "lastMonth":
+        filter = { mode: "lastMonth" };
         break;
       case "selectMonth":
         filter = {

@@ -23,6 +23,7 @@ import {
   endOfMonth,
   startOfYear,
   endOfYear,
+  subMonths,
 } from "date-fns";
 import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
 
@@ -266,6 +267,11 @@ export async function getAllExpenses(filter = {}) {
     } else if (mode === "thisMonth") {
       const start = Timestamp.fromDate(startOfMonth(now));
       const end = Timestamp.fromDate(endOfMonth(now));
+      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
+    } else if (mode === "lastMonth") {
+      const prevMonth = subMonths(now, 1);
+      const start = Timestamp.fromDate(startOfMonth(prevMonth));
+      const end = Timestamp.fromDate(endOfMonth(prevMonth));
       q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
     } else if (mode === "thisYear") {
       const start = Timestamp.fromDate(startOfYear(now));

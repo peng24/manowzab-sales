@@ -84,7 +84,7 @@ const defaultOptions = computed(() => {
     maintainAspectRatio: false,
     layout: {
       padding: {
-        top: 28,
+        top: 10,
         bottom: 5,
         left: 5,
         right: 5,
@@ -102,7 +102,7 @@ const defaultOptions = computed(() => {
           font: { family: "sans-serif", size: 12, weight: "bold" },
           usePointStyle: true,
           boxWidth: 8,
-          padding: 16,
+          padding: 8,
         },
       },
       tooltip: {

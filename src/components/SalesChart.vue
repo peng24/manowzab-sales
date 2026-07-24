@@ -1,6 +1,6 @@
 <template>
   <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
-    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <h3 class="text-lg font-bold text-gray-800">{{ title }}</h3>
       <div v-if="lastUpdated" class="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 w-fit">
         <span class="relative flex h-2 w-2">
@@ -10,7 +10,7 @@
         <span>อัปเดตล่าสุด: {{ lastUpdated }}</span>
       </div>
     </div>
-    <div class="h-[300px] md:h-[350px] w-full">
+    <div class="h-[280px] md:h-[320px] w-full">
       <Bar
         v-if="chartData.labels"
         :data="chartData"
@@ -72,7 +72,7 @@ const defaultOptions = {
   maintainAspectRatio: false,
   layout: {
     padding: {
-      top: 36, // Ensure top datalabels have ample clearance for screenshots
+      top: 10, // Compact top clearance for data labels
     },
   },
   plugins: {
@@ -84,7 +84,7 @@ const defaultOptions = {
         pointStyle: "circle",
         boxWidth: 8,
         boxHeight: 8,
-        padding: 16,
+        padding: 8,
         font: {
           family: "'Inter', 'Prompt', sans-serif",
           size: 12,
@@ -198,6 +198,7 @@ const defaultOptions = {
     y: {
       beginAtZero: true,
       stacked: true,
+      grace: "5%",
       border: { dash: [4, 4] },
       grid: {
         color: "#f1f5f9",
