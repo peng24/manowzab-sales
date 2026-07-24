@@ -502,6 +502,7 @@ import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
 import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils.js";
+import { formatCurrency } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
 import ThaiDatePicker from "../components/ThaiDatePicker.vue";
 import ThaiTimePicker from "../components/ThaiTimePicker.vue";
