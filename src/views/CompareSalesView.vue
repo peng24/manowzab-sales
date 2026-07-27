@@ -320,7 +320,7 @@
                 <td class="px-6 py-3.5 text-right font-semibold text-blue-600">
                   ฿{{ formatCurrency(row.val1) }}
                 </td>
-                <td class="px-6 py-3.5 text-right font-semibold text-amber-600">
+                <td class="px-6 py-3.5 text-right font-semibold text-orange-500">
                   ฿{{ formatCurrency(row.val2) }}
                 </td>
                 <td
@@ -344,7 +344,7 @@
               <tr>
                 <td class="px-6 py-4">ยอดรวมทั้งหมด (Total)</td>
                 <td class="px-6 py-4 text-right text-blue-300">฿{{ formatCurrency(stats1.sales) }}</td>
-                <td class="px-6 py-4 text-right text-amber-300">฿{{ formatCurrency(stats2.sales) }}</td>
+                <td class="px-6 py-4 text-right text-orange-300">฿{{ formatCurrency(stats2.sales) }}</td>
                 <td class="px-6 py-4 text-right" :class="salesDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'">
                   {{ salesDiff >= 0 ? '+' : '' }}฿{{ formatCurrency(salesDiff) }}
                 </td>

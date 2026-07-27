@@ -56,20 +56,20 @@ const chartData = computed(() => {
     labels: props.labels,
     datasets: [
       {
-        label: props.dataset1.label || "ช่วงเวลาปัจจุบัน",
-        data: props.dataset1.data || [],
-        backgroundColor: "rgba(59, 130, 246, 0.85)", // Indigo Blue
-        borderColor: "#2563eb",
+        label: props.dataset2.label || "ช่วงเวลาเปรียบเทียบ (เก่า)",
+        data: props.dataset2.data || [],
+        backgroundColor: "rgba(253, 186, 116, 0.85)", // Light Orange (เก่า - อยู่ซ้าย)
+        borderColor: "#f97316",
         borderWidth: 1.5,
         borderRadius: { topLeft: 4, topRight: 4 },
         barPercentage: 0.8,
         categoryPercentage: 0.7,
       },
       {
-        label: props.dataset2.label || "ช่วงเวลาเปรียบเทียบ",
-        data: props.dataset2.data || [],
-        backgroundColor: "rgba(245, 158, 11, 0.85)", // Amber Gold
-        borderColor: "#d97706",
+        label: props.dataset1.label || "ช่วงเวลาปัจจุบัน (ใหม่)",
+        data: props.dataset1.data || [],
+        backgroundColor: "rgba(59, 130, 246, 0.9)", // Blue (ใหม่ - อยู่ขวา)
+        borderColor: "#1d4ed8",
         borderWidth: 1.5,
         borderRadius: { topLeft: 4, topRight: 4 },
         barPercentage: 0.8,
@@ -135,7 +135,7 @@ const defaultOptions = computed(() => {
           };
         },
         color: (context) => {
-          return context.datasetIndex === 0 ? "#1d4ed8" : "#b45309";
+          return context.datasetIndex === 0 ? "#c2410c" : "#1d4ed8";
         },
         formatter: (value) => {
           if (!value || value === 0) return "";
