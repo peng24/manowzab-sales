@@ -176,7 +176,32 @@
             </div>
           </div>
 
-          <!-- Card 3: Transfer (ยอดโอน) -->
+          <!-- Card 3: Total Orders (จำนวนออเดอร์) -->
+          <div
+            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  จำนวนออเดอร์ (Total Orders)
+                </span>
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
+                  {{ stats.totalOrders.toLocaleString() }}
+                </h3>
+              </div>
+              <div class="rounded-xl bg-slate-100 p-3 text-slate-600">
+                <ShoppingBag class="h-6 w-6" />
+              </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+              <span>เฉลี่ยต่อออเดอร์</span>
+              <span class="font-bold text-gray-700">
+                ฿{{ formatCurrency(avgOrderValue) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Card 4: Transfer (ยอดโอน) -->
           <div
             class="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
@@ -201,7 +226,7 @@
             </div>
           </div>
 
-          <!-- Card 4: COD (เก็บปลายทาง) -->
+          <!-- Card 5: COD (เก็บปลายทาง) -->
           <div
             class="rounded-2xl border border-amber-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
@@ -226,7 +251,7 @@
             </div>
           </div>
 
-          <!-- Card 5: Expenses (รายจ่ายรวม) -->
+          <!-- Card 6: Expenses (รายจ่ายรวม) -->
           <div
             class="rounded-2xl border border-rose-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
@@ -247,31 +272,6 @@
               <span>จำนวนรายการ</span>
               <span class="font-bold text-rose-600">
                 {{ expenseStore.totalCount }} รายการ
-              </span>
-            </div>
-          </div>
-
-          <!-- Card 6: Total Orders (จำนวนออเดอร์) -->
-          <div
-            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <div class="flex items-start justify-between">
-              <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  จำนวนออเดอร์ (Total Orders)
-                </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
-                  {{ stats.totalOrders.toLocaleString() }}
-                </h3>
-              </div>
-              <div class="rounded-xl bg-slate-100 p-3 text-slate-600">
-                <ShoppingBag class="h-6 w-6" />
-              </div>
-            </div>
-            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
-              <span>เฉลี่ยต่อออเดอร์</span>
-              <span class="font-bold text-gray-700">
-                ฿{{ formatCurrency(avgOrderValue) }}
               </span>
             </div>
           </div>
