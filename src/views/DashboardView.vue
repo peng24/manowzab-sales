@@ -1,21 +1,21 @@
 <template>
   <PullToRefresh :on-refresh="fetchData">
-    <div class="container mx-auto max-w-7xl py-1 md:py-2">
+    <div class="container mx-auto max-w-7xl py-0">
       <!-- Header & Filter Card -->
       <div
-        class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+        class="mb-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 md:p-4 shadow-sm"
       >
-        <div class="flex items-center gap-3.5">
+        <div class="flex items-center gap-3">
           <div
-            class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 shrink-0"
           >
-            <Calendar class="h-6 w-6" />
+            <Calendar class="h-5 w-5" />
           </div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
               ภาพรวมยอดขาย
             </p>
-            <h1 class="text-xl md:text-2xl font-black text-gray-900">
+            <h1 class="text-lg md:text-xl font-black text-gray-900 leading-tight">
               {{ timeRangeLabel }}
             </h1>
           </div>
@@ -36,7 +36,7 @@
               ]"
               :key="range.key"
               @click="selectedTimeRange = range.key"
-              class="rounded-lg px-3 py-1.5 transition-all duration-150 cursor-pointer"
+              class="rounded-lg px-2.5 py-1 transition-all duration-150 cursor-pointer"
               :class="
                 selectedTimeRange === range.key
                   ? 'bg-white font-bold text-blue-600 shadow-xs'
@@ -48,10 +48,10 @@
           </div>
 
           <!-- Select Month Dropdown -->
-          <div class="flex items-center gap-2 border-l border-gray-200 pl-2">
+          <div class="flex items-center gap-1.5 border-l border-gray-200 pl-2">
             <select
               v-model="selectedTimeRange"
-              class="rounded-lg border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+              class="rounded-lg border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
               <option value="selectMonth">📅 เลือกเดือนเฉพาะ...</option>
               <option value="today">วันนี้ (Today)</option>
@@ -65,7 +65,7 @@
             <template v-if="selectedTimeRange === 'selectMonth'">
               <select
                 v-model="selectedMonth"
-                class="rounded-lg border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700"
+                class="rounded-lg border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700"
               >
                 <option
                   v-for="(name, index) in monthNames"
@@ -77,7 +77,7 @@
               </select>
               <select
                 v-model="selectedYear"
-                class="rounded-lg border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700"
+                class="rounded-lg border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700"
               >
                 <option v-for="year in yearRange" :key="year" :value="year">
                   พ.ศ. {{ year + 543 }}
@@ -98,40 +98,40 @@
         </div>
       </div>
 
-      <div v-else class="space-y-6 animate-fade-in-up">
+      <div v-else class="space-y-3.5 animate-fade-in-up">
         <!-- 1. KPI Cards Grid (3x2 Layout) -->
-        <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <!-- Hero Card 1: Net Profit (กำไรสุทธิ) -->
           <div
-            class="relative overflow-hidden rounded-2xl p-6 transition-all duration-200 hover:shadow-lg"
+            class="relative overflow-hidden rounded-2xl p-3.5 md:p-4 transition-all duration-200 hover:shadow-md"
             :class="
               netProfit >= 0
-                ? 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-md shadow-emerald-600/15'
-                : 'bg-gradient-to-br from-rose-600 via-rose-700 to-red-800 text-white shadow-md shadow-rose-600/15'
+                ? 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white shadow-sm shadow-emerald-600/15'
+                : 'bg-gradient-to-br from-rose-600 via-rose-700 to-red-800 text-white shadow-sm shadow-rose-600/15'
             "
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100/80">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-100/80">
                   กำไรสุทธิ (Net Profit)
                 </span>
-                <h3 class="mt-2 text-3xl font-black tracking-tight text-white">
+                <h3 class="mt-1 text-2xl md:text-[26px] font-black tracking-tight text-white leading-tight">
                   ฿{{ formatCurrency(netProfit) }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-white/10 p-3 backdrop-blur-xs">
-                <component :is="netProfit >= 0 ? TrendingUp : TrendingDown" class="h-6 w-6 text-white" />
+              <div class="rounded-xl bg-white/10 p-2 md:p-2.5 backdrop-blur-xs">
+                <component :is="netProfit >= 0 ? TrendingUp : TrendingDown" class="h-5 w-5 text-white" />
               </div>
             </div>
             <div
-              class="group relative mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-white/80 font-medium cursor-help"
+              class="group relative mt-2.5 flex items-center justify-between border-t border-white/10 pt-2 text-xs text-white/80 font-medium cursor-help"
               :title="`คิดจาก: (กำไรสุทธิ ฿${formatCurrency(netProfit)} ÷ ยอดขายรวม ฿${formatCurrency(stats.totalSales)}) × 100 = ${netProfitMargin}%`"
             >
               <span class="flex items-center gap-1">
                 อัตรากำไร (Margin)
                 <HelpCircle class="h-3.5 w-3.5 text-white/70 group-hover:text-white transition-colors" />
               </span>
-              <span class="rounded-full bg-white/20 px-2.5 py-0.5 font-bold text-white shadow-xs">
+              <span class="rounded-full bg-white/20 px-2 py-0.5 font-bold text-white shadow-xs">
                 {{ netProfitMargin }}%
               </span>
 
@@ -153,22 +153,22 @@
 
           <!-- Hero Card 2: Total Sales (ยอดขายรวม) -->
           <div
-            class="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-indigo-100 bg-white p-3.5 md:p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
                   ยอดขายรวม (Total Revenue)
                 </span>
-                <h3 class="mt-2 text-3xl font-black tracking-tight text-gray-900">
+                <h3 class="mt-1 text-2xl md:text-[26px] font-black tracking-tight text-gray-900 leading-tight">
                   ฿{{ formatCurrency(stats.totalSales) }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-indigo-50 p-3 text-indigo-600">
-                <Wallet class="h-6 w-6" />
+              <div class="rounded-xl bg-indigo-50 p-2 md:p-2.5 text-indigo-600">
+                <Wallet class="h-5 w-5" />
               </div>
             </div>
-            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+            <div class="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
               <span>สัดส่วนยอดโอน / COD</span>
               <span class="font-bold text-gray-800">
                 {{ transferPercent }}% / {{ codPercent }}%
@@ -178,22 +178,22 @@
 
           <!-- Card 3: Expenses (รายจ่ายรวม) -->
           <div
-            class="rounded-2xl border border-rose-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-rose-100 bg-white p-3.5 md:p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-rose-600">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600">
                   รายจ่ายรวม (Expenses)
                 </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-rose-950">
+                <h3 class="mt-1 text-2xl md:text-[26px] font-black text-rose-950 leading-tight">
                   ฿{{ formatCurrency(expenseStore.totalExpenses) }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-rose-50 p-3 text-rose-600">
-                <Receipt class="h-6 w-6" />
+              <div class="rounded-xl bg-rose-50 p-2 md:p-2.5 text-rose-600">
+                <Receipt class="h-5 w-5" />
               </div>
             </div>
-            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+            <div class="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
               <span>จำนวนรายการ</span>
               <span class="font-bold text-rose-600">
                 {{ expenseStore.totalCount }} รายการ
@@ -203,22 +203,22 @@
 
           <!-- Card 4: Transfer (ยอดโอน) -->
           <div
-            class="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-blue-100 bg-white p-3.5 md:p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-blue-600">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600">
                   ยอดโอน (Transfer)
                 </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
+                <h3 class="mt-1 text-2xl md:text-[26px] font-black text-gray-900 leading-tight">
                   ฿{{ formatCurrency(stats.totalTransfer) }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-blue-50 p-3 text-blue-600">
-                <ArrowRightLeft class="h-6 w-6" />
+              <div class="rounded-xl bg-blue-50 p-2 md:p-2.5 text-blue-600">
+                <ArrowRightLeft class="h-5 w-5" />
               </div>
             </div>
-            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+            <div class="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
               <span>คิดเป็นสัดส่วนยอดขาย</span>
               <span class="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-700">
                 {{ transferPercent }}%
@@ -228,22 +228,22 @@
 
           <!-- Card 5: COD (เก็บปลายทาง) -->
           <div
-            class="rounded-2xl border border-amber-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-amber-100 bg-white p-3.5 md:p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-600">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600">
                   เก็บปลายทาง (COD)
                 </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
+                <h3 class="mt-1 text-2xl md:text-[26px] font-black text-gray-900 leading-tight">
                   ฿{{ formatCurrency(stats.totalCOD) }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-amber-50 p-3 text-amber-600">
-                <Truck class="h-6 w-6" />
+              <div class="rounded-xl bg-amber-50 p-2 md:p-2.5 text-amber-600">
+                <Truck class="h-5 w-5" />
               </div>
             </div>
-            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+            <div class="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
               <span>คิดเป็นสัดส่วนยอดขาย</span>
               <span class="rounded-full bg-amber-50 px-2 py-0.5 font-bold text-amber-700">
                 {{ codPercent }}%
@@ -253,22 +253,22 @@
 
           <!-- Card 6: Total Orders (จำนวนออเดอร์) -->
           <div
-            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-slate-200 bg-white p-3.5 md:p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   จำนวนออเดอร์ (Total Orders)
                 </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
+                <h3 class="mt-1 text-2xl md:text-[26px] font-black text-gray-900 leading-tight">
                   {{ stats.totalOrders.toLocaleString() }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-slate-100 p-3 text-slate-600">
-                <ShoppingBag class="h-6 w-6" />
+              <div class="rounded-xl bg-slate-100 p-2 md:p-2.5 text-slate-600">
+                <ShoppingBag class="h-5 w-5" />
               </div>
             </div>
-            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
+            <div class="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
               <span>เฉลี่ยต่อออเดอร์</span>
               <span class="font-bold text-gray-700">
                 ฿{{ formatCurrency(avgOrderValue) }}

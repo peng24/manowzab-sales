@@ -46,7 +46,7 @@
         </div>
       </div>
     </div>
-    <div class="h-[280px] md:h-[320px] w-full">
+    <div class="h-[210px] md:h-[235px] w-full">
       <Bar
         v-if="displayChartData.labels"
         :data="displayChartData"
