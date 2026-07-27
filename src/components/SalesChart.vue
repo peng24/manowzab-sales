@@ -1,19 +1,55 @@
 <template>
   <div class="rounded-2xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
-    <div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-      <h3 class="text-lg font-bold text-gray-800">{{ title }}</h3>
-      <div v-if="lastUpdated" class="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 w-fit">
-        <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+    <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <h3 class="text-lg font-bold text-gray-800">{{ title }}</h3>
+        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 hidden md:inline-block">
+          {{ chartMode === 'sales' ? 'มุมมอง: โครงสร้างการขาย' : 'มุมมอง: รายรับ vs รายจ่าย' }}
         </span>
-        <span>อัปเดตล่าสุด: {{ lastUpdated }}</span>
+      </div>
+
+      <div class="flex items-center justify-between sm:justify-end gap-2 flex-wrap">
+        <!-- Toggle Mode Switch -->
+        <div class="flex items-center bg-gray-100/90 p-1 rounded-xl text-xs font-semibold border border-gray-200/60 shadow-inner">
+          <button
+            type="button"
+            @click="chartMode = 'sales'"
+            :class="[
+              'px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 cursor-pointer',
+              chartMode === 'sales'
+                ? 'bg-white text-indigo-700 shadow-sm font-bold border border-gray-200/50'
+                : 'text-gray-600 hover:text-gray-900'
+            ]"
+          >
+            <span>📊 โครงสร้างการขาย</span>
+          </button>
+          <button
+            type="button"
+            @click="chartMode = 'compare'"
+            :class="[
+              'px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 cursor-pointer',
+              chartMode === 'compare'
+                ? 'bg-white text-indigo-700 shadow-sm font-bold border border-gray-200/50'
+                : 'text-gray-600 hover:text-gray-900'
+            ]"
+          >
+            <span>⚖️ รายรับ vs รายจ่าย</span>
+          </button>
+        </div>
+
+        <div v-if="lastUpdated" class="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 w-fit">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>อัปเดตล่าสุด: {{ lastUpdated }}</span>
+        </div>
       </div>
     </div>
     <div class="h-[280px] md:h-[320px] w-full">
       <Bar
-        v-if="chartData.labels"
-        :data="chartData"
+        v-if="displayChartData.labels"
+        :data="displayChartData"
         :options="computedOptions"
       />
     </div>
@@ -21,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import {
   Chart as ChartJS,
   Title,
@@ -66,6 +102,29 @@ const props = defineProps({
     type: String,
     default: "",
   },
+});
+
+// State
+const chartMode = ref("sales"); // 'sales' | 'compare'
+
+// Filter chart data based on selected mode
+const displayChartData = computed(() => {
+  if (!props.chartData || !props.chartData.datasets) {
+    return { labels: [], datasets: [] };
+  }
+
+  if (chartMode.value === "sales") {
+    // Mode 1: Sales Breakdown only (Transfer + COD) -> Filter out Expense dataset
+    return {
+      labels: props.chartData.labels || [],
+      datasets: props.chartData.datasets.filter(
+        (ds) => ds.stack !== "expenses" && ds.label !== "รายจ่าย"
+      ),
+    };
+  }
+
+  // Mode 2: Revenue vs Expenses comparison -> Show all datasets
+  return props.chartData;
 });
 
 // Default chart options
