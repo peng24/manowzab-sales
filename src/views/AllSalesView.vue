@@ -568,24 +568,28 @@ const yearRange = computed(() => {
 
 // --- Computed Properties ---
 
-// Summary Statistics
-const totalSales = computed(() => {
-  return sales.value.reduce((sum, sale) => sum + (sale.amount || 0), 0);
+// Summary Statistics (Single Pass Pass)
+const salesStats = computed(() => {
+  return sales.value.reduce(
+    (acc, sale) => {
+      const amt = Number(sale.amount) || 0;
+      acc.totalSales += amt;
+      acc.totalOrders += 1;
+      if (sale.type === "COD") {
+        acc.codAmount += amt;
+      } else {
+        acc.transferAmount += amt;
+      }
+      return acc;
+    },
+    { totalSales: 0, totalOrders: 0, transferAmount: 0, codAmount: 0 }
+  );
 });
 
-const totalOrders = computed(() => sales.value.length);
-
-const transferAmount = computed(() => {
-  return sales.value
-    .filter((sale) => sale.type !== "COD")
-    .reduce((sum, sale) => sum + (sale.amount || 0), 0);
-});
-
-const codAmount = computed(() => {
-  return sales.value
-    .filter((sale) => sale.type === "COD")
-    .reduce((sum, sale) => sum + (sale.amount || 0), 0);
-});
+const totalSales = computed(() => salesStats.value.totalSales);
+const totalOrders = computed(() => salesStats.value.totalOrders);
+const transferAmount = computed(() => salesStats.value.transferAmount);
+const codAmount = computed(() => salesStats.value.codAmount);
 
 // Pagination
 const totalPages = computed(

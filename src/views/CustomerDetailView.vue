@@ -299,29 +299,35 @@ const fetchCustomerSales = async (isRefresh = false) => {
         break;
     }
 
-    // 1. Fetch total spent and count with a limit of 200 for safety/speed
-    const { items: allItems } = await getSalesByCustomerName(props.name, {
-      cutoffDate,
-      limitCount: 200,
-    });
-    totalOrders.value = allItems.length;
-    totalSpent.value = allItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const decodedCustomerName = props.name ? decodeURIComponent(props.name) : "";
 
-    // 2. Fetch paginated sales
-    const { items, lastDoc } = await getSalesByCustomerName(props.name, {
-      cutoffDate,
-      limitCount: pageSize,
-      lastDoc: pageCursors.value[currentPage.value],
-    });
+    if (currentPage.value === 1) {
+      // Single query for Page 1: fetch all items (up to 200) for stats + page 1 slice
+      const { items: allItems, lastDoc } = await getSalesByCustomerName(decodedCustomerName, {
+        cutoffDate,
+        limitCount: 200,
+      });
+      totalOrders.value = allItems.length;
+      totalSpent.value = allItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
-    sales.value = items;
-
-    // Save next page cursor if we have full page of items
-    if (lastDoc && items.length === pageSize) {
-      pageCursors.value[currentPage.value + 1] = lastDoc;
-      hasMore.value = true;
+      sales.value = allItems.slice(0, pageSize);
+      hasMore.value = allItems.length > pageSize;
     } else {
-      hasMore.value = false;
+      // Subsequent pages fetch with cursor pagination
+      const { items, lastDoc } = await getSalesByCustomerName(decodedCustomerName, {
+        cutoffDate,
+        limitCount: pageSize,
+        lastDoc: pageCursors.value[currentPage.value],
+      });
+
+      sales.value = items;
+
+      if (lastDoc && items.length === pageSize) {
+        pageCursors.value[currentPage.value + 1] = lastDoc;
+        hasMore.value = true;
+      } else {
+        hasMore.value = false;
+      }
     }
   } catch (error) {
     console.error("Error fetching customer sales:", error);

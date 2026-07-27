@@ -68,12 +68,15 @@ const router = createRouter({
   routes,
 });
 
-// Helper function to wait for Firebase Auth to initialize
-const getCurrentUser = () => {
+// Singleton helper function to wait for initial Firebase Auth state once
+let authInitialized = false;
+const waitForAuth = () => {
+  if (authInitialized) return Promise.resolve(auth.currentUser);
   return new Promise((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
+        authInitialized = true;
         unsubscribe();
         resolve(user);
       },
@@ -83,15 +86,13 @@ const getCurrentUser = () => {
 };
 
 router.beforeEach(async (to, from, next) => {
+  const currentUser = await waitForAuth();
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
 
-  if (requiresAuth) {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      next("/login");
-    } else {
-      next();
-    }
+  if (requiresAuth && !currentUser) {
+    next("/login");
+  } else if (to.path === "/login" && currentUser) {
+    next("/");
   } else {
     next();
   }

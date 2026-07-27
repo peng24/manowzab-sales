@@ -681,9 +681,18 @@ const prepareMonthlyChart = (transactions, start, end) => {
         end: endOfYear(new Date()),
       });
     } else {
-      const dates = transactions.map((tx) => tx.dateTime).filter((d) => d);
-      const minDate = new Date(Math.min(...dates));
-      const maxDate = new Date(Math.max(...dates));
+      let minTime = Infinity;
+      let maxTime = -Infinity;
+      for (let i = 0; i < transactions.length; i++) {
+        const d = transactions[i].dateTime;
+        if (d && !isNaN(d.getTime())) {
+          const t = d.getTime();
+          if (t < minTime) minTime = t;
+          if (t > maxTime) maxTime = t;
+        }
+      }
+      const minDate = minTime !== Infinity ? new Date(minTime) : new Date();
+      const maxDate = maxTime !== -Infinity ? new Date(maxTime) : new Date();
       monthsRange = eachMonthOfInterval({
         start: startOfMonth(minDate),
         end: endOfMonth(maxDate),

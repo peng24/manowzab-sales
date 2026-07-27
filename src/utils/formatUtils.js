@@ -16,5 +16,6 @@ export const formatCurrency = (val) => {
  */
 export const sanitizeCustomerId = (name) => {
   if (!name) return "";
-  return name.trim().replace(/\//g, "-");
+  return String(name).trim().replace(/\//g, "-");
 };
+

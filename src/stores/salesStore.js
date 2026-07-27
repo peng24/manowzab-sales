@@ -26,6 +26,7 @@ export const useSalesStore = defineStore("sales", {
     },
     lastFetchTime: null,
     lastImportedTime: null,
+    lastImportFetchTime: null,
     loadedFilters: null,
   }),
 
@@ -152,7 +153,15 @@ export const useSalesStore = defineStore("sales", {
      */
     async fetchSales(customFilters = null) {
       const filters = customFilters || this.filters;
-      const isSameFilter = this.loadedFilters && JSON.stringify(filters) === JSON.stringify(this.loadedFilters);
+      const isSameFilter =
+        this.loadedFilters &&
+        this.loadedFilters.mode === filters.mode &&
+        this.loadedFilters.month === filters.month &&
+        this.loadedFilters.year === filters.year &&
+        String(this.loadedFilters.startDate) === String(filters.startDate) &&
+        String(this.loadedFilters.endDate) === String(filters.endDate) &&
+        this.loadedFilters.limitCount === filters.limitCount;
+
       const cacheTimeout = 5 * 60 * 1000; // 5 minutes in ms
       const isCacheValid = 
         this.sales.length > 0 && 
@@ -170,11 +179,14 @@ export const useSalesStore = defineStore("sales", {
 
         this.sales = salesData;
         this.lastFetchTime = new Date();
-        this.loadedFilters = JSON.parse(JSON.stringify(filters));
+        this.loadedFilters = { ...filters };
 
-        // Fetch latest import time (both Transfer and COD)
-        const latestTime = await getLatestImportTime();
-        this.lastImportedTime = latestTime;
+        // Fetch latest import time with 10-min cache to avoid duplicate queries
+        const importCacheTimeout = 10 * 60 * 1000;
+        if (!this.lastImportedTime || !this.lastImportFetchTime || (new Date() - this.lastImportFetchTime > importCacheTimeout)) {
+          this.lastImportedTime = await getLatestImportTime();
+          this.lastImportFetchTime = new Date();
+        }
 
         return salesData;
       } catch (error) {
@@ -190,6 +202,7 @@ export const useSalesStore = defineStore("sales", {
      */
     invalidateCache() {
       this.lastFetchTime = null;
+      this.lastImportFetchTime = null;
       this.loadedFilters = null;
     },
 

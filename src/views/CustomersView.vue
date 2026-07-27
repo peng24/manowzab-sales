@@ -583,6 +583,7 @@ import {
   query,
   where,
   getDocs,
+  getCountFromServer,
 } from "firebase/firestore";
 import Swal from "sweetalert2";
 import { format } from "date-fns";
@@ -701,8 +702,8 @@ watch(mergeSource, async (newVal) => {
   try {
     const salesRef = collection(db, "sales");
     const q = query(salesRef, where("customerName", "==", newVal));
-    const snap = await getDocs(q);
-    sourceSalesCount.value = snap.docs.length;
+    const snap = await getCountFromServer(q);
+    sourceSalesCount.value = snap.data().count;
   } catch (error) {
     console.error("Error getting sales count:", error);
     sourceSalesCount.value = 0;
@@ -716,6 +717,10 @@ onMounted(() => {
   if (customerStore.customers.length === 0) {
     customerStore.fetchCustomers(true);
   }
+});
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout);
 });
 
 const loadMoreCustomers = () => {

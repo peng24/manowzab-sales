@@ -106,8 +106,12 @@ export const useExpenseStore = defineStore("expense", {
   actions: {
     /**
      * Fetch all expense categories
+     * @param {boolean} forceRefresh - Force query from Firestore
      */
-    async fetchCategories() {
+    async fetchCategories(forceRefresh = false) {
+      if (this.categories.length > 0 && !forceRefresh) {
+        return this.categories;
+      }
       try {
         const cats = await getExpenseCategories();
         this.categories = cats;

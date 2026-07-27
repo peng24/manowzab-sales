@@ -18,6 +18,8 @@ import {
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Bar } from "vue-chartjs";
 
+import { formatCurrency } from "../utils/formatUtils.js";
+
 ChartJS.register(
   Title,
   Tooltip,
@@ -116,11 +118,7 @@ const defaultOptions = computed(() => {
             let label = context.dataset.label || "";
             if (label) label += ": ";
             if (context.parsed.y !== null) {
-              label += new Intl.NumberFormat("th-TH", {
-                style: "currency",
-                currency: "THB",
-                maximumFractionDigits: 0,
-              }).format(context.parsed.y);
+              label += "฿" + formatCurrency(context.parsed.y);
             }
             return label;
           },

@@ -26,6 +26,7 @@ import {
   subMonths,
 } from "date-fns";
 import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
+import { measureExecution } from "../utils/perfTracker.js";
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   "ค่าโฆษณา",
@@ -41,45 +42,47 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
  * Automatically seeds default categories ONLY IF collection is completely empty on initial load.
  */
 export async function getExpenseCategories() {
-  try {
-    const catRef = collection(db, "expenseCategories");
-    let snapshot = await getDocs(query(catRef, orderBy("name", "asc")));
+  return measureExecution("expenseService.getExpenseCategories", async () => {
+    try {
+      const catRef = collection(db, "expenseCategories");
+      let snapshot = await getDocs(query(catRef, orderBy("name", "asc")));
 
-    // Auto-seed default categories ONLY IF collection is completely empty
-    if (snapshot.empty) {
-      console.log("Seeding default expense categories to Firestore...");
-      const batch = writeBatch(db);
-      DEFAULT_EXPENSE_CATEGORIES.forEach((catName, idx) => {
-        const newDocRef = doc(catRef);
-        batch.set(newDocRef, {
-          name: catName,
-          order: idx,
-          createdAt: serverTimestamp(),
+      // Auto-seed default categories ONLY IF collection is completely empty
+      if (snapshot.empty) {
+        console.log("Seeding default expense categories to Firestore...");
+        const batch = writeBatch(db);
+        DEFAULT_EXPENSE_CATEGORIES.forEach((catName, idx) => {
+          const newDocRef = doc(catRef);
+          batch.set(newDocRef, {
+            name: catName,
+            order: idx,
+            createdAt: serverTimestamp(),
+          });
         });
-      });
-      await batch.commit();
+        await batch.commit();
 
-      // Fetch snapshot again after seeding
-      snapshot = await getDocs(query(catRef, orderBy("name", "asc")));
+        // Fetch snapshot again after seeding
+        snapshot = await getDocs(query(catRef, orderBy("name", "asc")));
+      }
+
+      const items = snapshot.docs.map((d) => ({
+        id: d.id,
+        name: d.data().name,
+        order: d.data().order ?? 0,
+      }));
+
+      // Sort by order ascending
+      return items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    } catch (error) {
+      console.error("Error fetching expense categories:", error);
+      // Fallback using safe IDs without slashes
+      return DEFAULT_EXPENSE_CATEGORIES.map((cat, idx) => ({
+        id: `default-${idx}`,
+        name: cat,
+        order: idx,
+      }));
     }
-
-    const items = snapshot.docs.map((d) => ({
-      id: d.id,
-      name: d.data().name,
-      order: d.data().order ?? 0,
-    }));
-
-    // Sort by order ascending
-    return items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  } catch (error) {
-    console.error("Error fetching expense categories:", error);
-    // Fallback using safe IDs without slashes
-    return DEFAULT_EXPENSE_CATEGORIES.map((cat, idx) => ({
-      id: `default-${idx}`,
-      name: cat,
-      order: idx,
-    }));
-  }
+  });
 }
 
 /**
@@ -241,68 +244,93 @@ export async function addExpense(expenseData) {
  * Get all expenses with optional filtering
  */
 export async function getAllExpenses(filter = {}) {
-  const {
-    mode = "all",
-    startDate = null,
-    endDate = null,
-    month = null,
-    year = null,
-    category = null,
-  } = filter;
+  const modeLabel = filter.mode || "all";
+  return measureExecution(`expenseService.getAllExpenses(mode: '${modeLabel}')`, async () => {
+    const {
+      mode = "all",
+      startDate = null,
+      endDate = null,
+      month = null,
+      year = null,
+      category = null,
+    } = filter;
 
-  try {
-    const expRef = collection(db, "expenses");
-    let q = query(expRef, orderBy("dateTime", "desc"));
+    try {
+      const expRef = collection(db, "expenses");
+      const constraints = [];
+      const now = new Date();
+      let start = null;
+      let end = null;
 
-    const now = new Date();
+      switch (mode) {
+        case "today":
+          start = startOfDay(now);
+          end = endOfDay(now);
+          break;
+        case "thisWeek":
+          start = startOfWeek(now, { weekStartsOn: 1 });
+          end = endOfWeek(now, { weekStartsOn: 1 });
+          break;
+        case "thisMonth":
+          start = startOfMonth(now);
+          end = endOfMonth(now);
+          break;
+        case "lastMonth": {
+          const prevMonth = subMonths(now, 1);
+          start = startOfMonth(prevMonth);
+          end = endOfMonth(prevMonth);
+          break;
+        }
+        case "thisYear":
+          start = startOfYear(now);
+          end = endOfYear(now);
+          break;
+        case "selectMonth":
+          if (month !== null && year !== null) {
+            const targetDate = new Date(year, month, 1);
+            start = startOfMonth(targetDate);
+            end = endOfMonth(targetDate);
+          }
+          break;
+        case "custom":
+          if (startDate && endDate) {
+            const startObj = toDate(startDate);
+            const endObj = toDate(endDate);
+            if (startObj && endObj && !isNaN(startObj.getTime()) && !isNaN(endObj.getTime())) {
+              start = startOfDay(startObj);
+              end = endOfDay(endObj);
+            }
+          }
+          break;
+      }
 
-    if (mode === "today") {
-      const start = Timestamp.fromDate(startOfDay(now));
-      const end = Timestamp.fromDate(endOfDay(now));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
-    } else if (mode === "thisWeek") {
-      const start = Timestamp.fromDate(startOfWeek(now, { weekStartsOn: 1 }));
-      const end = Timestamp.fromDate(endOfWeek(now, { weekStartsOn: 1 }));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
-    } else if (mode === "thisMonth") {
-      const start = Timestamp.fromDate(startOfMonth(now));
-      const end = Timestamp.fromDate(endOfMonth(now));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
-    } else if (mode === "lastMonth") {
-      const prevMonth = subMonths(now, 1);
-      const start = Timestamp.fromDate(startOfMonth(prevMonth));
-      const end = Timestamp.fromDate(endOfMonth(prevMonth));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
-    } else if (mode === "thisYear") {
-      const start = Timestamp.fromDate(startOfYear(now));
-      const end = Timestamp.fromDate(endOfYear(now));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
-    } else if (mode === "selectMonth" && month !== null && year !== null) {
-      const targetDate = new Date(year, month, 1);
-      const start = Timestamp.fromDate(startOfMonth(targetDate));
-      const end = Timestamp.fromDate(endOfMonth(targetDate));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
-    } else if (mode === "custom" && startDate && endDate) {
-      const start = Timestamp.fromDate(startOfDay(toDate(startDate)));
-      const end = Timestamp.fromDate(endOfDay(toDate(endDate)));
-      q = query(expRef, where("dateTime", ">=", start), where("dateTime", "<=", end), orderBy("dateTime", "desc"));
+      if (start && end) {
+        constraints.push(
+          where("dateTime", ">=", Timestamp.fromDate(start)),
+          where("dateTime", "<=", Timestamp.fromDate(end))
+        );
+      }
+
+      constraints.push(orderBy("dateTime", "desc"));
+
+      const q = query(expRef, ...constraints);
+      const snapshot = await getDocs(q);
+
+      let items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      if (category && category !== "all") {
+        items = items.filter((item) => item.category === category);
+      }
+
+      return items;
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+      throw error;
     }
-
-    const snapshot = await getDocs(q);
-    let items = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    if (category && category !== "all") {
-      items = items.filter((item) => item.category === category);
-    }
-
-    return items;
-  } catch (error) {
-    console.error("Error fetching expenses:", error);
-    throw error;
-  }
+  });
 }
 
 /**

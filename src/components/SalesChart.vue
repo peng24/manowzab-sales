@@ -34,6 +34,8 @@ import {
 import { Bar } from "vue-chartjs";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 
+import { formatCurrency } from "../utils/formatUtils.js";
+
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
@@ -113,11 +115,7 @@ const defaultOptions = {
             label += ": ";
           }
           if (context.parsed.y !== null) {
-            label += new Intl.NumberFormat("th-TH", {
-              style: "currency",
-              currency: "THB",
-              maximumFractionDigits: 0,
-            }).format(context.parsed.y);
+            label += "฿" + formatCurrency(context.parsed.y);
           }
           return label;
         },

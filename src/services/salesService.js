@@ -26,6 +26,8 @@ import {
   subMonths,
 } from "date-fns";
 import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
+import { sanitizeCustomerId } from "../utils/formatUtils.js";
+import { measureExecution } from "../utils/perfTracker.js";
 
 /**
  * Get sales for a specific customer with optional date filtering and server-side pagination
@@ -37,39 +39,40 @@ import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
  * @returns {Promise<{items: Array, lastDoc: DocumentSnapshot|null}>}
  */
 export async function getSalesByCustomerName(customerName, options = {}) {
-  const { cutoffDate = null, limitCount = 10, lastDoc = null } = options;
-  try {
-    const salesRef = collection(db, "sales");
-    let q = query(
-      salesRef,
-      where("customerName", "==", customerName),
-      orderBy("dateTime", "desc")
-    );
+  return measureExecution(`salesService.getSalesByCustomerName(${customerName})`, async () => {
+    const { cutoffDate = null, limitCount = 10, lastDoc = null } = options;
+    try {
+      const salesRef = collection(db, "sales");
+      let q = query(
+        salesRef,
+        where("customerName", "==", customerName),
+        orderBy("dateTime", "desc")
+      );
 
-    if (cutoffDate) {
-      q = query(q, where("dateTime", ">=", cutoffDate));
+      if (cutoffDate) {
+        q = query(q, where("dateTime", ">=", cutoffDate));
+      }
+
+      if (lastDoc) {
+        q = query(q, startAfter(lastDoc));
+      }
+
+      q = query(q, limit(limitCount));
+
+      const snapshot = await getDocs(q);
+      const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      return { items, lastDoc: lastVisible };
+    } catch (error) {
+      console.error("Error in getSalesByCustomerName service:", error);
+      throw error;
     }
-
-    if (lastDoc) {
-      q = query(q, startAfter(lastDoc));
-    }
-
-    q = query(q, limit(limitCount));
-
-    const snapshot = await getDocs(q);
-    const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
-    const items = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return { items, lastDoc: lastVisible };
-  } catch (error) {
-    console.error("Error in getSalesByCustomerName service:", error);
-    throw error;
-  }
+  });
 }
-
 
 /**
  * Get all sales with optional filtering
@@ -79,159 +82,97 @@ export async function getSalesByCustomerName(customerName, options = {}) {
  * @param {Date} filter.endDate - End date for custom range
  * @param {number} filter.month - Month (0-11)
  * @param {number} filter.year - Year
- * @param {number} filter.limitCount - Limit number of records (default: 200)
+ * @param {number} filter.limitCount - Limit number of records
  * @returns {Promise<Array>} Array of sales documents
  */
 export async function getAllSales(filter = {}) {
-  const {
-    mode = "all",
-    startDate = null,
-    endDate = null,
-    month = null,
-    year = null,
-    limitCount = null,
-  } = filter;
+  const modeLabel = filter.mode || "all";
+  return measureExecution(`salesService.getAllSales(mode: '${modeLabel}')`, async () => {
+    const {
+      mode = "all",
+      startDate = null,
+      endDate = null,
+      month = null,
+      year = null,
+      limitCount = null,
+    } = filter;
 
-  try {
-    const salesRef = collection(db, "sales");
-    let q;
+    try {
+      const salesRef = collection(db, "sales");
+      const constraints = [];
+      const now = new Date();
+      let start = null;
+      let end = null;
 
-    if (mode === "all") {
-      // All Time
-      if (limitCount) {
-        q = query(salesRef, orderBy("dateTime", "desc"), limit(limitCount));
-      } else {
-        q = query(salesRef, orderBy("dateTime", "desc"));
+      switch (mode) {
+        case "today":
+          start = startOfDay(now);
+          end = endOfDay(now);
+          break;
+        case "thisWeek":
+          if (startDate && endDate) {
+            start = startDate;
+            end = endDate;
+          }
+          break;
+        case "thisMonth":
+          start = startOfMonth(now);
+          end = endOfMonth(now);
+          break;
+        case "lastMonth": {
+          const prevMonth = subMonths(now, 1);
+          start = startOfMonth(prevMonth);
+          end = endOfMonth(prevMonth);
+          break;
+        }
+        case "thisYear":
+          start = startOfYear(now);
+          end = endOfYear(now);
+          break;
+        case "month":
+        case "selectMonth":
+          if (month !== null && year !== null) {
+            const d = new Date(year, month);
+            start = startOfMonth(d);
+            end = endOfMonth(d);
+          }
+          break;
+        case "year":
+          if (year !== null) {
+            const d = new Date(year, 0);
+            start = startOfYear(d);
+            end = endOfYear(d);
+          }
+          break;
+        case "custom":
+          if (startDate && endDate) {
+            start = startOfDay(new Date(startDate));
+            end = endOfDay(new Date(endDate));
+          }
+          break;
       }
-    } else if (mode === "custom" && startDate && endDate) {
-      // Custom Range
-      const start = startOfDay(new Date(startDate));
-      const end = endOfDay(new Date(endDate));
 
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "month" && month !== null && year !== null) {
-      // Specific Month
-      const start = startOfMonth(new Date(year, month));
-      const end = endOfMonth(new Date(year, month));
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "year" && year !== null) {
-      // Specific Year
-      const start = startOfYear(new Date(year, 0));
-      const end = endOfYear(new Date(year, 0));
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "today") {
-      // Today
-      const start = startOfDay(new Date());
-      const end = endOfDay(new Date());
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "thisWeek" && startDate && endDate) {
-      // This Week (requires start and end dates from caller)
-      q = query(
-        salesRef,
-        where("dateTime", ">=", startDate),
-        where("dateTime", "<=", endDate),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "thisMonth") {
-      // This Month
-      const start = startOfMonth(new Date());
-      const end = endOfMonth(new Date());
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "lastMonth") {
-      // Last Month
-      const prevMonth = subMonths(new Date(), 1);
-      const start = startOfMonth(prevMonth);
-      const end = endOfMonth(prevMonth);
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "thisYear") {
-      // This Year
-      const start = startOfYear(new Date());
-      const end = endOfYear(new Date());
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else if (mode === "selectMonth" && month !== null && year !== null) {
-      // Select specific month (same as 'month' mode)
-      const start = startOfMonth(new Date(year, month));
-      const end = endOfMonth(new Date(year, month));
-
-      q = query(
-        salesRef,
-        where("dateTime", ">=", start),
-        where("dateTime", "<=", end),
-        orderBy("dateTime", "desc"),
-      );
-    } else {
-      // Fallback to all
-      if (limitCount) {
-        q = query(salesRef, orderBy("dateTime", "desc"), limit(limitCount));
-      } else {
-        q = query(salesRef, orderBy("dateTime", "desc"));
+      if (start && end) {
+        constraints.push(where("dateTime", ">=", start), where("dateTime", "<=", end));
       }
+
+      constraints.push(orderBy("dateTime", "desc"));
+
+      if (limitCount) {
+        constraints.push(limit(limitCount));
+      }
+
+      const q = query(salesRef, ...constraints);
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+      throw error;
     }
-
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-  } catch (error) {
-    console.error("Error fetching sales:", error);
-    throw error;
-  }
-}
-
-/**
- * Get sales by date range
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- * @returns {Promise<Array>} Array of sales documents
- */
-export async function getSalesByDateRange(startDate, endDate) {
-  return getAllSales({
-    mode: "custom",
-    startDate,
-    endDate,
   });
 }
 
@@ -250,7 +191,8 @@ export async function createSale(saleData) {
     const timestamp = toFirestoreTimestamp(saleData.dateTime || saleData.date);
 
     if (saleData.customerName) {
-      const customerRef = doc(db, "customers", saleData.customerName);
+      const cleanCustomerId = sanitizeCustomerId(saleData.customerName);
+      const customerRef = doc(db, "customers", cleanCustomerId);
       const cSnap = await getDoc(customerRef);
       if (cSnap.exists() && cSnap.data().isMerging) {
         throw new Error(`ไม่สามารถเพิ่มรายการขายได้ เนื่องจากลูกค้า "${saleData.customerName}" อยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
@@ -294,7 +236,8 @@ export async function updateSale(id, data) {
     }
 
     if (data.customerName) {
-      const customerRef = doc(db, "customers", data.customerName);
+      const cleanCustomerId = sanitizeCustomerId(data.customerName);
+      const customerRef = doc(db, "customers", cleanCustomerId);
       const cSnap = await getDoc(customerRef);
       if (cSnap.exists() && cSnap.data().isMerging) {
         throw new Error(`ไม่สามารถแก้ไขรายการขายได้ เนื่องจากลูกค้า "${data.customerName}" อยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
@@ -341,7 +284,8 @@ export async function upsertCustomer(customerData) {
     const { name, ...otherData } = customerData;
     if (!name) throw new Error("Customer name is required");
 
-    const customerRef = doc(db, "customers", name);
+    const cleanCustomerId = sanitizeCustomerId(name);
+    const customerRef = doc(db, "customers", cleanCustomerId);
     
     // Read customer first to check if they are merging
     const customerSnap = await getDoc(customerRef);
@@ -353,7 +297,7 @@ export async function upsertCustomer(customerData) {
     await setDoc(
       customerRef,
       {
-        name,
+        name: cleanCustomerId,
         ...otherData,
         lastUpdate: serverTimestamp(),
       },
@@ -385,8 +329,9 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
       const dateObj = new Date(item.date);
       const dateSuffix = format(dateObj, "yyyyMMdd");
 
-      // Sales operation
-      const salesDocId = `COD_${item.orderNo}_${dateSuffix}`;
+      // Sales operation (sanitize orderNo to prevent slashes breaking doc path)
+      const cleanOrderNo = String(item.orderNo || "").replace(/\//g, "-");
+      const salesDocId = `COD_${cleanOrderNo}_${dateSuffix}`;
       const salesData = {
         type: "COD",
         orderNo: item.orderNo,
@@ -406,7 +351,7 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
 
       // Customer operation
       if (item.customerName && item.customerName.trim().length > 0) {
-        const customerId = item.customerName; // Assume already sanitized by caller
+        const customerId = sanitizeCustomerId(item.customerName);
         const customerData = {
           name: customerId,
           lastUpdate: serverTimestamp(),
@@ -530,58 +475,48 @@ export async function getLatestImportTime() {
  * @returns {Promise<{salesCount: number}>} Number of sales updated
  */
 export async function mergeCustomers(sourceName, targetName) {
+  const { writeBatch, doc, getDoc, getDocs, collection, query, where } = await import("firebase/firestore");
+  
+  if (!sourceName || !targetName) {
+    throw new Error("ทั้งชื่อลูกค้าต้นทางและปลายทางมีความจำเป็น");
+  }
+  if (sourceName === targetName) {
+    throw new Error("ชื่อลูกค้าต้นทางและปลายทางไม่สามารถเป็นชื่อเดียวกันได้");
+  }
+
+  const cleanSourceId = sanitizeCustomerId(sourceName);
+  const cleanTargetId = sanitizeCustomerId(targetName);
+
+  const sourceRef = doc(db, "customers", cleanSourceId);
+  const targetRef = doc(db, "customers", cleanTargetId);
+
+  // 1. Lock both customers by setting isMerging: true using a batch
+  const lockBatch = writeBatch(db);
+  lockBatch.update(sourceRef, { isMerging: true });
+  lockBatch.update(targetRef, { isMerging: true });
+  await lockBatch.commit();
+
   try {
-    const { writeBatch, doc, getDoc, getDocs, collection, query, where } = await import("firebase/firestore");
-    
-    if (!sourceName || !targetName) {
-      throw new Error("ทั้งชื่อลูกค้าต้นทางและปลายทางมีความจำเป็น");
+    const [sourceSnap, targetSnap] = await Promise.all([
+      getDoc(sourceRef),
+      getDoc(targetRef),
+    ]);
+
+    if (!sourceSnap.exists()) {
+      throw new Error(`ไม่พบข้อมูลลูกค้าต้นทาง: ${sourceName}`);
     }
-    if (sourceName === targetName) {
-      throw new Error("ชื่อลูกค้าต้นทางและปลายทางไม่สามารถเป็นชื่อเดียวกันได้");
+    if (!targetSnap.exists()) {
+      throw new Error(`ไม่พบข้อมูลลูกค้าปลายทาง: ${targetName}`);
     }
 
-    const sourceRef = doc(db, "customers", sourceName);
-    const targetRef = doc(db, "customers", targetName);
+    const sourceData = sourceSnap.data();
+    const targetData = targetSnap.data();
 
-    // 1. Lock both customers by setting isMerging: true using a batch
-    const lockBatch = writeBatch(db);
-    lockBatch.update(sourceRef, { isMerging: true });
-    lockBatch.update(targetRef, { isMerging: true });
-    await lockBatch.commit();
-
-    let salesDocs = [];
-    let sourceData = {};
-    let targetData = {};
-
-    try {
-      const [sourceSnap, targetSnap] = await Promise.all([
-        getDoc(sourceRef),
-        getDoc(targetRef),
-      ]);
-
-      if (!sourceSnap.exists()) {
-        throw new Error(`ไม่พบข้อมูลลูกค้าต้นทาง: ${sourceName}`);
-      }
-      if (!targetSnap.exists()) {
-        throw new Error(`ไม่พบข้อมูลลูกค้าปลายทาง: ${targetName}`);
-      }
-
-      sourceData = sourceSnap.data();
-      targetData = targetSnap.data();
-
-      // Fetch all sales for source customer
-      const salesRef = collection(db, "sales");
-      const salesQuery = query(salesRef, where("customerName", "==", sourceName));
-      const salesSnap = await getDocs(salesQuery);
-      salesDocs = salesSnap.docs;
-    } catch (err) {
-      // If error occurs, attempt to unlock both and rethrow
-      const unlockBatch = writeBatch(db);
-      unlockBatch.update(sourceRef, { isMerging: false });
-      unlockBatch.update(targetRef, { isMerging: false });
-      await unlockBatch.commit().catch(() => {});
-      throw err;
-    }
+    // Fetch all sales for source customer
+    const salesRef = collection(db, "sales");
+    const salesQuery = query(salesRef, where("customerName", "==", sourceName));
+    const salesSnap = await getDocs(salesQuery);
+    const salesDocs = salesSnap.docs;
 
     // Prepare target customer merged data
     const updatedTargetData = {
@@ -634,6 +569,11 @@ export async function mergeCustomers(sourceName, targetName) {
     return { salesCount: salesDocs.length };
   } catch (error) {
     console.error("Error merging customers in service:", error);
+    // Guarantee unlock both customer documents on error
+    const unlockBatch = writeBatch(db);
+    unlockBatch.update(sourceRef, { isMerging: false }).catch(() => {});
+    unlockBatch.update(targetRef, { isMerging: false }).catch(() => {});
+    await unlockBatch.commit().catch(() => {});
     throw error;
   }
 }
