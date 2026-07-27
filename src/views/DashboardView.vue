@@ -176,27 +176,27 @@
             </div>
           </div>
 
-          <!-- Card 3: Total Orders (จำนวนออเดอร์) -->
+          <!-- Card 3: Expenses (รายจ่ายรวม) -->
           <div
-            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-rose-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  จำนวนออเดอร์ (Total Orders)
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-600">
+                  รายจ่ายรวม (Expenses)
                 </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
-                  {{ stats.totalOrders.toLocaleString() }}
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-rose-950">
+                  ฿{{ formatCurrency(expenseStore.totalExpenses) }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-slate-100 p-3 text-slate-600">
-                <ShoppingBag class="h-6 w-6" />
+              <div class="rounded-xl bg-rose-50 p-3 text-rose-600">
+                <Receipt class="h-6 w-6" />
               </div>
             </div>
             <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
-              <span>เฉลี่ยต่อออเดอร์</span>
-              <span class="font-bold text-gray-700">
-                ฿{{ formatCurrency(avgOrderValue) }}
+              <span>จำนวนรายการ</span>
+              <span class="font-bold text-rose-600">
+                {{ expenseStore.totalCount }} รายการ
               </span>
             </div>
           </div>
@@ -251,27 +251,27 @@
             </div>
           </div>
 
-          <!-- Card 6: Expenses (รายจ่ายรวม) -->
+          <!-- Card 6: Total Orders (จำนวนออเดอร์) -->
           <div
-            class="rounded-2xl border border-rose-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div class="flex items-start justify-between">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-rose-600">
-                  รายจ่ายรวม (Expenses)
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  จำนวนออเดอร์ (Total Orders)
                 </span>
-                <h3 class="mt-2 text-2xl md:text-3xl font-black text-rose-950">
-                  ฿{{ formatCurrency(expenseStore.totalExpenses) }}
+                <h3 class="mt-2 text-2xl md:text-3xl font-black text-gray-900">
+                  {{ stats.totalOrders.toLocaleString() }}
                 </h3>
               </div>
-              <div class="rounded-xl bg-rose-50 p-3 text-rose-600">
-                <Receipt class="h-6 w-6" />
+              <div class="rounded-xl bg-slate-100 p-3 text-slate-600">
+                <ShoppingBag class="h-6 w-6" />
               </div>
             </div>
             <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
-              <span>จำนวนรายการ</span>
-              <span class="font-bold text-rose-600">
-                {{ expenseStore.totalCount }} รายการ
+              <span>เฉลี่ยต่อออเดอร์</span>
+              <span class="font-bold text-gray-700">
+                ฿{{ formatCurrency(avgOrderValue) }}
               </span>
             </div>
           </div>
