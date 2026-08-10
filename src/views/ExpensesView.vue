@@ -220,37 +220,122 @@
       <!-- Expense List & Filters (Right 2 cols) -->
       <div class="lg:col-span-2 rounded-xl bg-white p-6 border border-gray-100 shadow-sm space-y-6">
         <!-- Filter Bar -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-100">
-          <!-- Time Filter Mode Buttons -->
-          <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-lg">
-            <button
-              v-for="m in filterModes"
-              :key="m.value"
-              @click="setFilterMode(m.value)"
-              class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
-              :class="expenseStore.filters.mode === m.value ? 'bg-white text-rose-600 shadow-sm font-semibold' : 'text-gray-600 hover:text-gray-900'"
-            >
-              {{ m.label }}
-            </button>
+        <div class="space-y-3 pb-4 border-b border-gray-100">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <!-- Time Filter Mode Buttons -->
+            <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-lg">
+              <button
+                v-for="m in filterModes"
+                :key="m.value"
+                @click="setFilterMode(m.value)"
+                class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer"
+                :class="expenseStore.filters.mode === m.value ? 'bg-white text-rose-600 shadow-sm font-semibold' : 'text-gray-600 hover:text-gray-900'"
+              >
+                {{ m.label }}
+              </button>
+            </div>
+
+            <!-- Category Filter Dropdown -->
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500 font-medium whitespace-nowrap">หมวดหมู่:</label>
+              <select
+                v-model="selectedCategoryFilter"
+                @change="onCategoryFilterChange"
+                class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium focus:border-rose-500 focus:outline-none bg-white cursor-pointer"
+              >
+                <option value="all">ทั้งหมด</option>
+                <option
+                  v-for="cat in expenseStore.categories"
+                  :key="cat.id"
+                  :value="cat.name"
+                >
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <!-- Category Filter Dropdown -->
-          <div class="flex items-center gap-2">
-            <label class="text-xs text-gray-500 font-medium">หมวดหมู่:</label>
-            <select
-              v-model="selectedCategoryFilter"
-              @change="onCategoryFilterChange"
-              class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium focus:border-rose-500 focus:outline-none"
-            >
-              <option value="all">ทั้งหมด</option>
-              <option
-                v-for="cat in expenseStore.categories"
-                :key="cat.id"
-                :value="cat.name"
+          <!-- Extended Filter Inputs: Month/Year Selector -->
+          <div
+            v-if="expenseStore.filters.mode === 'selectMonth'"
+            class="flex flex-col sm:flex-row items-center gap-3 bg-rose-50/50 p-3 rounded-lg border border-rose-100"
+          >
+            <span class="text-xs font-semibold text-rose-700 flex items-center gap-1.5">
+              <component :is="Calendar" class="h-4 w-4 text-rose-500" />
+              เลือกเดือนและปีที่ต้องการดู:
+            </span>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                v-model="selectedMonth"
+                @change="onSelectMonthChange"
+                class="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 focus:border-rose-500 focus:outline-none cursor-pointer flex-1"
               >
-                {{ cat.name }}
-              </option>
-            </select>
+                <option v-for="(name, index) in monthNames" :key="index" :value="index">
+                  {{ name }}
+                </option>
+              </select>
+              <select
+                v-model="selectedYear"
+                @change="onSelectMonthChange"
+                class="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 focus:border-rose-500 focus:outline-none cursor-pointer flex-1"
+              >
+                <option v-for="yr in yearRange" :key="yr" :value="yr">
+                  พ.ศ. {{ yr + 543 }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Extended Filter Inputs: Custom Date Range Pickers -->
+          <div
+            v-if="expenseStore.filters.mode === 'custom'"
+            class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-rose-50/50 p-3 rounded-lg border border-rose-100"
+          >
+            <span class="text-xs font-semibold text-rose-700 flex items-center gap-1.5 shrink-0">
+              <component :is="CalendarRange" class="h-4 w-4 text-rose-500" />
+              กำหนดช่วงวันที่แสดง:
+            </span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">วันที่เริ่มต้น</label>
+                <ThaiDatePicker v-model="customStartDate" @change="onCustomDateChange" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium text-gray-500 mb-1">วันที่สิ้นสุด</label>
+                <ThaiDatePicker v-model="customEndDate" @change="onCustomDateChange" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Range Indicator & View Mode Switcher -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+          <div class="flex items-center gap-2 text-xs font-semibold text-gray-700">
+            <component :is="Calendar" class="h-4 w-4 text-rose-500 shrink-0" />
+            <span>แสดงข้อมูล:</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
+              {{ formattedDateRangeLabel }}
+            </span>
+          </div>
+
+          <!-- View Mode Tabs -->
+          <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-200 self-start sm:self-auto">
+            <button
+              @click="viewMode = 'list'"
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer"
+              :class="viewMode === 'list' ? 'bg-rose-600 text-white shadow-xs font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'"
+            >
+              <component :is="List" class="h-3.5 w-3.5" />
+              รายการทั้งหมด
+            </button>
+            <button
+              @click="viewMode = 'daily'"
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer"
+              :class="viewMode === 'daily' ? 'bg-rose-600 text-white shadow-xs font-semibold' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'"
+            >
+              <component :is="CalendarDays" class="h-3.5 w-3.5" />
+              สรุปจำแนกตามวัน
+            </button>
           </div>
         </div>
 
@@ -277,8 +362,8 @@
           <p class="text-sm font-medium">ไม่พบรายการรายจ่ายตามเงื่อนไขที่เลือก</p>
         </div>
 
-        <!-- Expenses Table -->
-        <div v-else class="overflow-x-auto">
+        <!-- View 1: List View (Expenses Table) -->
+        <div v-else-if="viewMode === 'list'" class="overflow-x-auto">
           <table class="w-full text-left text-sm text-gray-600">
             <thead class="bg-gray-50 text-xs font-semibold uppercase text-gray-500 border-b">
               <tr>
@@ -338,6 +423,86 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- View 2: Daily Breakdown View -->
+        <div v-else-if="viewMode === 'daily'" class="space-y-4">
+          <div
+            v-for="group in sortedDailySummary"
+            :key="group.dateKey"
+            class="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-2xs transition-all hover:border-rose-200"
+          >
+            <!-- Daily Group Header -->
+            <div class="flex items-center justify-between bg-gray-50 px-4 py-3 border-b border-gray-100">
+              <div class="flex items-center gap-2">
+                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                  <component :is="Calendar" class="h-4 w-4" />
+                </span>
+                <div>
+                  <h4 class="text-sm font-bold text-gray-800">
+                    {{ formatThaiDateDisplay(group.date) }}
+                  </h4>
+                  <p class="text-[11px] text-gray-500">
+                    รวม {{ group.count }} รายการ
+                  </p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs text-gray-400 font-medium block">ยอดรวมประจำวัน</span>
+                <span class="text-base font-black text-rose-600">
+                  ฿{{ formatCurrency(group.totalAmount) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Daily Items List -->
+            <div class="divide-y divide-gray-100">
+              <div
+                v-for="item in group.expenses"
+                :key="item.id"
+                class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-rose-50/30 transition-colors"
+              >
+                <div class="flex items-start gap-3">
+                  <span
+                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border shrink-0 mt-0.5"
+                    :class="[
+                      getCategoryColor(item.category).bg,
+                      getCategoryColor(item.category).text,
+                      getCategoryColor(item.category).border
+                    ]"
+                  >
+                    {{ item.category }}
+                  </span>
+                  <div>
+                    <div class="text-sm font-semibold text-gray-900">{{ item.title }}</div>
+                    <div v-if="item.note" class="text-xs text-gray-500 mt-0.5">{{ item.note }}</div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between sm:justify-end gap-4">
+                  <span class="text-sm font-bold text-gray-900">
+                    ฿{{ formatCurrency(item.amount) }}
+                  </span>
+                  <div class="flex items-center space-x-1">
+                    <button
+                      @click="startEdit(item)"
+                      class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors"
+                      title="แก้ไข"
+                    >
+                      <component :is="Edit3" class="h-4 w-4" />
+                    </button>
+                    <button
+                      @click="confirmDelete(item)"
+                      class="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors"
+                      title="ลบ"
+                    >
+                      <component :is="Trash2" class="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -463,6 +628,9 @@ import {
   ChevronUp,
   ChevronDown,
   Calendar,
+  List,
+  CalendarDays,
+  CalendarRange,
 } from "lucide-vue-next";
 import ThaiDatePicker from "../components/ThaiDatePicker.vue";
 
@@ -485,6 +653,41 @@ const submitting = ref(false);
 const searchQuery = ref("");
 const selectedCategoryFilter = ref("all");
 
+// View mode state: 'list' or 'daily'
+const viewMode = ref("list");
+
+// Month/Year Selector states
+const monthNames = [
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
+];
+
+const selectedMonth = ref(new Date().getMonth());
+const selectedYear = ref(new Date().getFullYear());
+
+// Custom Date Range states
+const customStartDate = ref(todayStr);
+const customEndDate = ref(todayStr);
+
+const yearRange = computed(() => {
+  const cy = new Date().getFullYear();
+  const list = [];
+  for (let y = cy - 5; y <= cy + 1; y++) {
+    list.push(y);
+  }
+  return list;
+});
+
 // Category Modal states
 const showCategoryModal = ref(false);
 const newCategoryName = ref("");
@@ -492,9 +695,12 @@ const addingCategory = ref(false);
 
 const filterModes = [
   { value: "thisMonth", label: "เดือนนี้" },
+  { value: "lastMonth", label: "เดือนก่อน" },
+  { value: "selectMonth", label: "เลือกเดือน" },
   { value: "today", label: "วันนี้" },
   { value: "thisWeek", label: "สัปดาห์นี้" },
   { value: "thisYear", label: "ปีนี้" },
+  { value: "custom", label: "กำหนดเอง" },
   { value: "all", label: "ทั้งหมด" },
 ];
 
@@ -728,8 +934,110 @@ const confirmDelete = async (item) => {
   }
 };
 
+const formattedDateRangeLabel = computed(() => {
+  const mode = expenseStore.filters.mode;
+  const now = new Date();
+
+  if (mode === "thisMonth") {
+    return `เดือนนี้ (${monthNames[now.getMonth()]} ${now.getFullYear() + 543})`;
+  }
+  if (mode === "lastMonth") {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `เดือนก่อน (${monthNames[prev.getMonth()]} ${prev.getFullYear() + 543})`;
+  }
+  if (mode === "selectMonth") {
+    return `${monthNames[selectedMonth.value]} พ.ศ. ${selectedYear.value + 543}`;
+  }
+  if (mode === "today") {
+    return `วันนี้ (${formatThaiShortDate(now)})`;
+  }
+  if (mode === "thisWeek") {
+    return "สัปดาห์นี้";
+  }
+  if (mode === "thisYear") {
+    return `ปีนี้ (พ.ศ. ${now.getFullYear() + 543})`;
+  }
+  if (mode === "custom") {
+    const startText = customStartDate.value ? formatThaiShortDate(new Date(customStartDate.value)) : "-";
+    const endText = customEndDate.value ? formatThaiShortDate(new Date(customEndDate.value)) : "-";
+    return `${startText} ถึง ${endText}`;
+  }
+  return "รายการทั้งหมด";
+});
+
+const sortedDailySummary = computed(() => {
+  const summaryObj = expenseStore.summaryByDate;
+  if (!summaryObj) return [];
+
+  const keys = Object.keys(summaryObj).sort((a, b) => b.localeCompare(a));
+
+  return keys
+    .map((key) => {
+      let dayExpenses = summaryObj[key].expenses;
+
+      if (searchQuery.value.trim()) {
+        const q = searchQuery.value.trim().toLowerCase();
+        dayExpenses = dayExpenses.filter(
+          (item) =>
+            (item.title && item.title.toLowerCase().includes(q)) ||
+            (item.note && item.note.toLowerCase().includes(q)) ||
+            (item.category && item.category.toLowerCase().includes(q))
+        );
+      }
+
+      if (selectedCategoryFilter.value && selectedCategoryFilter.value !== "all") {
+        dayExpenses = dayExpenses.filter((item) => item.category === selectedCategoryFilter.value);
+      }
+
+      const totalAmount = dayExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+      return {
+        dateKey: key,
+        date: summaryObj[key].date,
+        expenses: dayExpenses,
+        totalAmount,
+        count: dayExpenses.length,
+      };
+    })
+    .filter((group) => group.count > 0);
+});
+
 const setFilterMode = async (mode) => {
-  await expenseStore.setFilter({ mode });
+  if (mode === "selectMonth") {
+    await expenseStore.setFilter({
+      mode,
+      month: selectedMonth.value,
+      year: selectedYear.value,
+    });
+  } else if (mode === "custom") {
+    await expenseStore.setFilter({
+      mode,
+      startDate: customStartDate.value,
+      endDate: customEndDate.value,
+    });
+  } else {
+    await expenseStore.setFilter({ mode });
+  }
+};
+
+const onSelectMonthChange = async () => {
+  if (expenseStore.filters.mode === "selectMonth") {
+    await expenseStore.setFilter({
+      mode: "selectMonth",
+      month: selectedMonth.value,
+      year: selectedYear.value,
+    });
+  }
+};
+
+const onCustomDateChange = async () => {
+  if (expenseStore.filters.mode === "custom") {
+    await expenseStore.setFilter({
+      mode: "custom",
+      startDate: customStartDate.value,
+      endDate: customEndDate.value,
+    });
+  }
 };
 
 const onCategoryFilterChange = async () => {
