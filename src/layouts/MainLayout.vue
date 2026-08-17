@@ -73,6 +73,15 @@
         </router-link>
 
         <router-link
+          to="/tax"
+          class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
+          active-class="bg-blue-600 text-white shadow-md"
+        >
+          <component :is="Calculator" class="mr-3 h-5 w-5" />
+          วางแผนภาษี
+        </router-link>
+
+        <router-link
           to="/customers"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
@@ -205,6 +214,15 @@
       </router-link>
 
       <router-link
+        to="/tax"
+        class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
+        active-class="text-blue-600 font-semibold"
+      >
+        <component :is="Calculator" class="h-6 w-6 mb-0.5" />
+        <span class="text-[10px]">ภาษี</span>
+      </router-link>
+
+      <router-link
         to="/customers"
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
@@ -240,6 +258,7 @@ import {
   User,
   Receipt,
   TrendingUp,
+  Calculator,
 } from "lucide-vue-next";
 
 const router = useRouter();

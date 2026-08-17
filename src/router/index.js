@@ -54,6 +54,11 @@ const routes = [
         name: "CompareSales",
         component: () => import("../views/CompareSalesView.vue"),
       },
+      {
+        path: "tax",
+        name: "Tax",
+        component: () => import("../views/TaxView.vue"),
+      },
     ],
   },
   {
