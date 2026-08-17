@@ -7,10 +7,13 @@ const packageJson = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
 );
 
+const buildTime = new Date().toISOString();
+
 export default defineConfig({
   plugins: [vue()],
   base: "/manowzab-sales/", // สำหรับ GitHub Pages
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
+    __BUILD_TIME__: JSON.stringify(buildTime),
   },
 });

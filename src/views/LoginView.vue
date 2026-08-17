@@ -74,8 +74,11 @@
       </form>
 
       <!-- Version Display -->
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-400">Version {{ appVersion }}</p>
+      <div class="mt-6 text-center space-y-0.5">
+        <p class="text-xs text-gray-500 font-semibold">Version {{ appVersion }}</p>
+        <p v-if="buildTimeFormatted" class="text-[11px] text-gray-400">
+          อัปเดตล่าสุด: {{ buildTimeFormatted }}
+        </p>
       </div>
     </div>
   </div>
@@ -86,6 +89,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
+import { formatThaiDateTime } from "../utils/dateUtils.js";
 import Swal from "sweetalert2";
 
 const router = useRouter();
@@ -93,9 +97,17 @@ const email = ref("");
 const password = ref("");
 const loading = ref(false);
 
-// Access global version constant
+// Access global version and build time constants
 const appVersion = computed(() => {
   return typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+});
+
+const buildTimeFormatted = computed(() => {
+  if (typeof __BUILD_TIME__ !== "undefined" && __BUILD_TIME__) {
+    const d = new Date(__BUILD_TIME__);
+    return !isNaN(d.getTime()) ? formatThaiDateTime(d) : "";
+  }
+  return "";
 });
 
 const handleLogin = async () => {

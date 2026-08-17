@@ -91,9 +91,12 @@
         </router-link>
       </nav>
 
-      <!-- Version Display (Desktop) -->
-      <div class="px-4 py-2 text-center">
-        <p class="text-xs text-slate-500">Version {{ appVersion }}</p>
+      <!-- Version & Last Updated Display (Desktop) -->
+      <div class="px-4 py-2 text-center space-y-0.5">
+        <p class="text-xs text-slate-400 font-semibold">Version {{ appVersion }}</p>
+        <p v-if="buildTimeFormatted" class="text-[10px] text-slate-500">
+          อัปเดตเมื่อ: {{ buildTimeFormatted }}
+        </p>
       </div>
 
       <!-- Logout (Desktop) -->
@@ -118,11 +121,16 @@
       >
         <div class="flex items-center">
           <!-- Mobile Logo (Visible only on small screens) -->
-          <span
-            class="md:hidden text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mr-2"
-          >
-            ManowZab
-          </span>
+          <div class="md:hidden flex flex-col">
+            <span
+              class="text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight"
+            >
+              ManowZab
+            </span>
+            <span v-if="buildTimeFormatted" class="text-[9px] text-gray-400 font-medium">
+              v{{ appVersion }} • {{ buildTimeFormatted }}
+            </span>
+          </div>
           <!-- Desktop Title (Visible only on large screens) -->
           <h2 class="hidden text-xl font-bold text-gray-800 md:block">
             ยอดขายร้านมะนาวแซ่บ 🍋🌶️
@@ -131,9 +139,14 @@
 
         <!-- Right Side: Date / Profile / Logout (Mobile) -->
         <div class="flex items-center gap-3">
-          <span class="hidden text-sm font-semibold text-gray-600 md:block">
-            📅 {{ todayThaiDate }}
-          </span>
+          <div class="hidden md:flex flex-col items-end">
+            <span class="text-sm font-semibold text-gray-700">
+              📅 {{ todayThaiDate }}
+            </span>
+            <span v-if="buildTimeFormatted" class="text-[10px] text-gray-400">
+              อัปเดตล่าสุด: {{ buildTimeFormatted }}
+            </span>
+          </div>
           <button
             @click="handleLogout"
             class="md:hidden rounded-full p-2 text-gray-500 hover:bg-gray-100"
@@ -248,7 +261,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useSalesStore } from "../stores/salesStore.js";
 import { useCustomerStore } from "../stores/customerStore.js";
-import { formatThaiDate } from "../utils/dateUtils.js";
+import { formatThaiDate, formatThaiDateTime } from "../utils/dateUtils.js";
 import {
   LayoutDashboard,
   CreditCard,
@@ -267,9 +280,17 @@ const customerStore = useCustomerStore();
 
 const todayThaiDate = computed(() => formatThaiDate(new Date()));
 
-// Access global version constant
+// Access global version and build time constants
 const appVersion = computed(() => {
   return typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+});
+
+const buildTimeFormatted = computed(() => {
+  if (typeof __BUILD_TIME__ !== "undefined" && __BUILD_TIME__) {
+    const d = new Date(__BUILD_TIME__);
+    return !isNaN(d.getTime()) ? formatThaiDateTime(d) : "";
+  }
+  return "";
 });
 
 const handleLogout = async () => {
