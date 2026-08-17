@@ -138,6 +138,7 @@ export async function getAllSales(filter = {}) {
           }
           break;
         case "year":
+        case "selectYear":
           if (year !== null) {
             const d = new Date(year, 0);
             start = startOfYear(d);

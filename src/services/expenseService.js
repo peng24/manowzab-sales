@@ -285,11 +285,20 @@ export async function getAllExpenses(filter = {}) {
           start = startOfYear(now);
           end = endOfYear(now);
           break;
+        case "month":
         case "selectMonth":
           if (month !== null && year !== null) {
             const targetDate = new Date(year, month, 1);
             start = startOfMonth(targetDate);
             end = endOfMonth(targetDate);
+          }
+          break;
+        case "year":
+        case "selectYear":
+          if (year !== null) {
+            const targetDate = new Date(year, 0, 1);
+            start = startOfYear(targetDate);
+            end = endOfYear(targetDate);
           }
           break;
         case "custom":

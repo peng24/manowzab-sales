@@ -3,87 +3,169 @@
     <div class="container mx-auto max-w-7xl py-0">
       <!-- Header & Filter Card -->
       <div
-        class="mb-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 md:p-4 shadow-sm"
+        class="mb-3.5 rounded-2xl border border-gray-100 bg-white p-3.5 md:p-4 shadow-sm"
       >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 shrink-0"
-          >
-            <Calendar class="h-5 w-5" />
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 shrink-0"
+            >
+              <Calendar class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                ภาพรวมยอดขาย
+              </p>
+              <h1 class="text-lg md:text-xl font-black text-gray-900 leading-tight">
+                {{ timeRangeLabel }}
+              </h1>
+            </div>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-              ภาพรวมยอดขาย
-            </p>
-            <h1 class="text-lg md:text-xl font-black text-gray-900 leading-tight">
-              {{ timeRangeLabel }}
-            </h1>
+
+          <!-- Filter Navigation Toolbar -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Quick Presets -->
+            <div class="flex flex-wrap items-center rounded-xl bg-gray-100/80 p-1 text-xs font-medium gap-0.5">
+              <button
+                v-for="range in [
+                  { key: 'today', label: 'วันนี้' },
+                  { key: 'thisWeek', label: 'สัปดาห์นี้' },
+                  { key: 'thisMonth', label: 'เดือนนี้' },
+                  { key: 'lastMonth', label: 'เดือนก่อน' },
+                  { key: 'thisYear', label: 'ปีนี้' },
+                  { key: 'allTime', label: 'ทั้งหมด' }
+                ]"
+                :key="range.key"
+                @click="selectedTimeRange = range.key"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer text-xs"
+                :class="
+                  selectedTimeRange === range.key
+                    ? 'bg-white font-bold text-blue-600 shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                "
+              >
+                {{ range.label }}
+              </button>
+
+              <!-- Detailed Filters Switcher Pills -->
+              <div class="h-4 w-[1px] bg-gray-300 mx-1 hidden sm:block"></div>
+
+              <button
+                @click="selectedTimeRange = 'selectMonth'"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                :class="
+                  selectedTimeRange === 'selectMonth'
+                    ? 'bg-blue-600 font-bold text-white shadow-xs'
+                    : 'text-blue-700 hover:bg-blue-50'
+                "
+              >
+                <span>📅 เลือกเดือน</span>
+              </button>
+
+              <button
+                @click="selectedTimeRange = 'selectYear'"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                :class="
+                  selectedTimeRange === 'selectYear'
+                    ? 'bg-blue-600 font-bold text-white shadow-xs'
+                    : 'text-blue-700 hover:bg-blue-50'
+                "
+              >
+                <span>📆 เลือกปี</span>
+              </button>
+
+              <button
+                @click="selectedTimeRange = 'custom'"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                :class="
+                  selectedTimeRange === 'custom'
+                    ? 'bg-blue-600 font-bold text-white shadow-xs'
+                    : 'text-blue-700 hover:bg-blue-50'
+                "
+              >
+                <span>🗓️ กำหนดช่วงวัน</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Filter Presets & Dropdown -->
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Quick Presets -->
-          <div class="flex rounded-xl bg-gray-100 p-1 text-xs font-medium">
-            <button
-              v-for="range in [
-                { key: 'today', label: 'วันนี้' },
-                { key: 'thisWeek', label: 'สัปดาห์นี้' },
-                { key: 'thisMonth', label: 'เดือนนี้' },
-                { key: 'lastMonth', label: 'เดือนก่อน' },
-                { key: 'thisYear', label: 'ปีนี้' },
-                { key: 'allTime', label: 'ทั้งหมด' }
-              ]"
-              :key="range.key"
-              @click="selectedTimeRange = range.key"
-              class="rounded-lg px-2.5 py-1 transition-all duration-150 cursor-pointer"
-              :class="
-                selectedTimeRange === range.key
-                  ? 'bg-white font-bold text-blue-600 shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900'
-              "
+        <!-- Sub-Bar for Detailed Selection Controls -->
+        <div
+          v-if="['selectMonth', 'selectYear', 'custom'].includes(selectedTimeRange)"
+          class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-3 bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/70"
+        >
+          <!-- 1. Select Month Mode Controls -->
+          <div v-if="selectedTimeRange === 'selectMonth'" class="flex items-center flex-wrap gap-2 text-xs font-semibold text-gray-700">
+            <span class="text-blue-700 font-bold flex items-center gap-1">
+              <span>📅</span> เลือกเดือนเฉพาะ:
+            </span>
+            <select
+              v-model="selectedMonth"
+              class="rounded-lg border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
-              {{ range.label }}
-            </button>
+              <option
+                v-for="(name, index) in monthNames"
+                :key="index"
+                :value="index"
+              >
+                {{ name }}
+              </option>
+            </select>
+            <select
+              v-model="selectedYear"
+              class="rounded-lg border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+            >
+              <option v-for="year in yearRange" :key="year" :value="year">
+                พ.ศ. {{ year + 543 }}
+              </option>
+            </select>
           </div>
 
-          <!-- Select Month Dropdown -->
-          <div class="flex items-center gap-1.5 border-l border-gray-200 pl-2">
+          <!-- 2. Select Year Mode Controls -->
+          <div v-else-if="selectedTimeRange === 'selectYear'" class="flex items-center flex-wrap gap-2 text-xs font-semibold text-gray-700">
+            <span class="text-blue-700 font-bold flex items-center gap-1">
+              <span>📆</span> เลือกปีเฉพาะ:
+            </span>
             <select
-              v-model="selectedTimeRange"
-              class="rounded-lg border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700 focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+              v-model="selectedYear"
+              class="rounded-lg border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="selectMonth">📅 เลือกเดือนเฉพาะ...</option>
-              <option value="today">วันนี้ (Today)</option>
-              <option value="thisWeek">สัปดาห์นี้ (This Week)</option>
-              <option value="thisMonth">เดือนนี้ (This Month)</option>
-              <option value="lastMonth">เดือนก่อน (Last Month)</option>
-              <option value="thisYear">ปีนี้ (This Year)</option>
-              <option value="allTime">ทั้งหมด (All Time)</option>
+              <option v-for="year in yearRange" :key="year" :value="year">
+                พ.ศ. {{ year + 543 }}
+              </option>
             </select>
+          </div>
 
-            <template v-if="selectedTimeRange === 'selectMonth'">
-              <select
-                v-model="selectedMonth"
-                class="rounded-lg border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700"
-              >
-                <option
-                  v-for="(name, index) in monthNames"
-                  :key="index"
-                  :value="index"
-                >
-                  {{ name }}
-                </option>
-              </select>
-              <select
-                v-model="selectedYear"
-                class="rounded-lg border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700"
-              >
-                <option v-for="year in yearRange" :key="year" :value="year">
-                  พ.ศ. {{ year + 543 }}
-                </option>
-              </select>
-            </template>
+          <!-- 3. Custom Date Range Mode Controls -->
+          <div v-else-if="selectedTimeRange === 'custom'" class="flex items-center flex-wrap gap-2 md:gap-3 text-xs font-medium text-gray-700 w-full sm:w-auto">
+            <span class="text-blue-700 font-bold flex items-center gap-1 shrink-0">
+              <span>🗓️</span> กำหนดช่วงวัน:
+            </span>
+
+            <div class="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <span class="text-gray-500">ตั้งแต่วันที่</span>
+              <input
+                type="date"
+                v-model="customStartDate"
+                class="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <span class="text-gray-500">ถึงวันที่</span>
+              <input
+                type="date"
+                v-model="customEndDate"
+                class="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            <button
+              @click="fetchData"
+              class="rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-700 shadow-xs transition-colors cursor-pointer"
+            >
+              ค้นหา
+            </button>
           </div>
         </div>
       </div>
@@ -399,9 +481,10 @@ import {
   eachDayOfInterval,
   eachMonthOfInterval,
   subMonths,
+  differenceInDays,
 } from "date-fns";
 import { th } from "date-fns/locale";
-import { formatThaiDateTime, toDate } from "../utils/dateUtils.js";
+import { formatThaiDateTime, formatThaiShortDate, toDate } from "../utils/dateUtils.js";
 import { formatCurrency } from "../utils/formatUtils.js";
 
 // Store
@@ -424,6 +507,8 @@ const currentDate = new Date();
 const selectedTimeRange = ref("thisMonth"); // Default: This Month
 const selectedMonth = ref(currentDate.getMonth());
 const selectedYear = ref(currentDate.getFullYear());
+const customStartDate = ref(format(startOfMonth(currentDate), "yyyy-MM-dd"));
+const customEndDate = ref(format(endOfMonth(currentDate), "yyyy-MM-dd"));
 
 const chartData = ref({});
 
@@ -515,29 +600,43 @@ const lastUpdatedText = computed(() => {
 
 const timeRangeLabel = computed(() => {
   const prevMonthDate = subMonths(currentDate, 1);
-  const labels = {
-    today: "ประจำวันนี้",
-    thisWeek: "ประจำสัปดาห์นี้",
-    thisMonth: `ประจำเดือน${monthNames[currentDate.getMonth()]} พ.ศ. ${currentDate.getFullYear() + 543}`,
-    lastMonth: `ประจำเดือน${monthNames[prevMonthDate.getMonth()]} พ.ศ. ${prevMonthDate.getFullYear() + 543}`,
-    thisYear: `ประจำปี พ.ศ. ${currentDate.getFullYear() + 543}`,
-    allTime: "ตั้งแต่เริ่มต้น",
-    selectMonth: `ประจำเดือน${monthNames[selectedMonth.value]} พ.ศ. ${selectedYear.value + 543}`,
-  };
-  return labels[selectedTimeRange.value] || "";
+  if (selectedTimeRange.value === "today") return "ประจำวันนี้";
+  if (selectedTimeRange.value === "thisWeek") return "ประจำสัปดาห์นี้";
+  if (selectedTimeRange.value === "thisMonth")
+    return `ประจำเดือน${monthNames[currentDate.getMonth()]} พ.ศ. ${currentDate.getFullYear() + 543}`;
+  if (selectedTimeRange.value === "lastMonth")
+    return `ประจำเดือน${monthNames[prevMonthDate.getMonth()]} พ.ศ. ${prevMonthDate.getFullYear() + 543}`;
+  if (selectedTimeRange.value === "thisYear")
+    return `ประจำปี พ.ศ. ${currentDate.getFullYear() + 543}`;
+  if (selectedTimeRange.value === "selectMonth")
+    return `ประจำเดือน${monthNames[selectedMonth.value]} พ.ศ. ${selectedYear.value + 543}`;
+  if (selectedTimeRange.value === "selectYear")
+    return `ประจำปี พ.ศ. ${selectedYear.value + 543}`;
+  if (selectedTimeRange.value === "custom") {
+    if (!customStartDate.value || !customEndDate.value) return "กำหนดช่วงวันเอง";
+    const sDate = formatThaiShortDate(customStartDate.value);
+    const eDate = formatThaiShortDate(customEndDate.value);
+    return `ช่วงวันที่ ${sDate} - ${eDate}`;
+  }
+  if (selectedTimeRange.value === "allTime") return "ตั้งแต่เริ่มต้น";
+  return "";
 });
 
 const chartTitle = computed(() => {
-  const titles = {
-    today: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
-    thisWeek: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
-    thisMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
-    lastMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
-    selectMonth: "เปรียบเทียบยอดขายและรายจ่ายรายวัน",
-    thisYear: "เปรียบเทียบยอดขายและรายจ่ายรายเดือน",
-    allTime: "เปรียบเทียบยอดขายและรายจ่ายรายเดือน",
-  };
-  return titles[selectedTimeRange.value] || "ยอดขายและรายจ่าย";
+  if (
+    selectedTimeRange.value === "thisYear" ||
+    selectedTimeRange.value === "selectYear" ||
+    selectedTimeRange.value === "allTime"
+  ) {
+    return "เปรียบเทียบยอดขายและรายจ่ายรายเดือน";
+  }
+  if (selectedTimeRange.value === "custom") {
+    const { start, end } = getDateRange();
+    if (start && end && differenceInDays(end, start) > 60) {
+      return "เปรียบเทียบยอดขายและรายจ่ายรายเดือน";
+    }
+  }
+  return "เปรียบเทียบยอดขายและรายจ่ายรายวัน";
 });
 
 // --- Logic ---
@@ -574,10 +673,23 @@ const getDateRange = () => {
         start: startOfMonth(targetDate),
         end: endOfMonth(targetDate),
       };
+    case "selectYear":
+      const targetYearDate = new Date(selectedYear.value, 0);
+      return {
+        start: startOfYear(targetYearDate),
+        end: endOfYear(targetYearDate),
+      };
     case "thisYear":
       return {
         start: startOfYear(now),
         end: endOfYear(now),
+      };
+    case "custom":
+      const startObj = customStartDate.value ? new Date(customStartDate.value) : now;
+      const endObj = customEndDate.value ? new Date(customEndDate.value) : now;
+      return {
+        start: startOfDay(startObj),
+        end: endOfDay(endObj),
       };
     case "allTime":
       return {
@@ -596,7 +708,7 @@ const fetchData = async () => {
   try {
     const { start, end } = getDateRange();
 
-    // Prepare filter for salesStore
+    // Prepare filter for salesStore & expenseStore
     let filter = {};
 
     switch (selectedTimeRange.value) {
@@ -617,6 +729,19 @@ const fetchData = async () => {
           mode: "selectMonth",
           month: selectedMonth.value,
           year: selectedYear.value,
+        };
+        break;
+      case "selectYear":
+        filter = {
+          mode: "selectYear",
+          year: selectedYear.value,
+        };
+        break;
+      case "custom":
+        filter = {
+          mode: "custom",
+          startDate: start,
+          endDate: end,
         };
         break;
       case "thisYear":
@@ -660,11 +785,19 @@ const fetchData = async () => {
 const prepareChartData = (transactions, start, end) => {
   const range = selectedTimeRange.value;
 
-  if (range === "thisYear" || range === "allTime") {
+  let isMonthlyView =
+    range === "thisYear" || range === "selectYear" || range === "allTime";
+  if (range === "custom" && start && end) {
+    if (differenceInDays(end, start) > 60) {
+      isMonthlyView = true;
+    }
+  }
+
+  if (isMonthlyView) {
     // Group by Month
     prepareMonthlyChart(transactions, start, end);
   } else {
-    // Group by Day (today, thisWeek, thisMonth, selectMonth)
+    // Group by Day (today, thisWeek, thisMonth, selectMonth, custom <= 60 days)
     prepareDailyChart(transactions, start, end);
   }
 };
@@ -699,7 +832,7 @@ const prepareMonthlyChart = (transactions, start, end) => {
       });
     }
   } else {
-    // This year
+    // This year / Select Year / Custom > 60 days
     monthsRange = eachMonthOfInterval({ start, end });
   }
 
@@ -830,7 +963,7 @@ const prepareDailyChart = (transactions, start, end) => {
       return dayNamesShort[dayIndex];
     });
   } else {
-    // This Month / Select Month - show day numbers (1, 2, 3...)
+    // This Month / Select Month / Custom <= 60 days - show day numbers (1, 2, 3...)
     labels = daysRange.map((day) => day.getDate().toString());
   }
 
@@ -878,12 +1011,14 @@ const prepareDailyChart = (transactions, start, end) => {
 };
 
 // Watchers
-watch(selectedTimeRange, () => {
-  fetchData();
+watch(selectedTimeRange, (newVal) => {
+  if (newVal !== "custom") {
+    fetchData();
+  }
 });
 
 watch([selectedMonth, selectedYear], () => {
-  if (selectedTimeRange.value === "selectMonth") {
+  if (selectedTimeRange.value === "selectMonth" || selectedTimeRange.value === "selectYear") {
     fetchData();
   }
 });
