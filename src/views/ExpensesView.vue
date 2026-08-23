@@ -443,35 +443,33 @@
                       getCategoryColor(item.category).border
                     ]"
                   >
-                    <component :is="Sparkles" v-if="item.isAuto" class="mr-1 h-3 w-3 text-rose-500" />
                     {{ item.category }}
                   </span>
                 </td>
                 <td class="px-4 py-3">
-                  <div class="font-medium text-gray-900 flex items-center gap-1.5 flex-wrap">
+                  <div class="font-medium text-gray-900 flex items-center gap-2">
                     <span>{{ item.title }}</span>
                     <span
                       v-if="item.isAuto"
-                      class="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200"
+                      class="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 border border-rose-200/60 shrink-0"
                     >
                       ⚡ อัตโนมัติ
                     </span>
                   </div>
-                  <div v-if="item.note" class="text-xs text-gray-400 mt-0.5">{{ item.note }}</div>
+                  <div v-if="item.note && !item.isAuto" class="text-xs text-gray-400 mt-0.5">{{ item.note }}</div>
                 </td>
                 <td class="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">
                   ฿{{ formatCurrency(item.amount) }}
                 </td>
                 <td class="px-4 py-3 text-center whitespace-nowrap">
                   <!-- Virtual Auto Item Action -->
-                  <div v-if="item.isAuto">
+                  <div v-if="item.isAuto" class="flex items-center justify-center">
                     <button
                       @click="openOverheadModal"
-                      class="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                      class="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                       title="ตั้งค่าต้นทุนแฝง"
                     >
-                      <component :is="Settings" class="h-3.5 w-3.5" />
-                      ตั้งค่า
+                      <component :is="Settings" class="h-4 w-4" />
                     </button>
                   </div>
                   <!-- Normal Items Actions -->
@@ -544,20 +542,19 @@
                       getCategoryColor(item.category).border
                     ]"
                   >
-                    <component :is="Sparkles" v-if="item.isAuto" class="mr-1 h-3 w-3 text-rose-500" />
                     {{ item.category }}
                   </span>
                   <div>
-                    <div class="text-sm font-semibold text-gray-900 flex items-center gap-1.5 flex-wrap">
+                    <div class="text-sm font-semibold text-gray-900 flex items-center gap-2">
                       <span>{{ item.title }}</span>
                       <span
                         v-if="item.isAuto"
-                        class="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200"
+                        class="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 border border-rose-200/60 shrink-0"
                       >
                         ⚡ อัตโนมัติ
                       </span>
                     </div>
-                    <div v-if="item.note" class="text-xs text-gray-500 mt-0.5">{{ item.note }}</div>
+                    <div v-if="item.note && !item.isAuto" class="text-xs text-gray-500 mt-0.5">{{ item.note }}</div>
                   </div>
                 </div>
 
@@ -565,14 +562,13 @@
                   <span class="text-sm font-bold text-gray-900">
                     ฿{{ formatCurrency(item.amount) }}
                   </span>
-                  <div v-if="item.isAuto">
+                  <div v-if="item.isAuto" class="flex items-center justify-center">
                     <button
                       @click="openOverheadModal"
-                      class="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                      class="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                       title="ตั้งค่าต้นทุนแฝง"
                     >
-                      <component :is="Settings" class="h-3.5 w-3.5" />
-                      ตั้งค่า
+                      <component :is="Settings" class="h-4 w-4" />
                     </button>
                   </div>
                   <div v-else class="flex items-center space-x-1">

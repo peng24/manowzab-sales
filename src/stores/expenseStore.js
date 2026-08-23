@@ -110,7 +110,7 @@ export const useExpenseStore = defineStore("expense", {
         amount: this.totalOverheadCost,
         dateTime: new Date(),
         paymentMethod: "Auto",
-        note: "คำนวณอัตโนมัติจากยอดขาย (ค่าน้ำ, ค่าไฟซัก, ค่าไฟรีด, น้ำยาซัก/ปรับผ้านุ่ม)",
+        note: "",
         count: this.totalOverheadCount,
         rate: state.autoOverheadRate,
       };
@@ -216,7 +216,7 @@ export const useExpenseStore = defineStore("expense", {
               amount: dayOverheadAmount,
               dateTime: daySales.date,
               paymentMethod: "Auto",
-              note: "คำนวณอัตโนมัติจากยอดขาย (ค่าน้ำ, ค่าไฟซัก, ค่าไฟรีด, น้ำยาซัก/ปรับผ้านุ่ม)",
+              note: "",
             });
             summary[dateKey].totalAmount += dayOverheadAmount;
             summary[dateKey].count += 1;
