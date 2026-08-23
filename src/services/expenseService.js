@@ -29,6 +29,7 @@ import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
 import { measureExecution } from "../utils/perfTracker.js";
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
+  "ต้นทุนแฝง (ซัก-รีด)",
   "ค่าโฆษณา",
   "ค่าขนส่ง/บรรจุภัณฑ์",
   "ต้นทุนสินค้า",

@@ -11,6 +11,7 @@ import {
   deleteExpenseCategory,
   updateCategoriesOrder,
 } from "../services/expenseService.js";
+import { useSalesStore } from "./salesStore.js";
 import { toDate } from "../utils/dateUtils.js";
 
 export const useExpenseStore = defineStore("expense", {
@@ -26,26 +27,100 @@ export const useExpenseStore = defineStore("expense", {
       month: new Date().getMonth(),
       year: new Date().getFullYear(),
     },
+    autoOverheadRate:
+      localStorage.getItem("salespilot_auto_overhead_rate") !== null
+        ? Number(localStorage.getItem("salespilot_auto_overhead_rate"))
+        : 2.0,
+    autoOverheadEnabled:
+      localStorage.getItem("salespilot_auto_overhead_enabled") !== "false",
+    autoOverheadCategory: "ต้นทุนแฝง (ซัก-รีด)",
   }),
 
   getters: {
     /**
-     * Total expense amount for current loaded expenses
+     * Count of sales for overhead calculation
      */
-    totalExpenses: (state) => {
-      return state.expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    totalOverheadCount: (state) => {
+      if (!state.autoOverheadEnabled) return 0;
+      const salesStore = useSalesStore();
+      return salesStore.sales ? salesStore.sales.length : 0;
     },
 
     /**
-     * Count of expense records
+     * Total calculated overhead cost for current period
      */
-    totalCount: (state) => state.expenses.length,
+    totalOverheadCost(state) {
+      if (!state.autoOverheadEnabled || state.autoOverheadRate <= 0) return 0;
+      return this.totalOverheadCount * state.autoOverheadRate;
+    },
+
+    /**
+     * Total recorded expenses (excluding auto overhead)
+     */
+    totalRecordedExpenses: (state) => {
+      return state.expenses.reduce(
+        (sum, item) => sum + (Number(item.amount) || 0),
+        0
+      );
+    },
+
+    /**
+     * Total expense amount (including auto overhead if applicable)
+     */
+    totalExpenses(state) {
+      const recorded = state.expenses.reduce(
+        (sum, item) => sum + (Number(item.amount) || 0),
+        0
+      );
+      if (
+        state.selectedCategory !== "all" &&
+        state.selectedCategory !== state.autoOverheadCategory
+      ) {
+        return recorded;
+      }
+      return recorded + this.totalOverheadCost;
+    },
+
+    /**
+     * Count of expense records (including auto overhead item if enabled)
+     */
+    totalCount(state) {
+      const baseCount = state.expenses.length;
+      if (state.autoOverheadEnabled && this.totalOverheadCost > 0) {
+        if (
+          state.selectedCategory === "all" ||
+          state.selectedCategory === state.autoOverheadCategory
+        ) {
+          return baseCount + 1;
+        }
+      }
+      return baseCount;
+    },
+
+    /**
+     * Virtual Auto Overhead Item
+     */
+    autoOverheadItem(state) {
+      if (!state.autoOverheadEnabled || this.totalOverheadCost <= 0) return null;
+      return {
+        id: "auto-overhead-virtual",
+        isAuto: true,
+        title: `ต้นทุนแฝงซัก-รีด (${this.totalOverheadCount} ตัว × ฿${state.autoOverheadRate.toFixed(2)})`,
+        category: state.autoOverheadCategory,
+        amount: this.totalOverheadCost,
+        dateTime: new Date(),
+        paymentMethod: "Auto",
+        note: "คำนวณอัตโนมัติจากยอดขาย (ค่าน้ำ, ค่าไฟซัก, ค่าไฟรีด, น้ำยาซัก/ปรับผ้านุ่ม)",
+        count: this.totalOverheadCount,
+        rate: state.autoOverheadRate,
+      };
+    },
 
     /**
      * Expense breakdown by category
      * Returns an array of { category, total, percentage, count } sorted descending by total
      */
-    expensesByCategory: (state) => {
+    expensesByCategory(state) {
       const summary = {};
       let grandTotal = 0;
 
@@ -61,6 +136,16 @@ export const useExpenseStore = defineStore("expense", {
         summary[cat].count += 1;
       });
 
+      if (state.autoOverheadEnabled && this.totalOverheadCost > 0) {
+        const cat = state.autoOverheadCategory;
+        grandTotal += this.totalOverheadCost;
+        if (!summary[cat]) {
+          summary[cat] = { category: cat, total: 0, count: 0, isAuto: true };
+        }
+        summary[cat].total += this.totalOverheadCost;
+        summary[cat].count += 1;
+      }
+
       return Object.values(summary)
         .map((item) => ({
           ...item,
@@ -72,7 +157,7 @@ export const useExpenseStore = defineStore("expense", {
     /**
      * Group expenses by date (YYYY-MM-DD)
      */
-    summaryByDate: (state) => {
+    summaryByDate(state) {
       const summary = {};
 
       state.expenses.forEach((exp) => {
@@ -99,11 +184,68 @@ export const useExpenseStore = defineStore("expense", {
         summary[dateKey].count += 1;
       });
 
+      // Add daily overhead if enabled and category allows it
+      if (
+        state.autoOverheadEnabled &&
+        state.autoOverheadRate > 0 &&
+        (state.selectedCategory === "all" ||
+          state.selectedCategory === state.autoOverheadCategory)
+      ) {
+        const salesStore = useSalesStore();
+        const salesSummary = salesStore.summaryByDate || {};
+
+        Object.keys(salesSummary).forEach((dateKey) => {
+          const daySales = salesSummary[dateKey];
+          const dayCount = daySales.count || 0;
+          if (dayCount > 0) {
+            const dayOverheadAmount = dayCount * state.autoOverheadRate;
+            if (!summary[dateKey]) {
+              summary[dateKey] = {
+                date: daySales.date,
+                expenses: [],
+                totalAmount: 0,
+                count: 0,
+              };
+            }
+
+            summary[dateKey].expenses.push({
+              id: `auto-overhead-${dateKey}`,
+              isAuto: true,
+              title: `ต้นทุนแฝงซัก-รีด (${dayCount} ตัว × ฿${state.autoOverheadRate.toFixed(2)})`,
+              category: state.autoOverheadCategory,
+              amount: dayOverheadAmount,
+              dateTime: daySales.date,
+              paymentMethod: "Auto",
+              note: "คำนวณอัตโนมัติจากยอดขาย (ค่าน้ำ, ค่าไฟซัก, ค่าไฟรีด, น้ำยาซัก/ปรับผ้านุ่ม)",
+            });
+            summary[dateKey].totalAmount += dayOverheadAmount;
+            summary[dateKey].count += 1;
+          }
+        });
+      }
+
       return summary;
     },
   },
 
   actions: {
+    /**
+     * Update overhead configuration
+     */
+    updateOverheadSettings({ rate, enabled }) {
+      if (rate !== undefined && !isNaN(rate) && Number(rate) >= 0) {
+        this.autoOverheadRate = Number(rate);
+        localStorage.setItem("salespilot_auto_overhead_rate", String(rate));
+      }
+      if (enabled !== undefined) {
+        this.autoOverheadEnabled = Boolean(enabled);
+        localStorage.setItem(
+          "salespilot_auto_overhead_enabled",
+          String(enabled)
+        );
+      }
+    },
+
     /**
      * Fetch all expense categories
      * @param {boolean} forceRefresh - Force query from Firestore
@@ -180,15 +322,19 @@ export const useExpenseStore = defineStore("expense", {
     },
 
     /**
-     * Fetch expenses based on filters
+     * Fetch expenses based on filters and sync salesStore
      */
     async fetchExpenses() {
       this.loading = true;
       try {
-        const items = await getAllExpenses({
-          ...this.filters,
-          category: this.selectedCategory,
-        });
+        const salesStore = useSalesStore();
+        const [items] = await Promise.all([
+          getAllExpenses({
+            ...this.filters,
+            category: this.selectedCategory,
+          }),
+          salesStore.fetchSales({ ...this.filters }),
+        ]);
         this.expenses = items;
       } catch (error) {
         console.error("Error fetching expenses in store:", error);
@@ -264,3 +410,4 @@ export const useExpenseStore = defineStore("expense", {
     },
   },
 });
+

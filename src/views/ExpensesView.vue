@@ -12,13 +12,30 @@
         </p>
       </div>
 
-      <button
-        @click="showCategoryModal = true"
-        class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
-      >
-        <component :is="FolderPlus" class="mr-2 h-4 w-4 text-purple-600" />
-        จัดการหมวดหมู่รายจ่าย
-      </button>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Overhead Setting Button -->
+        <button
+          @click="openOverheadModal"
+          class="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2 text-sm font-semibold text-rose-700 shadow-xs hover:bg-rose-100 transition-colors cursor-pointer"
+        >
+          <component :is="Sparkles" class="mr-1.5 h-4 w-4 text-rose-600" />
+          ต้นทุนแฝงซัก-รีด
+          <span
+            class="ml-2 rounded-full px-2 py-0.5 text-xs font-bold"
+            :class="expenseStore.autoOverheadEnabled ? 'bg-rose-600 text-white' : 'bg-gray-200 text-gray-600'"
+          >
+            {{ expenseStore.autoOverheadEnabled ? `฿${expenseStore.autoOverheadRate.toFixed(2)}/ตัว` : 'ปิดใช้งาน' }}
+          </span>
+        </button>
+
+        <button
+          @click="showCategoryModal = true"
+          class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-xs hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          <component :is="FolderPlus" class="mr-2 h-4 w-4 text-purple-600" />
+          จัดการหมวดหมู่รายจ่าย
+        </button>
+      </div>
     </div>
 
     <!-- Section 1: Form Add/Edit Expense -->
@@ -148,7 +165,15 @@
       <div class="rounded-xl bg-gradient-to-br from-rose-500 to-red-600 p-5 text-white shadow-md">
         <p class="text-xs uppercase font-medium tracking-wider text-rose-100">รายจ่ายรวม (ช่วงเวลาที่เลือก)</p>
         <h3 class="text-3xl font-bold mt-1">฿{{ formatCurrency(expenseStore.totalExpenses) }}</h3>
-        <p class="text-xs text-rose-100 mt-2">จำนวน {{ expenseStore.totalCount }} รายการ</p>
+        <div class="flex items-center justify-between mt-2 text-xs text-rose-100">
+          <span>จำนวน {{ expenseStore.totalCount }} รายการ</span>
+          <span
+            v-if="expenseStore.autoOverheadEnabled && expenseStore.totalOverheadCost > 0"
+            class="font-semibold bg-black/20 px-2 py-0.5 rounded-md"
+          >
+            รวมต้นทุนแฝง ฿{{ formatCurrency(expenseStore.totalOverheadCost) }}
+          </span>
+        </div>
       </div>
 
       <div class="rounded-xl bg-white p-5 border border-gray-100 shadow-sm flex flex-col justify-between">
@@ -339,6 +364,31 @@
           </div>
         </div>
 
+        <!-- Auto Overhead Alert Banner -->
+        <div
+          v-if="expenseStore.autoOverheadEnabled && expenseStore.totalOverheadCost > 0"
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-rose-50 via-pink-50 to-orange-50 border border-rose-200 p-3.5 rounded-xl text-xs text-rose-900 shadow-2xs"
+        >
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-600 text-white font-bold shrink-0 shadow-xs text-xs">
+              ⚡
+            </span>
+            <div>
+              <span class="font-bold text-gray-900">รวมต้นทุนแฝงซัก-รีดอัตโนมัติแล้ว:</span>
+              <span class="ml-1 text-gray-700">
+                ยอดขาย <strong class="text-rose-700">{{ expenseStore.totalOverheadCount }} ตัว</strong> × ฿{{ expenseStore.autoOverheadRate.toFixed(2) }} = <strong class="text-rose-700">฿{{ formatCurrency(expenseStore.totalOverheadCost) }}</strong>
+              </span>
+            </div>
+          </div>
+          <button
+            @click="openOverheadModal"
+            class="inline-flex items-center gap-1 font-semibold text-rose-700 hover:text-rose-900 bg-white border border-rose-200 px-3 py-1.5 rounded-lg shadow-2xs hover:bg-rose-50/70 transition-colors self-start sm:self-auto cursor-pointer"
+          >
+            <component :is="Settings" class="h-3.5 w-3.5 text-rose-600" />
+            ปรับอัตราต่อตัว
+          </button>
+        </div>
+
         <!-- Search input -->
         <div class="relative">
           <input
@@ -379,6 +429,7 @@
                 v-for="item in filteredExpenses"
                 :key="item.id"
                 class="hover:bg-gray-50/80 transition-colors"
+                :class="{ 'bg-rose-50/30': item.isAuto }"
               >
                 <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
                   {{ formatThaiShortDate(item.dateTime) }}
@@ -392,28 +443,49 @@
                       getCategoryColor(item.category).border
                     ]"
                   >
+                    <component :is="Sparkles" v-if="item.isAuto" class="mr-1 h-3 w-3 text-rose-500" />
                     {{ item.category }}
                   </span>
                 </td>
                 <td class="px-4 py-3">
-                  <div class="font-medium text-gray-900">{{ item.title }}</div>
+                  <div class="font-medium text-gray-900 flex items-center gap-1.5 flex-wrap">
+                    <span>{{ item.title }}</span>
+                    <span
+                      v-if="item.isAuto"
+                      class="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200"
+                    >
+                      ⚡ อัตโนมัติ
+                    </span>
+                  </div>
                   <div v-if="item.note" class="text-xs text-gray-400 mt-0.5">{{ item.note }}</div>
                 </td>
                 <td class="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">
                   ฿{{ formatCurrency(item.amount) }}
                 </td>
                 <td class="px-4 py-3 text-center whitespace-nowrap">
-                  <div class="flex items-center justify-center space-x-2">
+                  <!-- Virtual Auto Item Action -->
+                  <div v-if="item.isAuto">
+                    <button
+                      @click="openOverheadModal"
+                      class="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                      title="ตั้งค่าต้นทุนแฝง"
+                    >
+                      <component :is="Settings" class="h-3.5 w-3.5" />
+                      ตั้งค่า
+                    </button>
+                  </div>
+                  <!-- Normal Items Actions -->
+                  <div v-else class="flex items-center justify-center space-x-2">
                     <button
                       @click="startEdit(item)"
-                      class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                      class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 cursor-pointer"
                       title="แก้ไข"
                     >
                       <component :is="Edit3" class="h-4 w-4" />
                     </button>
                     <button
                       @click="confirmDelete(item)"
-                      class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                      class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 cursor-pointer"
                       title="ลบ"
                     >
                       <component :is="Trash2" class="h-4 w-4" />
@@ -461,6 +533,7 @@
                 v-for="item in group.expenses"
                 :key="item.id"
                 class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-rose-50/30 transition-colors"
+                :class="{ 'bg-rose-50/20': item.isAuto }"
               >
                 <div class="flex items-start gap-3">
                   <span
@@ -471,10 +544,19 @@
                       getCategoryColor(item.category).border
                     ]"
                   >
+                    <component :is="Sparkles" v-if="item.isAuto" class="mr-1 h-3 w-3 text-rose-500" />
                     {{ item.category }}
                   </span>
                   <div>
-                    <div class="text-sm font-semibold text-gray-900">{{ item.title }}</div>
+                    <div class="text-sm font-semibold text-gray-900 flex items-center gap-1.5 flex-wrap">
+                      <span>{{ item.title }}</span>
+                      <span
+                        v-if="item.isAuto"
+                        class="rounded-md bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200"
+                      >
+                        ⚡ อัตโนมัติ
+                      </span>
+                    </div>
                     <div v-if="item.note" class="text-xs text-gray-500 mt-0.5">{{ item.note }}</div>
                   </div>
                 </div>
@@ -483,17 +565,27 @@
                   <span class="text-sm font-bold text-gray-900">
                     ฿{{ formatCurrency(item.amount) }}
                   </span>
-                  <div class="flex items-center space-x-1">
+                  <div v-if="item.isAuto">
+                    <button
+                      @click="openOverheadModal"
+                      class="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                      title="ตั้งค่าต้นทุนแฝง"
+                    >
+                      <component :is="Settings" class="h-3.5 w-3.5" />
+                      ตั้งค่า
+                    </button>
+                  </div>
+                  <div v-else class="flex items-center space-x-1">
                     <button
                       @click="startEdit(item)"
-                      class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors"
+                      class="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors cursor-pointer"
                       title="แก้ไข"
                     >
                       <component :is="Edit3" class="h-4 w-4" />
                     </button>
                     <button
                       @click="confirmDelete(item)"
-                      class="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors"
+                      class="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer"
                       title="ลบ"
                     >
                       <component :is="Trash2" class="h-4 w-4" />
@@ -596,9 +688,123 @@
         <div class="pt-2 text-right">
           <button
             @click="showCategoryModal = false"
-            class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 cursor-pointer"
           >
             ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overhead Cost Settings Modal -->
+    <div
+      v-if="showOverheadModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+    >
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 space-y-5 animate-scale-in">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-500 to-red-600 text-white shadow-md shadow-rose-500/20">
+              <component :is="Sparkles" class="h-5 w-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-gray-900">ตั้งค่าต้นทุนแฝง (ซัก-รีด)</h3>
+              <p class="text-xs text-gray-500">ระบบคำนวณจากยอดขายให้อัตโนมัติ</p>
+            </div>
+          </div>
+          <button @click="showOverheadModal = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 cursor-pointer">
+            <component :is="X" class="h-5 w-5" />
+          </button>
+        </div>
+
+        <!-- Toggle Enable/Disable -->
+        <div class="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 border border-gray-200">
+          <div>
+            <p class="text-sm font-bold text-gray-800">เปิดใช้งานการคำนวณต้นทุนแฝงอัตโนมัติ</p>
+            <p class="text-xs text-gray-500">นำยอดขายมาคำนวณและลงในรายจ่าย/แดชบอร์ดทันที</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" v-model="tempOverheadEnabled" class="sr-only peer" />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+          </label>
+        </div>
+
+        <!-- Rate Input -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-700">
+            อัตราต้นทุนแฝงต่อชิ้น/ตัว (บาท)
+          </label>
+          <div class="relative">
+            <input
+              type="number"
+              step="0.05"
+              min="0"
+              v-model.number="tempOverheadRate"
+              :disabled="!tempOverheadEnabled"
+              class="w-full rounded-xl border border-gray-300 pl-4 pr-16 py-2.5 text-base font-bold text-gray-900 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 disabled:bg-gray-100 disabled:text-gray-400"
+            />
+            <span class="absolute right-4 top-3 text-xs font-bold text-gray-400">บาท/ตัว</span>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="flex flex-wrap items-center gap-2 pt-1">
+            <span class="text-xs text-gray-400 font-medium">ค่าแนะนำ:</span>
+            <button
+              type="button"
+              @click="tempOverheadRate = 1.70"
+              :disabled="!tempOverheadEnabled"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-200 bg-gray-50 hover:bg-rose-50 hover:border-rose-200 text-gray-700 hover:text-rose-700 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              1.70 บ. (เฉพาะซักรีด)
+            </button>
+            <button
+              type="button"
+              @click="tempOverheadRate = 2.00"
+              :disabled="!tempOverheadEnabled"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              ⭐ 2.00 บ. (แนะนำ)
+            </button>
+            <button
+              type="button"
+              @click="tempOverheadRate = 3.00"
+              :disabled="!tempOverheadEnabled"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-gray-200 bg-gray-50 hover:bg-rose-50 hover:border-rose-200 text-gray-700 hover:text-rose-700 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              3.00 บ. (รวมถุง/ป้าย)
+            </button>
+          </div>
+        </div>
+
+        <!-- Details Card -->
+        <div class="rounded-xl bg-blue-50/70 p-3.5 border border-blue-100/80 text-xs text-blue-900 space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5 text-blue-800">
+            <span>💡</span> รายละเอียดต้นทุนแฝงที่คิด (ต่อ 1 ตัว):
+          </div>
+          <ul class="list-disc list-inside space-y-0.5 text-blue-800/80 pl-1 text-[11px]">
+            <li>ค่าน้ำประปา (~0.12 บ.) + ค่าไฟเครื่องซักผ้า (~0.18 บ.)</li>
+            <li>น้ำยาซักผ้า + น้ำยาปรับผ้านุ่ม + น้ำยาป้ายคราบ (~0.63 บ.)</li>
+            <li>ค่าไฟเตารีดไอน้ำ (~0.70 บ.)</li>
+          </ul>
+          <p class="text-[11px] font-semibold text-blue-700 pt-1 border-t border-blue-200/60">
+            สูตรคำนวณ: ยอดขาย {{ expenseStore.totalOverheadCount }} ตัว × ฿{{ (tempOverheadRate || 0).toFixed(2) }} = ฿{{ formatCurrency(expenseStore.totalOverheadCount * (tempOverheadRate || 0)) }}
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100">
+          <button
+            @click="showOverheadModal = false"
+            class="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            ยกเลิก
+          </button>
+          <button
+            @click="saveOverheadSettings"
+            class="rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-rose-500/20 hover:from-rose-700 hover:to-red-700 transition-all cursor-pointer"
+          >
+            บันทึกการตั้งค่า
           </button>
         </div>
       </div>
@@ -631,6 +837,8 @@ import {
   List,
   CalendarDays,
   CalendarRange,
+  Sparkles,
+  Settings,
 } from "lucide-vue-next";
 import ThaiDatePicker from "../components/ThaiDatePicker.vue";
 
@@ -692,6 +900,43 @@ const yearRange = computed(() => {
 const showCategoryModal = ref(false);
 const newCategoryName = ref("");
 const addingCategory = ref(false);
+
+// Overhead Modal states
+const showOverheadModal = ref(false);
+const tempOverheadRate = ref(expenseStore.autoOverheadRate);
+const tempOverheadEnabled = ref(expenseStore.autoOverheadEnabled);
+
+const openOverheadModal = () => {
+  tempOverheadRate.value = expenseStore.autoOverheadRate;
+  tempOverheadEnabled.value = expenseStore.autoOverheadEnabled;
+  showOverheadModal.value = true;
+};
+
+const saveOverheadSettings = () => {
+  const rate = Number(tempOverheadRate.value);
+  if (isNaN(rate) || rate < 0) {
+    Swal.fire({
+      icon: "error",
+      title: "ข้อมูลไม่ถูกต้อง",
+      text: "กรุณาระบุอัตราต้นทุนแฝงเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0",
+    });
+    return;
+  }
+
+  expenseStore.updateOverheadSettings({
+    rate,
+    enabled: tempOverheadEnabled.value,
+  });
+
+  showOverheadModal.value = false;
+  Swal.fire({
+    icon: "success",
+    title: "บันทึกการตั้งค่าสำเร็จ",
+    text: `ตั้งค่าต้นทุนแฝง ฿${rate.toFixed(2)}/ตัว (${tempOverheadEnabled.value ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}) เรียบร้อยแล้ว`,
+    timer: 1500,
+    showConfirmButton: false,
+  });
+};
 
 const filterModes = [
   { value: "thisMonth", label: "เดือนนี้" },
@@ -809,7 +1054,17 @@ const getCategoryColor = (categoryName) => {
 };
 
 const filteredExpenses = computed(() => {
-  let list = expenseStore.expenses;
+  let list = [...expenseStore.expenses];
+
+  // Prepend auto overhead item if enabled and matches category filter
+  if (
+    expenseStore.autoOverheadEnabled &&
+    expenseStore.autoOverheadItem &&
+    (selectedCategoryFilter.value === "all" ||
+      selectedCategoryFilter.value === expenseStore.autoOverheadCategory)
+  ) {
+    list.unshift(expenseStore.autoOverheadItem);
+  }
 
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase();

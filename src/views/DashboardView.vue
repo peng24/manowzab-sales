@@ -276,9 +276,16 @@
               </div>
             </div>
             <div class="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-xs text-gray-500">
-              <span>จำนวนรายการ</span>
+              <span>
+                {{ expenseStore.autoOverheadEnabled && expenseStore.totalOverheadCost > 0 ? 'รวมต้นทุนแฝงซักรีด' : 'จำนวนรายการ' }}
+              </span>
               <span class="font-bold text-rose-600">
-                {{ expenseStore.totalCount }} รายการ
+                <template v-if="expenseStore.autoOverheadEnabled && expenseStore.totalOverheadCost > 0">
+                  ฿{{ formatCurrency(expenseStore.totalOverheadCost) }}
+                </template>
+                <template v-else>
+                  {{ expenseStore.totalCount }} รายการ
+                </template>
               </span>
             </div>
           </div>
@@ -851,6 +858,9 @@ const prepareMonthlyChart = (transactions, start, end) => {
 
     if (monthlyData[key]) {
       monthlyData[key][type] += amt;
+      if (expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0) {
+        monthlyData[key].Expense += expenseStore.autoOverheadRate;
+      }
     }
   });
 
@@ -939,6 +949,9 @@ const prepareDailyChart = (transactions, start, end) => {
 
     if (dailyData[key]) {
       dailyData[key][type] += amt;
+      if (expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0) {
+        dailyData[key].Expense += expenseStore.autoOverheadRate;
+      }
     }
   });
 
