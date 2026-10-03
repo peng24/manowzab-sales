@@ -38,12 +38,17 @@ export const useExpenseStore = defineStore("expense", {
 
   getters: {
     /**
-     * Count of sales for overhead calculation
+     * Count of items (ตัว) for overhead calculation
      */
     totalOverheadCount: (state) => {
       if (!state.autoOverheadEnabled) return 0;
       const salesStore = useSalesStore();
-      return salesStore.sales ? salesStore.sales.length : 0;
+      return salesStore.sales
+        ? salesStore.sales.reduce(
+            (sum, sale) => sum + (Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1),
+            0
+          )
+        : 0;
     },
 
     /**
@@ -196,7 +201,7 @@ export const useExpenseStore = defineStore("expense", {
 
         Object.keys(salesSummary).forEach((dateKey) => {
           const daySales = salesSummary[dateKey];
-          const dayCount = daySales.count || 0;
+          const dayCount = daySales.itemCount !== undefined ? daySales.itemCount : (daySales.count || 0);
           if (dayCount > 0) {
             const dayOverheadAmount = dayCount * state.autoOverheadRate;
             if (!summary[dateKey]) {

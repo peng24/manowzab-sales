@@ -349,9 +349,14 @@
                 <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   จำนวนออเดอร์ (Total Orders)
                 </span>
-                <h3 class="mt-1 text-2xl md:text-[26px] font-black text-gray-900 leading-tight">
-                  {{ stats.totalOrders.toLocaleString() }}
-                </h3>
+                <div class="mt-1 flex items-baseline gap-2">
+                  <h3 class="text-2xl md:text-[26px] font-black text-gray-900 leading-tight">
+                    {{ stats.totalOrders.toLocaleString() }}
+                  </h3>
+                  <span class="text-xs font-semibold text-slate-500">
+                    ({{ stats.totalItems.toLocaleString() }} ตัว)
+                  </span>
+                </div>
               </div>
               <div class="rounded-xl bg-slate-100 p-2 md:p-2.5 text-slate-600">
                 <ShoppingBag class="h-5 w-5" />
@@ -457,6 +462,9 @@
                       }"
                     >
                       {{ tx.type === 'COD' ? '📦 เก็บปลายทาง (COD)' : '💳 โอนเงิน (Transfer)' }}
+                      <span v-if="tx.itemCount && tx.itemCount > 1" class="ml-1 text-[11px] font-bold text-indigo-800">
+                        ({{ tx.itemCount }} ตัว)
+                      </span>
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-black text-gray-900">
@@ -567,6 +575,7 @@ const yearRange = computed(() => {
 const stats = computed(() => ({
   totalSales: salesStore.totalSales,
   totalOrders: salesStore.totalOrders,
+  totalItems: salesStore.totalItems,
   totalTransfer: salesStore.totalTransfer,
   totalCOD: salesStore.totalCOD,
 }));
@@ -859,7 +868,8 @@ const prepareMonthlyChart = (transactions, start, end) => {
     if (monthlyData[key]) {
       monthlyData[key][type] += amt;
       if (expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0) {
-        monthlyData[key].Expense += expenseStore.autoOverheadRate;
+        const items = Number(tx.itemCount) > 0 ? Number(tx.itemCount) : 1;
+        monthlyData[key].Expense += items * expenseStore.autoOverheadRate;
       }
     }
   });
@@ -950,7 +960,8 @@ const prepareDailyChart = (transactions, start, end) => {
     if (dailyData[key]) {
       dailyData[key][type] += amt;
       if (expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0) {
-        dailyData[key].Expense += expenseStore.autoOverheadRate;
+        const items = Number(tx.itemCount) > 0 ? Number(tx.itemCount) : 1;
+        dailyData[key].Expense += items * expenseStore.autoOverheadRate;
       }
     }
   });

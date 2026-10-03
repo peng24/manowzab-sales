@@ -49,6 +49,15 @@ export const useSalesStore = defineStore("sales", {
     },
 
     /**
+     * Get total number of items/pieces sold (รวมจำนวนตัวทั้งหมด)
+     */
+    totalItems: (state) => {
+      return state.sales.reduce((sum, sale) => {
+        return sum + (Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1);
+      }, 0);
+    },
+
+    /**
      * Calculate total Transfer amount
      */
     totalTransfer: (state) => {
@@ -94,15 +103,18 @@ export const useSalesStore = defineStore("sales", {
             totalCOD: 0,
             totalTransfer: 0,
             count: 0,
+            itemCount: 0,
           };
         }
 
         const amount = Number(sale.amount) || 0;
         const type = sale.type === "COD" ? "COD" : "Transfer";
+        const items = Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1;
 
         summary[dateKey].sales.push(sale);
         summary[dateKey].totalAmount += amount;
         summary[dateKey].count += 1;
+        summary[dateKey].itemCount += items;
 
         if (type === "COD") {
           summary[dateKey].totalCOD += amount;

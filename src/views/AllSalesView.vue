@@ -184,7 +184,10 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500 mb-1">จำนวนออเดอร์</p>
-            <p class="text-3xl font-bold text-gray-700">{{ totalOrders }}</p>
+            <div class="flex items-baseline gap-2">
+              <p class="text-3xl font-bold text-gray-700">{{ totalOrders }}</p>
+              <span class="text-sm font-semibold text-gray-500">({{ totalItems.toLocaleString() }} ตัว)</span>
+            </div>
           </div>
           <div
             class="h-12 w-12 bg-slate-200 rounded-full flex items-center justify-center"
@@ -242,6 +245,12 @@
               </th>
               <th
                 scope="col"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+              >
+                จำนวน (ตัว)
+              </th>
+              <th
+                scope="col"
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
               >
                 ยอดเงิน
@@ -262,12 +271,12 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="loading">
-              <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+              <td colspan="7" class="px-6 py-10 text-center text-gray-500">
                 กำลังโหลดข้อมูล...
               </td>
             </tr>
             <tr v-else-if="paginatedSales.length === 0">
-              <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+              <td colspan="7" class="px-6 py-10 text-center text-gray-500">
                 ไม่พบรายการขายในช่วงเวลาที่เลือก
               </td>
             </tr>
@@ -296,6 +305,11 @@
                   {{ sale.customerName }}
                 </router-link>
                 <span v-else class="text-gray-600">ไม่ระบุ</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200/60">
+                  {{ sale.itemCount || 1 }} ตัว
+                </span>
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900"
@@ -455,18 +469,38 @@
               />
             </div>
 
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700"
-                >ยอดเงิน (บาท)</label
-              >
-              <input
-                type="number"
-                v-model.number="editForm.amount"
-                step="0.01"
-                min="0"
-                required
-                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-              />
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-700"
+                  >ยอดเงิน (บาท)</label
+                >
+                <input
+                  type="number"
+                  v-model.number="editForm.amount"
+                  step="0.01"
+                  min="0"
+                  required
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-700"
+                  >จำนวนตัว (ตัว)</label
+                >
+                <div class="relative rounded-md shadow-sm">
+                  <input
+                    type="number"
+                    v-model.number="editForm.itemCount"
+                    step="1"
+                    min="1"
+                    required
+                    class="w-full rounded-lg border-gray-300 pr-10 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  />
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span class="text-gray-400 sm:text-xs">ตัว</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="flex justify-end gap-3 pt-2">
@@ -540,6 +574,7 @@ const editForm = ref({
   time: "",
   customerName: "",
   amount: 0,
+  itemCount: 1,
 });
 
 // Constants
@@ -573,8 +608,10 @@ const salesStats = computed(() => {
   return sales.value.reduce(
     (acc, sale) => {
       const amt = Number(sale.amount) || 0;
+      const items = Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1;
       acc.totalSales += amt;
       acc.totalOrders += 1;
+      acc.totalItems += items;
       if (sale.type === "COD") {
         acc.codAmount += amt;
       } else {
@@ -582,12 +619,13 @@ const salesStats = computed(() => {
       }
       return acc;
     },
-    { totalSales: 0, totalOrders: 0, transferAmount: 0, codAmount: 0 }
+    { totalSales: 0, totalOrders: 0, totalItems: 0, transferAmount: 0, codAmount: 0 }
   );
 });
 
 const totalSales = computed(() => salesStats.value.totalSales);
 const totalOrders = computed(() => salesStats.value.totalOrders);
+const totalItems = computed(() => salesStats.value.totalItems);
 const transferAmount = computed(() => salesStats.value.transferAmount);
 const codAmount = computed(() => salesStats.value.codAmount);
 
@@ -726,6 +764,7 @@ const openEditModal = (item) => {
     time: format(d, "HH:mm"),
     customerName: item.customerName || "",
     amount: item.amount || 0,
+    itemCount: item.itemCount || 1,
   };
   showModal.value = true;
 };
@@ -744,6 +783,7 @@ const saveEdit = async () => {
       date: dateObj,
       customerName: editForm.value.customerName,
       amount: Number(editForm.value.amount),
+      itemCount: Math.max(1, Math.floor(Number(editForm.value.itemCount) || 1)),
     };
 
     await updateSale(editingId.value, updateData);

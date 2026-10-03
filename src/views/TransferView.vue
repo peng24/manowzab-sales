@@ -123,8 +123,48 @@
           </p>
         </div>
 
-        <!-- Slip URL -->
+        <!-- Item Count (จำนวนตัว) -->
         <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <label class="block text-sm font-medium text-gray-700">
+              จำนวนตัว (ซื้อกี่ตัว)
+            </label>
+            <span
+              v-if="expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0"
+              class="text-xs font-medium text-rose-600"
+            >
+              ต้นทุนแฝง: ฿{{ ((Math.max(1, Number(formData.itemCount) || 1)) * expenseStore.autoOverheadRate).toFixed(2) }} (฿{{ expenseStore.autoOverheadRate.toFixed(2) }}/ตัว)
+            </span>
+          </div>
+          <div class="relative rounded-md shadow-sm">
+            <input
+              type="number"
+              v-model.number="formData.itemCount"
+              placeholder="1"
+              step="1"
+              min="1"
+              required
+              :class="[
+                'block w-full rounded-lg pl-4 pr-12 focus:ring-blue-500',
+                validationErrors.itemCount
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:border-blue-500',
+              ]"
+              @input="validationErrors.itemCount = ''"
+            />
+            <div
+              class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
+            >
+              <span class="text-gray-500 sm:text-sm">ตัว</span>
+            </div>
+          </div>
+          <p v-if="validationErrors.itemCount" class="mt-1 text-sm text-red-600">
+            {{ validationErrors.itemCount }}
+          </p>
+        </div>
+
+        <!-- Slip URL -->
+        <div class="space-y-1 md:col-span-2">
           <label class="block text-sm font-medium text-gray-700"
             >ลิงก์สลิป (URL)</label
           >
@@ -204,6 +244,12 @@
               </th>
               <th
                 scope="col"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                จำนวน (ตัว)
+              </th>
+              <th
+                scope="col"
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
                 ยอดเงิน
@@ -224,12 +270,12 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="loading" class="text-center">
-              <td colspan="6" class="py-10 text-gray-500">
+              <td colspan="7" class="py-10 text-gray-500">
                 กำลังโหลดข้อมูล...
               </td>
             </tr>
             <tr v-else-if="requests.length === 0" class="text-center">
-              <td colspan="6" class="py-10 text-gray-500">
+              <td colspan="7" class="py-10 text-gray-500">
                 ไม่พบรายการโอนล่าสุด
               </td>
             </tr>
@@ -258,6 +304,11 @@
                   {{ req.customerName }}
                 </router-link>
                 <span v-else class="text-gray-600">ไม่ระบุ</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200/60">
+                  {{ req.itemCount || 1 }} ตัว
+                </span>
               </td>
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600"
@@ -406,19 +457,39 @@
               />
             </div>
 
-            <!-- Amount -->
-            <div class="space-y-1">
-              <label class="block text-sm font-medium text-gray-700"
-                >ยอดโอน (บาท)</label
-              >
-              <input
-                type="number"
-                v-model.number="editData.amount"
-                step="0.01"
-                min="0"
-                required
-                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-              />
+            <!-- Amount & Item Count -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-700"
+                  >ยอดโอน (บาท)</label
+                >
+                <input
+                  type="number"
+                  v-model.number="editData.amount"
+                  step="0.01"
+                  min="0"
+                  required
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-700"
+                  >จำนวนตัว (ตัว)</label
+                >
+                <div class="relative rounded-md shadow-sm">
+                  <input
+                    type="number"
+                    v-model.number="editData.itemCount"
+                    step="1"
+                    min="1"
+                    required
+                    class="w-full rounded-lg border-gray-300 pr-10 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  />
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span class="text-gray-400 sm:text-xs">ตัว</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Slip URL -->
@@ -475,6 +546,7 @@ import { formatThaiDateTime, formatThaiDate, toDate } from "../utils/dateUtils.j
 import { formatCurrency, sanitizeCustomerId } from "../utils/formatUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
 import { useCustomerStore } from "../stores/customerStore.js";
+import { useExpenseStore } from "../stores/expenseStore.js";
 import Swal from "sweetalert2";
 
 import ThaiDatePicker from "../components/ThaiDatePicker.vue";
@@ -482,6 +554,7 @@ import ThaiTimePicker from "../components/ThaiTimePicker.vue";
 
 const salesStore = useSalesStore();
 const customerStore = useCustomerStore();
+const expenseStore = useExpenseStore();
 
 // State
 const formData = ref({
@@ -490,6 +563,7 @@ const formData = ref({
   orderNo: "",
   customerName: "",
   amount: "",
+  itemCount: 1,
   slipUrl: "",
 });
 
@@ -513,11 +587,13 @@ const editData = ref({
   time: "",
   customerName: "",
   amount: "",
+  itemCount: 1,
   slipUrl: "",
 });
 
 const validationErrors = ref({
   amount: "",
+  itemCount: "",
 });
 
 // --- Auto Generate Order No ---
@@ -558,7 +634,7 @@ const handleClickOutside = (e) => {
 
 // --- Validation Function ---
 const validateForm = () => {
-  validationErrors.value = { amount: "" };
+  validationErrors.value = { amount: "", itemCount: "" };
   let isValid = true;
 
   // Amount validation
@@ -570,6 +646,13 @@ const validateForm = () => {
     isValid = false;
   } else if (isNaN(formData.value.amount)) {
     validationErrors.value.amount = "ยอดเงินต้องเป็นตัวเลขเท่านั้น (Please enter a valid amount)";
+    isValid = false;
+  }
+
+  // Item count validation
+  const itemCountNum = Number(formData.value.itemCount);
+  if (!formData.value.itemCount || isNaN(itemCountNum) || itemCountNum < 1) {
+    validationErrors.value.itemCount = "กรุณาระบุจำนวนตัวอย่างน้อย 1 ตัว";
     isValid = false;
   }
 
@@ -585,7 +668,7 @@ const saveTransfer = async () => {
     Swal.fire({
       icon: "warning",
       title: "ข้อมูลไม่ถูกต้อง",
-      text: validationErrors.value.amount || "กรุณาตรวจสอบข้อมูลอีกครั้ง",
+      text: validationErrors.value.amount || validationErrors.value.itemCount || "กรุณาตรวจสอบข้อมูลอีกครั้ง",
     });
     return;
   }
@@ -604,6 +687,7 @@ const saveTransfer = async () => {
       orderNo: formData.value.orderNo,
       customerName: sanitizedCustomerName,
       amount: Number(formData.value.amount),
+      itemCount: Math.max(1, Math.floor(Number(formData.value.itemCount) || 1)),
       slipUrl: formData.value.slipUrl || null,
     };
 
@@ -618,6 +702,7 @@ const saveTransfer = async () => {
       orderNo: "",
       customerName: "",
       amount: "",
+      itemCount: 1,
       slipUrl: "",
     };
 
@@ -653,6 +738,7 @@ const openEditModal = (req) => {
     time: format(dateObj, "HH:mm"),
     customerName: req.customerName || "",
     amount: req.amount || 0,
+    itemCount: req.itemCount || 1,
     slipUrl: req.slipUrl || "",
   };
   showEditModal.value = true;
@@ -674,6 +760,7 @@ const submitEdit = async () => {
       dateTime: dateObj,
       customerName: sanitizedCustomerName,
       amount: Number(editData.value.amount),
+      itemCount: Math.max(1, Math.floor(Number(editData.value.itemCount) || 1)),
       slipUrl: editData.value.slipUrl || null,
     });
 

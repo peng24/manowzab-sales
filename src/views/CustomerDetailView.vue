@@ -115,6 +115,12 @@
                 </th>
                 <th
                   scope="col"
+                  class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"
+                >
+                  จำนวน
+                </th>
+                <th
+                  scope="col"
                   class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
                 >
                   ประเภท
@@ -140,6 +146,11 @@
                   class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                 >
                   {{ sale.orderNo || "-" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200/60">
+                    {{ sale.itemCount || 1 }} ตัว
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
