@@ -57,6 +57,39 @@
           </select>
         </div>
 
+        <!-- Payment Type Filter (COD / Transfer) -->
+        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <label class="text-sm font-medium text-gray-700 sm:w-32">ประเภทรายการ:</label>
+          <div class="flex flex-wrap items-center gap-2 flex-1">
+            <button
+              type="button"
+              @click="typeFilter = 'all'"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer"
+              :class="typeFilter === 'all' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+            >
+              ทั้งหมด (All)
+            </button>
+            <button
+              type="button"
+              @click="typeFilter = 'COD'"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
+              :class="typeFilter === 'COD' ? 'bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200' : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50'"
+            >
+              <span>📦 เก็บเงินปลายทาง (COD)</span>
+              <span v-if="sales.length > 0" class="text-[11px] font-normal opacity-90">({{ codCount }})</span>
+            </button>
+            <button
+              type="button"
+              @click="typeFilter = 'Transfer'"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
+              :class="typeFilter === 'Transfer' ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-200' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50'"
+            >
+              <span>💳 โอนเงิน (Transfer)</span>
+              <span v-if="sales.length > 0" class="text-[11px] font-normal opacity-90">({{ transferCount }})</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Dynamic Inputs Based on Mode -->
         <div
           class="flex flex-col sm:flex-row gap-4 items-start sm:items-center"
@@ -271,70 +304,89 @@
           </button>
         </div>
 
-        <!-- Filter Pills by Item Count / Type -->
-        <div class="flex flex-wrap items-center gap-1.5 text-xs">
-          <span class="font-semibold text-gray-500 mr-1">กรอง:</span>
-          <button
-            type="button"
-            @click="countFilter = 'all'"
-            class="px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer"
-            :class="
-              countFilter === 'all'
-                ? 'bg-slate-800 text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
-            "
-          >
-            ทั้งหมด ({{ sales.length }})
-          </button>
-          <button
-            type="button"
-            @click="countFilter = 'one'"
-            class="px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer"
-            :class="
-              countFilter === 'one'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'
-            "
-            title="รายการที่มีจำนวน 1 ตัว (เหมาะสำหรับไล่ปรับยอดที่มีหลายชิ้น)"
-          >
-            1 ตัว ({{ oneItemCount }})
-          </button>
-          <button
-            type="button"
-            @click="countFilter = 'multi'"
-            class="px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer"
-            :class="
-              countFilter === 'multi'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'
-            "
-          >
-            ≥ 2 ตัว ({{ multiItemCount }})
-          </button>
-          <button
-            type="button"
-            @click="countFilter = 'cod'"
-            class="px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer"
-            :class="
-              countFilter === 'cod'
-                ? 'bg-amber-600 text-white'
-                : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
-            "
-          >
-            COD ({{ codCount }})
-          </button>
-          <button
-            type="button"
-            @click="countFilter = 'transfer'"
-            class="px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer"
-            :class="
-              countFilter === 'transfer'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
-            "
-          >
-            โอนเงิน ({{ transferCount }})
-          </button>
+        <!-- Filter Groups -->
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <!-- Type Filter Group -->
+          <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 shadow-2xs">
+            <span class="text-gray-400 text-[11px] px-1 font-semibold">ประเภท:</span>
+            <button
+              type="button"
+              @click="typeFilter = 'all'"
+              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              :class="typeFilter === 'all' ? 'bg-slate-800 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
+            >
+              ทั้งหมด
+            </button>
+            <button
+              type="button"
+              @click="typeFilter = 'COD'"
+              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+              :class="typeFilter === 'COD' ? 'bg-amber-600 text-white shadow-xs' : 'text-amber-800 hover:bg-amber-50'"
+            >
+              <span>COD</span>
+              <span class="text-[10px] px-1 rounded-full font-bold" :class="typeFilter === 'COD' ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-800'">
+                {{ codCount }}
+              </span>
+            </button>
+            <button
+              type="button"
+              @click="typeFilter = 'Transfer'"
+              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+              :class="typeFilter === 'Transfer' ? 'bg-blue-600 text-white shadow-xs' : 'text-blue-800 hover:bg-blue-50'"
+            >
+              <span>โอนเงิน</span>
+              <span class="text-[10px] px-1 rounded-full font-bold" :class="typeFilter === 'Transfer' ? 'bg-blue-700 text-white' : 'bg-blue-100 text-blue-800'">
+                {{ transferCount }}
+              </span>
+            </button>
+          </div>
+
+          <!-- Item Count Filter Group -->
+          <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 shadow-2xs">
+            <span class="text-gray-400 text-[11px] px-1 font-semibold">จำนวน:</span>
+            <button
+              type="button"
+              @click="countFilter = 'all'"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              :class="countFilter === 'all' ? 'bg-slate-800 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
+            >
+              ทั้งหมด
+            </button>
+            <button
+              type="button"
+              @click="countFilter = 'one'"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              :class="countFilter === 'one' ? 'bg-blue-600 text-white shadow-xs' : 'text-blue-700 hover:bg-blue-50'"
+            >
+              1 ตัว ({{ oneItemCount }})
+            </button>
+            <button
+              type="button"
+              @click="countFilter = 'multi'"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              :class="countFilter === 'multi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-700 hover:bg-indigo-50'"
+            >
+              ≥ 2 ตัว ({{ multiItemCount }})
+            </button>
+            <button
+              type="button"
+              @click="countFilter = 'verified'"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              :class="countFilter === 'verified' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-700 hover:bg-emerald-50'"
+              title="รายการที่บันทึกยืนยันจำนวนตัวแล้ว"
+            >
+              ✓ บันทึกแล้ว ({{ verifiedCount }})
+            </button>
+            <button
+              type="button"
+              @click="countFilter = 'unverified'"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              :class="countFilter === 'unverified' ? 'bg-rose-600 text-white shadow-xs' : 'text-rose-700 hover:bg-rose-50'"
+              title="รายการที่ยังไม่เคยระบุ/ยืนยันจำนวนตัว"
+            >
+              ⏳ ยังไม่ระบุ ({{ unverifiedCount }})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1022,7 +1074,7 @@
 // Icons
 import { Wallet, ShoppingBag, ArrowLeft, Calendar, Search, Zap } from "lucide-vue-next";
 import { useRouter } from "vue-router";
-import { ref, computed, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, nextTick, watch } from "vue";
 import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
@@ -1056,9 +1108,10 @@ const currentDate = new Date();
 const selectedMonth = ref(currentDate.getMonth());
 const selectedYear = ref(currentDate.getFullYear());
 
-// Search & Count/Type Quick Filter
+// Search & Filter State
 const searchQuery = ref("");
-const countFilter = ref("all"); // 'all', 'one', 'multi', 'cod', 'transfer'
+const typeFilter = ref("all"); // 'all', 'COD', 'Transfer'
+const countFilter = ref("all"); // 'all', 'one', 'multi', 'verified', 'unverified'
 
 // Pagination State
 const currentPage = ref(1);
@@ -1113,6 +1166,11 @@ const yearRange = computed(() => {
   return years;
 });
 
+// Helper: Check if a sale's item count has been verified / saved
+const isItemVerified = (sale) => {
+  return sale.isItemCountSet === true || (Number(sale.itemCount) || 1) > 1;
+};
+
 // --- Computed Properties ---
 
 // Summary Statistics
@@ -1136,6 +1194,11 @@ const salesStats = computed(() => {
       } else {
         acc.multiItemCount += 1;
       }
+      if (isItemVerified(sale)) {
+        acc.verifiedCount += 1;
+      } else {
+        acc.unverifiedCount += 1;
+      }
       return acc;
     },
     {
@@ -1148,6 +1211,8 @@ const salesStats = computed(() => {
       codCount: 0,
       oneItemCount: 0,
       multiItemCount: 0,
+      verifiedCount: 0,
+      unverifiedCount: 0,
     }
   );
 });
@@ -1161,8 +1226,10 @@ const transferCount = computed(() => salesStats.value.transferCount);
 const codCount = computed(() => salesStats.value.codCount);
 const oneItemCount = computed(() => salesStats.value.oneItemCount);
 const multiItemCount = computed(() => salesStats.value.multiItemCount);
+const verifiedCount = computed(() => salesStats.value.verifiedCount);
+const unverifiedCount = computed(() => salesStats.value.unverifiedCount);
 
-// Filtered sales based on Search & CountFilter
+// Filtered sales based on Search, Payment Type, & Item Count Filter
 const filteredSales = computed(() => {
   let list = sales.value;
 
@@ -1177,11 +1244,22 @@ const filteredSales = computed(() => {
     });
   }
 
-  // Count / Type Filter
+  // Payment Type Filter
+  if (typeFilter.value === "COD") {
+    list = list.filter((s) => s.type === "COD");
+  } else if (typeFilter.value === "Transfer") {
+    list = list.filter((s) => s.type !== "COD");
+  }
+
+  // Item Count Filter
   if (countFilter.value === "one") {
     list = list.filter((s) => (Number(s.itemCount) || 1) === 1);
   } else if (countFilter.value === "multi") {
     list = list.filter((s) => (Number(s.itemCount) || 1) > 1);
+  } else if (countFilter.value === "verified") {
+    list = list.filter((s) => isItemVerified(s));
+  } else if (countFilter.value === "unverified") {
+    list = list.filter((s) => !isItemVerified(s));
   } else if (countFilter.value === "cod") {
     list = list.filter((s) => s.type === "COD");
   } else if (countFilter.value === "transfer") {
@@ -1189,6 +1267,11 @@ const filteredSales = computed(() => {
   }
 
   return list;
+});
+
+// Reset page on filter changes
+watch([searchQuery, typeFilter, countFilter], () => {
+  currentPage.value = 1;
 });
 
 // Pagination
@@ -1264,6 +1347,7 @@ const handleReset = () => {
   customStartDate.value = "";
   customEndDate.value = "";
   searchQuery.value = "";
+  typeFilter.value = "all";
   countFilter.value = "all";
   currentPage.value = 1;
   fetchSales();
@@ -1317,12 +1401,7 @@ const nextPage = () => {
 
 // --- INLINE ITEM COUNT STEPPER & QUICK EDIT ---
 
-/**
- * Check if a sale's item count has been verified / saved
- */
-const isItemVerified = (sale) => {
-  return sale.isItemCountSet === true || Number(sale.itemCount) > 1;
-};
+// (isItemVerified is defined above in helper section)
 
 /**
  * Step item count directly from table cell (- or +)
