@@ -342,6 +342,7 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
         dateTime: dateObj,
         importedAt: serverTimestamp(),
         fileName: item.sourceFile,
+        itemCount: Math.max(1, Math.floor(Number(item.itemCount) || 1)),
       };
 
       allOperations.push({
