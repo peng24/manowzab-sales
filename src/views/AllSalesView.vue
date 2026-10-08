@@ -452,17 +452,20 @@
                     type="button"
                     @click.stop="openQuickCountModal(sale)"
                     :disabled="savingItemIds.has(sale.id)"
-                    class="px-2 py-0.5 text-xs font-bold rounded transition-all cursor-pointer flex items-center gap-1 group"
+                    class="px-2.5 py-0.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 group shadow-2xs"
                     :class="
-                      (Number(sale.itemCount) || 1) > 1
-                        ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-200'
-                        : 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-800 border border-gray-200'
+                      isItemVerified(sale)
+                        ? ((Number(sale.itemCount) || 1) > 1
+                            ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-300 ring-1 ring-indigo-200'
+                            : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 ring-1 ring-emerald-200')
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-dashed border-gray-300'
                     "
-                    title="คลิกเพื่อเลือกหรือพิมพ์จำนวนตัว"
+                    :title="isItemVerified(sale) ? 'บันทึกจำนวนตัวแล้ว (คลิกเพื่อแก้ไข)' : 'ยังไม่ได้ระบุ/ยืนยัน (คลิกเพื่อบันทึก)'"
                   >
                     <span v-if="savingItemIds.has(sale.id)" class="inline-block animate-spin text-[10px]">⌛</span>
-                    <span v-else class="font-extrabold">{{ sale.itemCount || 1 }}</span>
-                    <span class="text-[10px] font-normal text-gray-500 group-hover:text-gray-700">ตัว</span>
+                    <span v-else-if="isItemVerified(sale)" class="text-[11px] font-black" :class="(Number(sale.itemCount) || 1) > 1 ? 'text-indigo-600' : 'text-emerald-600'">✓</span>
+                    <span class="font-black">{{ sale.itemCount || 1 }}</span>
+                    <span class="text-[10px] font-normal" :class="isItemVerified(sale) ? ((Number(sale.itemCount) || 1) > 1 ? 'text-indigo-700' : 'text-emerald-700') : 'text-gray-400'">ตัว</span>
                   </button>
 
                   <!-- Increment button -->
@@ -1208,7 +1211,7 @@ const paginatedSales = computed(() => {
 const batchTargetItems = computed(() => {
   if (batchScope.value === "onesOnly") {
     return sales.value.filter(
-      (s) => !s.itemCount || Number(s.itemCount) <= 1
+      (s) => !isItemVerified(s)
     );
   }
   return sales.value;
@@ -1315,19 +1318,31 @@ const nextPage = () => {
 // --- INLINE ITEM COUNT STEPPER & QUICK EDIT ---
 
 /**
+ * Check if a sale's item count has been verified / saved
+ */
+const isItemVerified = (sale) => {
+  return sale.isItemCountSet === true || Number(sale.itemCount) > 1;
+};
+
+/**
  * Step item count directly from table cell (- or +)
  */
 const quickStepItem = async (sale, step) => {
   const current = Number(sale.itemCount) || 1;
   const newCount = Math.max(1, current + step);
-  if (newCount === current) return;
+  if (newCount === current && sale.isItemCountSet) return;
 
   savingItemIds.value.add(sale.id);
   const originalCount = sale.itemCount;
+  const originalSet = sale.isItemCountSet;
   sale.itemCount = newCount; // Optimistic update
+  sale.isItemCountSet = true;
 
   try {
-    await updateSale(sale.id, { itemCount: newCount });
+    await updateSale(sale.id, {
+      itemCount: newCount,
+      isItemCountSet: true,
+    });
     salesStore.invalidateCache();
 
     // Show lightweight Toast
@@ -1340,11 +1355,12 @@ const quickStepItem = async (sale, step) => {
     });
     Toast.fire({
       icon: "success",
-      title: `อัปเดตเป็น ${newCount} ตัวเรียบร้อย`,
+      title: `บันทึกเป็น ${newCount} ตัวเรียบร้อย`,
     });
   } catch (error) {
     console.error("Quick step error:", error);
     sale.itemCount = originalCount; // Rollback
+    sale.isItemCountSet = originalSet;
     Swal.fire({
       icon: "error",
       title: "บันทึกไม่สำเร็จ",
@@ -1387,16 +1403,24 @@ const saveQuickCountModal = async () => {
   const targetSale = quickModalSale.value;
   const newCount = Math.max(1, Math.floor(Number(quickModalCount.value) || 1));
   const originalCount = targetSale.itemCount;
+  const originalSet = targetSale.isItemCountSet;
 
   showQuickModal.value = false;
 
-  if (newCount === (Number(targetSale.itemCount) || 1)) return;
+  // Don't save only if it's already verified and the count didn't change
+  if (newCount === (Number(targetSale.itemCount) || 1) && targetSale.isItemCountSet === true) {
+    return;
+  }
 
   savingItemIds.value.add(targetSale.id);
   targetSale.itemCount = newCount;
+  targetSale.isItemCountSet = true; // Mark as verified/saved!
 
   try {
-    await updateSale(targetSale.id, { itemCount: newCount });
+    await updateSale(targetSale.id, {
+      itemCount: newCount,
+      isItemCountSet: true,
+    });
     salesStore.invalidateCache();
 
     const Toast = Swal.mixin({
@@ -1407,11 +1431,12 @@ const saveQuickCountModal = async () => {
     });
     Toast.fire({
       icon: "success",
-      title: `อัปเดตเป็น ${newCount} ตัวเรียบร้อย`,
+      title: `บันทึก ${newCount} ตัวเรียบร้อย`,
     });
   } catch (error) {
     console.error("Quick count modal error:", error);
     targetSale.itemCount = originalCount;
+    targetSale.isItemCountSet = originalSet;
     Swal.fire({
       icon: "error",
       title: "บันทึกไม่สำเร็จ",
@@ -1478,6 +1503,7 @@ const executeBatchCalculation = async () => {
     sales.value.forEach((s) => {
       if (updateMap.has(s.id)) {
         s.itemCount = updateMap.get(s.id);
+        s.isItemCountSet = true;
       }
     });
 
@@ -1568,6 +1594,7 @@ const saveEdit = async () => {
       customerName: editForm.value.customerName,
       amount: Number(editForm.value.amount),
       itemCount: Math.max(1, Math.floor(Number(editForm.value.itemCount) || 1)),
+      isItemCountSet: true,
     };
 
     await updateSale(editingId.value, updateData);

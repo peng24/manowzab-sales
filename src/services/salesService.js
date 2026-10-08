@@ -344,6 +344,7 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
         importedAt: serverTimestamp(),
         fileName: item.sourceFile,
         itemCount: Math.max(1, Math.floor(Number(item.itemCount) || 1)),
+        isItemCountSet: true,
       };
 
       allOperations.push({
@@ -600,6 +601,7 @@ export async function batchUpdateSaleItemCounts(updates, onProgress = null) {
       const saleRef = doc(db, "sales", item.id);
       batch.update(saleRef, {
         itemCount: Math.max(1, Math.floor(Number(item.itemCount) || 1)),
+        isItemCountSet: true,
         updatedAt: new Date(),
       });
     }
