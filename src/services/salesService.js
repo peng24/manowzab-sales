@@ -14,6 +14,7 @@ import {
   setDoc,
   getDoc,
   startAfter,
+  writeBatch,
 } from "firebase/firestore";
 import {
   format,
@@ -578,6 +579,39 @@ export async function mergeCustomers(sourceName, targetName) {
     await unlockBatch.commit().catch(() => {});
     throw error;
   }
+}
+
+/**
+ * Batch update item count for multiple sales
+ * @param {Array<{id: string, itemCount: number}>} updates - List of sale updates
+ * @param {Function} onProgress - Progress callback (processed, total)
+ * @returns {Promise<number>} Number of updated records
+ */
+export async function batchUpdateSaleItemCounts(updates, onProgress = null) {
+  if (!updates || updates.length === 0) return 0;
+  const BATCH_SIZE = 400;
+  let processed = 0;
+
+  for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+    const chunk = updates.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+
+    for (const item of chunk) {
+      const saleRef = doc(db, "sales", item.id);
+      batch.update(saleRef, {
+        itemCount: Math.max(1, Math.floor(Number(item.itemCount) || 1)),
+        updatedAt: new Date(),
+      });
+    }
+
+    await batch.commit();
+    processed += chunk.length;
+    if (onProgress) {
+      onProgress(processed, updates.length);
+    }
+  }
+
+  return processed;
 }
 
 

@@ -9,6 +9,7 @@ import {
   upsertCustomer,
   getLatestImportTime,
   mergeCustomers as mergeCustomersService,
+  batchUpdateSaleItemCounts,
 } from "../services/salesService.js";
 import { toDate } from "../utils/dateUtils.js";
 
@@ -342,6 +343,23 @@ export const useSalesStore = defineStore("sales", {
         return result;
       } catch (error) {
         console.error("Error merging customers in store:", error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Batch update item count for multiple sales
+     */
+    async batchUpdateItemCounts(updates, onProgress = null) {
+      this.loading = true;
+      try {
+        const count = await batchUpdateSaleItemCounts(updates, onProgress);
+        this.invalidateCache();
+        return count;
+      } catch (error) {
+        console.error("Error in batchUpdateItemCounts in store:", error);
         throw error;
       } finally {
         this.loading = false;
