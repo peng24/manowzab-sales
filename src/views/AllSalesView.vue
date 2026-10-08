@@ -624,76 +624,79 @@
             </div>
           </div>
 
-          <!-- Stepper & Input -->
-          <div class="mb-4 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              @click="quickModalCount = Math.max(1, quickModalCount - 1)"
-              :disabled="quickModalCount <= 1"
-              class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer"
-            >
-              -
-            </button>
-            <div class="relative w-28">
-              <input
-                type="number"
-                min="1"
-                v-model.number="quickModalCount"
-                class="w-full h-11 text-center text-xl font-black rounded-xl border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
-              />
-              <span class="absolute right-2 top-3 text-xs text-gray-400 pointer-events-none">ตัว</span>
+          <form @submit.prevent="saveQuickCountModal">
+            <!-- Stepper & Input -->
+            <div class="mb-4 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                @click="quickModalCount = Math.max(1, quickModalCount - 1); focusQuickInput()"
+                :disabled="quickModalCount <= 1"
+                class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer"
+              >
+                -
+              </button>
+              <div class="relative w-28">
+                <input
+                  ref="quickCountInputRef"
+                  type="number"
+                  min="1"
+                  v-model.number="quickModalCount"
+                  @keydown.enter.prevent="saveQuickCountModal"
+                  class="w-full h-11 text-center text-xl font-black rounded-xl border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+                />
+                <span class="absolute right-2 top-3 text-xs text-gray-400 pointer-events-none">ตัว</span>
+              </div>
+              <button
+                type="button"
+                @click="quickModalCount++; focusQuickInput()"
+                class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors cursor-pointer"
+              >
+                +
+              </button>
             </div>
-            <button
-              type="button"
-              @click="quickModalCount++"
-              class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors cursor-pointer"
-            >
-              +
-            </button>
-          </div>
 
-          <!-- Quick Pills (1-6) -->
-          <div class="mb-4 flex flex-wrap items-center justify-center gap-1.5">
-            <button
-              v-for="num in [1, 2, 3, 4, 5, 6, 8, 10]"
-              :key="num"
-              type="button"
-              @click="quickModalCount = num"
-              class="h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
-              :class="
-                quickModalCount === num
-                  ? 'bg-indigo-600 text-white shadow-xs font-black'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              "
-            >
-              {{ num }}
-            </button>
-          </div>
+            <!-- Quick Pills (1-10) -->
+            <div class="mb-4 flex flex-wrap items-center justify-center gap-1.5">
+              <button
+                v-for="num in [1, 2, 3, 4, 5, 6, 8, 10]"
+                :key="num"
+                type="button"
+                @click="quickModalCount = num; focusQuickInput()"
+                class="h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
+                :class="
+                  quickModalCount === num
+                    ? 'bg-indigo-600 text-white shadow-xs font-black ring-2 ring-indigo-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                "
+              >
+                {{ num }}
+              </button>
+            </div>
 
-          <!-- Overhead hint -->
-          <div
-            v-if="expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0"
-            class="mb-5 text-center text-xs font-semibold text-rose-600 bg-rose-50 p-2 rounded-lg"
-          >
-            🏷️ ต้นทุนแฝงออเดอร์นี้: ฿{{ ((quickModalCount || 1) * expenseStore.autoOverheadRate).toFixed(2) }} (฿{{ expenseStore.autoOverheadRate }}/ตัว)
-          </div>
+            <!-- Overhead hint -->
+            <div
+              v-if="expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0"
+              class="mb-5 text-center text-xs font-semibold text-rose-600 bg-rose-50 p-2 rounded-lg"
+            >
+              🏷️ ต้นทุนแฝงออเดอร์นี้: ฿{{ ((quickModalCount || 1) * expenseStore.autoOverheadRate).toFixed(2) }} (฿{{ expenseStore.autoOverheadRate }}/ตัว)
+            </div>
 
-          <div class="flex gap-2">
-            <button
-              type="button"
-              @click="showQuickModal = false"
-              class="flex-1 rounded-xl border border-gray-300 bg-white py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="button"
-              @click="saveQuickCountModal"
-              class="flex-1 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-colors cursor-pointer"
-            >
-              บันทึกจำนวน
-            </button>
-          </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                @click="showQuickModal = false"
+                class="flex-1 rounded-xl border border-gray-300 bg-white py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                ยกเลิก (Esc)
+              </button>
+              <button
+                type="submit"
+                class="flex-1 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-colors cursor-pointer"
+              >
+                บันทึกจำนวน (Enter)
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </Teleport>
@@ -1016,7 +1019,7 @@
 // Icons
 import { Wallet, ShoppingBag, ArrowLeft, Calendar, Search, Zap } from "lucide-vue-next";
 import { useRouter } from "vue-router";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
@@ -1352,6 +1355,20 @@ const quickStepItem = async (sale, step) => {
   }
 };
 
+const quickCountInputRef = ref(null);
+
+/**
+ * Focus and highlight/select input text so user can immediately type a number
+ */
+const focusQuickInput = () => {
+  nextTick(() => {
+    if (quickCountInputRef.value) {
+      quickCountInputRef.value.focus();
+      quickCountInputRef.value.select();
+    }
+  });
+};
+
 /**
  * Open Quick Count selection modal for a specific sale
  */
@@ -1359,6 +1376,7 @@ const openQuickCountModal = (sale) => {
   quickModalSale.value = sale;
   quickModalCount.value = Number(sale.itemCount) || 1;
   showQuickModal.value = true;
+  focusQuickInput();
 };
 
 /**
