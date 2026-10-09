@@ -507,17 +507,15 @@
                     class="px-2.5 py-0.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 group shadow-2xs"
                     :class="
                       isItemVerified(sale)
-                        ? ((Number(sale.itemCount) || 1) > 1
-                            ? 'bg-indigo-100 text-indigo-900 hover:bg-indigo-200 border border-indigo-300 ring-1 ring-indigo-200'
-                            : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 ring-1 ring-emerald-200')
+                        ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 ring-1 ring-emerald-200'
                         : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-dashed border-gray-300'
                     "
                     :title="isItemVerified(sale) ? 'บันทึกจำนวนตัวแล้ว (คลิกเพื่อแก้ไข)' : 'ยังไม่ได้ระบุ/ยืนยัน (คลิกเพื่อบันทึก)'"
                   >
                     <span v-if="savingItemIds.has(sale.id)" class="inline-block animate-spin text-[10px]">⌛</span>
-                    <span v-else-if="isItemVerified(sale)" class="text-[11px] font-black" :class="(Number(sale.itemCount) || 1) > 1 ? 'text-indigo-600' : 'text-emerald-600'">✓</span>
+                    <span v-else-if="isItemVerified(sale)" class="text-[11px] font-black text-emerald-600">✓</span>
                     <span class="font-black">{{ sale.itemCount || 1 }}</span>
-                    <span class="text-[10px] font-normal" :class="isItemVerified(sale) ? ((Number(sale.itemCount) || 1) > 1 ? 'text-indigo-700' : 'text-emerald-700') : 'text-gray-400'">ตัว</span>
+                    <span class="text-[10px] font-normal" :class="isItemVerified(sale) ? 'text-emerald-700' : 'text-gray-400'">ตัว</span>
                   </button>
 
                   <!-- Increment button -->
@@ -745,10 +743,19 @@
                 ยกเลิก (Esc)
               </button>
               <button
-                type="submit"
-                class="flex-1 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-colors cursor-pointer"
+                type="button"
+                @click="resetQuickCountModal"
+                class="flex-1 rounded-xl border border-amber-300 bg-amber-50 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
+                title="รีเซ็ตค่ากลับเป็น 1 ตัว และคืนสถานะยังไม่ระบุ"
               >
-                บันทึกจำนวน (Enter)
+                <RotateCcw class="h-3.5 w-3.5" />
+                <span>รีเซ็ตค่า</span>
+              </button>
+              <button
+                type="submit"
+                class="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-colors cursor-pointer flex items-center justify-center gap-1"
+              >
+                <span>บันทึก (Enter)</span>
               </button>
             </div>
           </form>
@@ -1072,7 +1079,7 @@
 
 <script setup>
 // Icons
-import { Wallet, ShoppingBag, ArrowLeft, Calendar, Search, Zap } from "lucide-vue-next";
+import { Wallet, ShoppingBag, ArrowLeft, Calendar, Search, Zap, RotateCcw } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { ref, computed, onMounted, nextTick, watch } from "vue";
 import Swal from "sweetalert2";
@@ -1519,6 +1526,53 @@ const saveQuickCountModal = async () => {
     Swal.fire({
       icon: "error",
       title: "บันทึกไม่สำเร็จ",
+      text: error.message,
+    });
+  } finally {
+    savingItemIds.value.delete(targetSale.id);
+  }
+};
+
+/**
+ * Reset an item's count back to initial state (1 piece, unverified)
+ */
+const resetQuickCountModal = async () => {
+  if (!quickModalSale.value) return;
+  const targetSale = quickModalSale.value;
+  showQuickModal.value = false;
+
+  savingItemIds.value.add(targetSale.id);
+  const originalCount = targetSale.itemCount;
+  const originalSet = targetSale.isItemCountSet;
+
+  // Optimistically reset
+  targetSale.itemCount = 1;
+  targetSale.isItemCountSet = false;
+
+  try {
+    await updateSale(targetSale.id, {
+      itemCount: 1,
+      isItemCountSet: false,
+    });
+    salesStore.invalidateCache();
+
+    const Toast = Swal.mixin({
+      toast: true,
+      position: "bottom-end",
+      showConfirmButton: false,
+      timer: 1500,
+    });
+    Toast.fire({
+      icon: "info",
+      title: "รีเซ็ตค่ากลับเป็น 1 ตัว (ยังไม่ระบุ) เรียบร้อย",
+    });
+  } catch (error) {
+    console.error("Reset quick count modal error:", error);
+    targetSale.itemCount = originalCount;
+    targetSale.isItemCountSet = originalSet;
+    Swal.fire({
+      icon: "error",
+      title: "รีเซ็ตไม่สำเร็จ",
       text: error.message,
     });
   } finally {
