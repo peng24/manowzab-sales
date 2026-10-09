@@ -4,15 +4,20 @@
     <button
       type="button"
       @click="togglePicker"
+      aria-haspopup="dialog"
+      :aria-expanded="isOpen"
+      :aria-label="'เลือกวันที่ ปัจจุบันคือ ' + (thaiFormattedDate || 'ยังไม่ได้เลือก')"
       class="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm shadow-xs flex items-center justify-between font-semibold text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
     >
       <span class="truncate">{{ thaiFormattedDate }}</span>
-      <Calendar class="h-5 w-5 text-gray-400 shrink-0" />
+      <Calendar class="h-5 w-5 text-gray-400 shrink-0" aria-hidden="true" />
     </button>
 
     <!-- Thai Date Picker Dropdown Popover -->
     <div
       v-if="isOpen"
+      role="dialog"
+      aria-label="ปฏิทินเลือกวันที่"
       class="absolute left-0 top-full mt-2 z-50 w-72 md:w-80 rounded-2xl bg-white p-4 shadow-2xl border border-gray-100 animate-fade-in"
     >
       <!-- Header: Month & Year Selector -->
@@ -20,16 +25,18 @@
         <button
           type="button"
           @click="prevMonth"
-          class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          aria-label="ไปยังเดือนก่อนหน้า"
+          class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
           title="เดือนก่อนหน้า"
         >
-          <ChevronLeft class="h-5 w-5" />
+          <ChevronLeft class="h-5 w-5" aria-hidden="true" />
         </button>
 
         <div class="flex items-center gap-1.5">
           <!-- Month Select -->
           <select
             v-model="currentMonth"
+            aria-label="เลือกเดือน"
             class="rounded-lg border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-800 focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
           >
             <option
@@ -44,6 +51,7 @@
           <!-- Year Select (พ.ศ.) -->
           <select
             v-model="currentYear"
+            aria-label="เลือกปี พ.ศ."
             class="rounded-lg border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-800 focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
           >
             <option v-for="yr in yearRange" :key="yr" :value="yr">
@@ -55,15 +63,16 @@
         <button
           type="button"
           @click="nextMonth"
-          class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          aria-label="ไปยังเดือนถัดไป"
+          class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
           title="เดือนถัดไป"
         >
-          <ChevronRight class="h-5 w-5" />
+          <ChevronRight class="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
 
       <!-- Thai Day of Week Header -->
-      <div class="mb-2 grid grid-cols-7 text-center">
+      <div class="mb-2 grid grid-cols-7 text-center" aria-hidden="true">
         <span
           v-for="(day, idx) in thaiDayHeaders"
           :key="idx"
@@ -75,9 +84,9 @@
       </div>
 
       <!-- Calendar Days Grid -->
-      <div class="grid grid-cols-7 gap-1 text-center">
+      <div class="grid grid-cols-7 gap-1 text-center" role="grid" aria-label="ตารางวันในเดือน">
         <!-- Empty Days before start of month -->
-        <div v-for="empty in paddingDays" :key="'empty-' + empty" class="h-8 md:h-9"></div>
+        <div v-for="empty in paddingDays" :key="'empty-' + empty" class="h-8 md:h-9" aria-hidden="true"></div>
 
         <!-- Days of current month -->
         <button
@@ -85,7 +94,8 @@
           :key="day"
           type="button"
           @click="selectDay(day)"
-          class="h-8 md:h-9 w-full rounded-xl text-xs md:text-sm font-semibold transition-all flex items-center justify-center cursor-pointer"
+          :aria-label="'วันที่ ' + day + ' ' + (thaiMonthNames[currentMonth] || '') + ' พ.ศ. ' + (currentYear + 543)"
+          class="h-8 md:h-9 w-full rounded-xl text-xs md:text-sm font-semibold transition-all flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
           :class="getDayClass(day)"
         >
           {{ day }}
@@ -97,14 +107,16 @@
         <button
           type="button"
           @click="selectToday"
-          class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors cursor-pointer"
+          aria-label="เลือกวันที่เป็นวันนี้"
+          class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
         >
           📍 เลือกวันนี้
         </button>
         <button
           type="button"
           @click="isOpen = false"
-          class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
+          aria-label="ปิดปฏิทิน"
+          class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:outline-hidden"
         >
           ปิด
         </button>
@@ -246,12 +258,20 @@ const handleClickOutside = (event) => {
   }
 };
 
+const handleKeydown = (event) => {
+  if (event.key === "Escape" && isOpen.value) {
+    isOpen.value = false;
+  }
+};
+
 onMounted(() => {
   document.addEventListener("click", handleClickOutside);
+  document.addEventListener("keydown", handleKeydown);
 });
 
 onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("keydown", handleKeydown);
 });
 
 const getDayClass = (day) => {

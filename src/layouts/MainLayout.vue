@@ -1,5 +1,13 @@
 <template>
   <div class="flex h-screen bg-gray-50 font-sans">
+    <!-- Skip to main content link for keyboard / screen reader users -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:font-bold focus:outline-none focus:ring-2 focus:ring-white"
+    >
+      ข้ามไปยังเนื้อหาหลัก (Skip to Content)
+    </a>
+
     <!-- ========================================== -->
     <!-- SIDEBAR (DESKTOP ONLY > 768px)         -->
     <!-- ========================================== -->
@@ -18,13 +26,13 @@
       </div>
 
       <!-- Desktop Navigation Links -->
-      <nav class="flex-1 space-y-2 px-4 py-6">
+      <nav class="flex-1 space-y-2 px-4 py-6" aria-label="เมนูหลักแถบข้าง">
         <router-link
           to="/"
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           exact-active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="LayoutDashboard" class="mr-3 h-5 w-5" />
+          <component :is="LayoutDashboard" class="mr-3 h-5 w-5" aria-hidden="true" />
           Dashboard
         </router-link>
 
@@ -33,7 +41,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="CreditCard" class="mr-3 h-5 w-5" />
+          <component :is="CreditCard" class="mr-3 h-5 w-5" aria-hidden="true" />
           บันทึกยอดโอน
         </router-link>
 
@@ -42,7 +50,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="FileSpreadsheet" class="mr-3 h-5 w-5" />
+          <component :is="FileSpreadsheet" class="mr-3 h-5 w-5" aria-hidden="true" />
           นำเข้า COD
         </router-link>
 
@@ -50,7 +58,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="History" class="mr-3 h-5 w-5" />
+          <component :is="History" class="mr-3 h-5 w-5" aria-hidden="true" />
           ประวัติการขาย
         </router-link>
 
@@ -59,7 +67,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="Receipt" class="mr-3 h-5 w-5" />
+          <component :is="Receipt" class="mr-3 h-5 w-5" aria-hidden="true" />
           บันทึกรายจ่าย
         </router-link>
 
@@ -68,7 +76,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="TrendingUp" class="mr-3 h-5 w-5" />
+          <component :is="TrendingUp" class="mr-3 h-5 w-5" aria-hidden="true" />
           เปรียบเทียบยอดขาย
         </router-link>
 
@@ -77,7 +85,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="Calculator" class="mr-3 h-5 w-5" />
+          <component :is="Calculator" class="mr-3 h-5 w-5" aria-hidden="true" />
           วางแผนภาษี
         </router-link>
 
@@ -86,7 +94,7 @@
           class="flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
           active-class="bg-blue-600 text-white shadow-md"
         >
-          <component :is="User" class="mr-3 h-5 w-5" />
+          <component :is="User" class="mr-3 h-5 w-5" aria-hidden="true" />
           ข้อมูลลูกค้า
         </router-link>
       </nav>
@@ -149,16 +157,20 @@
           </div>
           <button
             @click="handleLogout"
-            class="md:hidden rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            aria-label="ออกจากระบบ"
+            title="ออกจากระบบ"
+            class="md:hidden rounded-full p-2.5 text-gray-500 hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600"
           >
-            <component :is="LogOut" class="h-5 w-5" />
+            <component :is="LogOut" class="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
       </header>
 
       <!-- Scrollable Page Content -->
       <main
-        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 px-4 md:px-6 pt-2.5 md:pt-3 pb-24 md:pb-6"
+        id="main-content"
+        tabindex="-1"
+        class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 px-4 md:px-6 pt-2.5 md:pt-3 pb-24 md:pb-6 focus:outline-none"
       >
         <router-view />
       </main>
@@ -169,13 +181,14 @@
     <!-- ========================================== -->
     <nav
       class="fixed bottom-0 left-0 right-0 z-50 flex h-16 w-full items-center justify-around border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden pb-safe"
+      aria-label="เมนูหลักแถบล่าง"
     >
       <router-link
         to="/"
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="LayoutDashboard" class="h-6 w-6 mb-0.5" />
+        <component :is="LayoutDashboard" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">ภาพรวม</span>
       </router-link>
 
@@ -184,7 +197,7 @@
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="CreditCard" class="h-6 w-6 mb-0.5" />
+        <component :is="CreditCard" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">โอนเงิน</span>
       </router-link>
 
@@ -194,7 +207,7 @@
         active-class="text-blue-600 font-semibold"
       >
         <div class="relative">
-          <component :is="FileSpreadsheet" class="h-6 w-6 mb-0.5" />
+          <component :is="FileSpreadsheet" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         </div>
         <span class="text-[10px]">นำเข้า</span>
       </router-link>
@@ -204,7 +217,7 @@
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="History" class="h-6 w-6 mb-0.5" />
+        <component :is="History" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">ประวัติ</span>
       </router-link>
 
@@ -213,7 +226,7 @@
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="Receipt" class="h-6 w-6 mb-0.5" />
+        <component :is="Receipt" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">รายจ่าย</span>
       </router-link>
 
@@ -222,7 +235,7 @@
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="TrendingUp" class="h-6 w-6 mb-0.5" />
+        <component :is="TrendingUp" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">เปรียบเทียบ</span>
       </router-link>
 
@@ -231,7 +244,7 @@
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="Calculator" class="h-6 w-6 mb-0.5" />
+        <component :is="Calculator" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">ภาษี</span>
       </router-link>
 
@@ -240,7 +253,7 @@
         class="flex flex-1 flex-col items-center justify-center py-1 text-gray-500 transition-colors"
         active-class="text-blue-600 font-semibold"
       >
-        <component :is="User" class="h-6 w-6 mb-0.5" />
+        <component :is="User" class="h-6 w-6 mb-0.5" aria-hidden="true" />
         <span class="text-[10px]">ลูกค้า</span>
       </router-link>
     </nav>

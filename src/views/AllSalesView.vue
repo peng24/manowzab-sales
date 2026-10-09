@@ -8,9 +8,10 @@
         <!-- Back Button -->
         <button
           @click="router.push('/')"
-          class="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-600 shadow-sm hover:bg-gray-50 hover:text-blue-600 transition-colors cursor-pointer"
+          aria-label="กลับสู่หน้าหลัก"
+          class="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-600 shadow-sm hover:bg-gray-50 hover:text-blue-600 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
         >
-          <ArrowLeft class="h-5 w-5" />
+          <ArrowLeft class="h-5 w-5" aria-hidden="true" />
         </button>
         <div>
           <h1 class="text-2xl font-bold text-gray-800">ประวัติยอดขายทั้งหมด</h1>
@@ -26,10 +27,10 @@
           v-if="sales.length > 0"
           type="button"
           @click="openBatchModal"
-          class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:from-indigo-700 hover:to-blue-700 transition-all cursor-pointer"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:from-indigo-700 hover:to-blue-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
           title="คำนวณจำนวนตัวย้อนหลังจากยอดขายอัตโนมัติ"
         >
-          <Zap class="h-4 w-4" />
+          <Zap class="h-4 w-4" aria-hidden="true" />
           <span>คำนวณจำนวนตัวย้อนหลัง (Auto-Estimate)</span>
         </button>
       </div>
@@ -42,12 +43,14 @@
         <div
           class="flex flex-col sm:flex-row gap-4 items-start sm:items-center"
         >
-          <label class="text-sm font-medium text-gray-700 sm:w-32"
+          <label for="filter-mode-select" class="text-sm font-medium text-gray-700 sm:w-32"
             >โหมดการกรอง:</label
           >
           <select
+            id="filter-mode-select"
             v-model="filterMode"
             @change="onFilterModeChange"
+            aria-label="เลือกโหมดการกรองข้อมูล"
             class="flex-1 rounded-lg border-gray-300 bg-white px-4 py-2 text-sm font-medium shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="all">ทั้งหมด (All Time)</option>
@@ -64,7 +67,7 @@
             <button
               type="button"
               @click="typeFilter = 'all'"
-              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-slate-500"
               :class="typeFilter === 'all' ? 'bg-slate-800 text-white border-slate-800 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
             >
               ทั้งหมด (All)
@@ -72,7 +75,7 @@
             <button
               type="button"
               @click="typeFilter = 'COD'"
-              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-amber-500"
               :class="typeFilter === 'COD' ? 'bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200' : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50'"
             >
               <span>📦 เก็บเงินปลายทาง (COD)</span>
@@ -81,7 +84,7 @@
             <button
               type="button"
               @click="typeFilter = 'Transfer'"
-              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5"
+              class="px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-500"
               :class="typeFilter === 'Transfer' ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-200' : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50'"
             >
               <span>💳 โอนเงิน (Transfer)</span>
@@ -112,6 +115,7 @@
                 <input
                   type="date"
                   v-model="customStartDate"
+                  aria-label="วันที่เริ่มต้น"
                   class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
                   @click="
                     $event.target.showPicker ? $event.target.showPicker() : null
@@ -121,7 +125,7 @@
                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm flex items-center justify-between font-medium text-gray-900 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
                 >
                   <span>{{ formatThaiDateDisplay(customStartDate) }}</span>
-                  <Calendar class="h-4 w-4 text-gray-400" />
+                  <Calendar class="h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -133,6 +137,7 @@
                 <input
                   type="date"
                   v-model="customEndDate"
+                  aria-label="วันที่สิ้นสุด"
                   class="absolute inset-0 h-full w-full opacity-0 cursor-pointer z-10"
                   @click="
                     $event.target.showPicker ? $event.target.showPicker() : null
@@ -142,7 +147,7 @@
                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm flex items-center justify-between font-medium text-gray-900 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
                 >
                   <span>{{ formatThaiDateDisplay(customEndDate) }}</span>
-                  <Calendar class="h-4 w-4 text-gray-400" />
+                  <Calendar class="h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -155,6 +160,7 @@
           >
             <select
               v-model="selectedMonth"
+              aria-label="เลือกเดือน"
               class="flex-1 rounded-lg border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option
@@ -167,6 +173,7 @@
             </select>
             <select
               v-model="selectedYear"
+              aria-label="เลือกปี พ.ศ."
               class="flex-1 rounded-lg border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
@@ -179,6 +186,7 @@
           <div v-if="filterMode === 'year'" class="flex-1">
             <select
               v-model="selectedYear"
+              aria-label="เลือกปี พ.ศ."
               class="w-full rounded-lg border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
@@ -192,13 +200,13 @@
         <div class="flex gap-3 justify-end">
           <button
             @click="handleSearch"
-            class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors cursor-pointer"
+            class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
           >
             ค้นหา
           </button>
           <button
             @click="handleReset"
-            class="px-6 py-2 bg-gray-500 text-white font-medium rounded-lg shadow-sm hover:bg-gray-600 transition-colors cursor-pointer"
+            class="px-6 py-2 bg-gray-500 text-white font-medium rounded-lg shadow-sm hover:bg-gray-600 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:outline-hidden"
           >
             รีเซ็ต
           </button>
@@ -222,6 +230,7 @@
           </div>
           <div
             class="h-12 w-12 bg-violet-100 rounded-full flex items-center justify-center"
+            aria-hidden="true"
           >
             <Wallet class="h-6 w-6 text-violet-600" />
           </div>
@@ -251,6 +260,7 @@
           </div>
           <div
             class="h-12 w-12 bg-slate-200 rounded-full flex items-center justify-center"
+            aria-hidden="true"
           >
             <ShoppingBag class="h-6 w-6 text-slate-600" />
           </div>
@@ -291,14 +301,16 @@
           <input
             type="text"
             v-model="searchQuery"
+            aria-label="ค้นหา Order No, ชื่อลูกค้า, หรือเบอร์โทร"
             placeholder="ค้นหา Order No, ชื่อลูกค้า, หรือเบอร์โทร..."
-            class="w-full rounded-lg border border-gray-300 bg-white pl-9 pr-4 py-2 text-xs shadow-2xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="w-full rounded-lg border border-gray-300 bg-white pl-9 pr-8 py-2 text-xs shadow-2xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-          <Search class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
           <button
             v-if="searchQuery"
             @click="searchQuery = ''"
-            class="absolute right-3 top-2 text-xs text-gray-400 hover:text-gray-600"
+            aria-label="ล้างคำค้นหา"
+            class="absolute right-3 top-2 text-xs text-gray-500 hover:text-gray-700 p-0.5 cursor-pointer"
           >
             ✕
           </button>
@@ -308,11 +320,11 @@
         <div class="flex flex-wrap items-center gap-2.5 text-xs">
           <!-- Type Filter Group -->
           <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 shadow-2xs">
-            <span class="text-gray-400 text-[11px] px-1 font-semibold">ประเภท:</span>
+            <span class="text-gray-600 text-[11px] px-1 font-semibold">ประเภท:</span>
             <button
               type="button"
               @click="typeFilter = 'all'"
-              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-slate-500"
               :class="typeFilter === 'all' ? 'bg-slate-800 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
             >
               ทั้งหมด
@@ -320,7 +332,7 @@
             <button
               type="button"
               @click="typeFilter = 'COD'"
-              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-amber-500"
               :class="typeFilter === 'COD' ? 'bg-amber-600 text-white shadow-xs' : 'text-amber-800 hover:bg-amber-50'"
             >
               <span>COD</span>
@@ -331,7 +343,7 @@
             <button
               type="button"
               @click="typeFilter = 'Transfer'"
-              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1"
+              class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500"
               :class="typeFilter === 'Transfer' ? 'bg-blue-600 text-white shadow-xs' : 'text-blue-800 hover:bg-blue-50'"
             >
               <span>โอนเงิน</span>
@@ -343,11 +355,11 @@
 
           <!-- Item Count Filter Group -->
           <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 shadow-2xs">
-            <span class="text-gray-400 text-[11px] px-1 font-semibold">จำนวน:</span>
+            <span class="text-gray-600 text-[11px] px-1 font-semibold">จำนวน:</span>
             <button
               type="button"
               @click="countFilter = 'all'"
-              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-slate-500"
               :class="countFilter === 'all' ? 'bg-slate-800 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
             >
               ทั้งหมด
@@ -355,7 +367,7 @@
             <button
               type="button"
               @click="countFilter = 'one'"
-              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500"
               :class="countFilter === 'one' ? 'bg-blue-600 text-white shadow-xs' : 'text-blue-700 hover:bg-blue-50'"
             >
               1 ตัว ({{ oneItemCount }})
@@ -363,7 +375,7 @@
             <button
               type="button"
               @click="countFilter = 'multi'"
-              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500"
               :class="countFilter === 'multi' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-700 hover:bg-indigo-50'"
             >
               ≥ 2 ตัว ({{ multiItemCount }})
@@ -371,7 +383,7 @@
             <button
               type="button"
               @click="countFilter = 'verified'"
-              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500"
               :class="countFilter === 'verified' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-700 hover:bg-emerald-50'"
               title="รายการที่บันทึกยืนยันจำนวนตัวแล้ว"
             >
@@ -380,7 +392,7 @@
             <button
               type="button"
               @click="countFilter = 'unverified'"
-              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer"
+              class="px-2 py-1 rounded-lg font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-rose-500"
               :class="countFilter === 'unverified' ? 'bg-rose-600 text-white shadow-xs' : 'text-rose-700 hover:bg-rose-50'"
               title="รายการที่ยังไม่เคยระบุ/ยืนยันจำนวนตัว"
             >
@@ -493,7 +505,8 @@
                     type="button"
                     @click.stop="quickStepItem(sale, -1)"
                     :disabled="(Number(sale.itemCount) || 1) <= 1 || savingItemIds.has(sale.id)"
-                    class="h-6 w-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center transition-colors disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer"
+                    :aria-label="'ลดจำนวน 1 ตัว สำหรับ Order ' + (sale.orderNo || 'นี้')"
+                    class="h-6 w-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center transition-colors disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
                     title="ลดจำนวน 1 ตัว"
                   >
                     -
@@ -504,18 +517,19 @@
                     type="button"
                     @click.stop="openQuickCountModal(sale)"
                     :disabled="savingItemIds.has(sale.id)"
-                    class="px-2.5 py-0.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 group shadow-2xs"
+                    :aria-label="'จำนวน ' + (sale.itemCount || 1) + ' ตัว สำหรับ Order ' + (sale.orderNo || 'นี้') + (isItemVerified(sale) ? ' (บันทึกแล้ว คลิกเพื่อแก้ไข)' : ' (ยังไม่ได้ระบุ คลิกเพื่อบันทึก)')"
+                    class="px-2.5 py-0.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 group shadow-2xs focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
                     :class="
                       isItemVerified(sale)
                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 ring-1 ring-emerald-200'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-dashed border-gray-300'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-dashed border-gray-300'
                     "
                     :title="isItemVerified(sale) ? 'บันทึกจำนวนตัวแล้ว (คลิกเพื่อแก้ไข)' : 'ยังไม่ได้ระบุ/ยืนยัน (คลิกเพื่อบันทึก)'"
                   >
-                    <span v-if="savingItemIds.has(sale.id)" class="inline-block animate-spin text-[10px]">⌛</span>
-                    <span v-else-if="isItemVerified(sale)" class="text-[11px] font-black text-emerald-600">✓</span>
+                    <span v-if="savingItemIds.has(sale.id)" class="inline-block animate-spin text-[10px]" aria-hidden="true">⌛</span>
+                    <span v-else-if="isItemVerified(sale)" class="text-[11px] font-black text-emerald-600" aria-hidden="true">✓</span>
                     <span class="font-black">{{ sale.itemCount || 1 }}</span>
-                    <span class="text-[10px] font-normal" :class="isItemVerified(sale) ? 'text-emerald-700' : 'text-gray-400'">ตัว</span>
+                    <span class="text-[10px] font-normal" :class="isItemVerified(sale) ? 'text-emerald-700' : 'text-gray-500'">ตัว</span>
                   </button>
 
                   <!-- Increment button -->
@@ -523,7 +537,8 @@
                     type="button"
                     @click.stop="quickStepItem(sale, 1)"
                     :disabled="savingItemIds.has(sale.id)"
-                    class="h-6 w-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center transition-colors disabled:opacity-25 cursor-pointer"
+                    :aria-label="'เพิ่มจำนวน 1 ตัว สำหรับ Order ' + (sale.orderNo || 'นี้')"
+                    class="h-6 w-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center transition-colors disabled:opacity-25 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
                     title="เพิ่มจำนวน 1 ตัว"
                   >
                     +
@@ -556,7 +571,8 @@
                 <div class="flex items-center justify-end gap-1.5">
                   <button
                     @click="openEditModal(sale)"
-                    class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
+                    :aria-label="'แก้ไขรายการ ' + (sale.orderNo || 'นี้')"
+                    class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-hidden"
                     title="แก้ไขรายการทั้งหมด"
                   >
                     <svg
@@ -566,6 +582,7 @@
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       stroke-width="2"
+                      aria-hidden="true"
                     >
                       <path
                         stroke-linecap="round"
@@ -577,7 +594,8 @@
                   </button>
                   <button
                     @click="deleteSale(sale)"
-                    class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                    :aria-label="'ลบรายการ ' + (sale.orderNo || 'นี้')"
+                    class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-hidden"
                     title="ลบรายการ"
                   >
                     <svg
@@ -587,6 +605,7 @@
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                       stroke-width="2"
+                      aria-hidden="true"
                     >
                       <path
                         stroke-linecap="round"
@@ -610,7 +629,7 @@
       >
         <div class="text-xs text-gray-700">
           แสดง {{ filteredSales.length > 0 ? startIndex + 1 : 0 }}-{{ endIndex }} จาก {{ filteredSales.length }} รายการ
-          <span v-if="searchQuery || countFilter !== 'all'" class="text-gray-400">
+          <span v-if="searchQuery || countFilter !== 'all'" class="text-gray-500">
             (กรองจากทั้งหมด {{ sales.length }} รายการ)
           </span>
         </div>
@@ -618,17 +637,19 @@
           <button
             @click="previousPage"
             :disabled="currentPage === 1"
-            class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            aria-label="ไปหน้าก่อนหน้า"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
           >
             ก่อนหน้า
           </button>
-          <div class="px-3 py-1.5 text-xs font-bold text-gray-700">
+          <div class="px-3 py-1.5 text-xs font-bold text-gray-700" aria-current="page">
             หน้า {{ currentPage }} / {{ totalPages }}
           </div>
           <button
             @click="nextPage"
             :disabled="currentPage === totalPages"
-            class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            aria-label="ไปหน้าถัดไป"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
           >
             ถัดไป
           </button>
@@ -640,18 +661,22 @@
     <Teleport to="body">
       <div
         v-if="showQuickModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-modal-title"
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
           class="absolute inset-0 bg-black/40 backdrop-blur-xs"
           @click="showQuickModal = false"
+          aria-hidden="true"
         ></div>
         <div
           class="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl animate-fade-in-up"
         >
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h3 class="text-base font-bold text-gray-800">
+              <h3 id="quick-modal-title" class="text-base font-bold text-gray-800">
                 ปรับจำนวนตัว
               </h3>
               <p class="text-xs text-gray-500 font-mono">
@@ -659,8 +684,10 @@
               </p>
             </div>
             <button
+              type="button"
               @click="showQuickModal = false"
-              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+              aria-label="ปิดหน้าต่างปรับจำนวนตัว"
+              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
             >
               ✕
             </button>
@@ -669,7 +696,7 @@
           <!-- Customer info & amount -->
           <div class="mb-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-600 flex justify-between items-center">
             <div>
-              <span class="text-gray-400">ลูกค้า:</span>
+              <span class="text-gray-500">ลูกค้า:</span>
               <span class="font-medium text-gray-800 ml-1">{{ quickModalSale?.customerName || 'ไม่ระบุ' }}</span>
             </div>
             <div class="font-bold text-amber-600">
@@ -684,7 +711,8 @@
                 type="button"
                 @click="quickModalCount = Math.max(1, quickModalCount - 1); focusQuickInput()"
                 :disabled="quickModalCount <= 1"
-                class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer"
+                aria-label="ลดจำนวน 1 ตัว"
+                class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
               >
                 -
               </button>
@@ -693,16 +721,18 @@
                   ref="quickCountInputRef"
                   type="number"
                   min="1"
+                  aria-label="ระบุจำนวนตัว"
                   v-model.number="quickModalCount"
                   @keydown.enter.prevent="saveQuickCountModal"
                   class="w-full h-11 text-center text-xl font-black rounded-xl border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
                 />
-                <span class="absolute right-2 top-3 text-xs text-gray-400 pointer-events-none">ตัว</span>
+                <span class="absolute right-2 top-3 text-xs text-gray-400 pointer-events-none" aria-hidden="true">ตัว</span>
               </div>
               <button
                 type="button"
                 @click="quickModalCount++; focusQuickInput()"
-                class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="เพิ่มจำนวน 1 ตัว"
+                class="h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-black text-lg flex items-center justify-center transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
               >
                 +
               </button>
@@ -714,8 +744,9 @@
                 v-for="num in [1, 2, 3, 4, 5, 6, 8, 10]"
                 :key="num"
                 type="button"
+                :aria-label="'เลือกจำนวน ' + num + ' ตัว'"
                 @click="quickModalCount = num; focusQuickInput()"
-                class="h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center"
+                class="h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
                 :class="
                   quickModalCount === num
                     ? 'bg-indigo-600 text-white shadow-xs font-black ring-2 ring-indigo-200'
@@ -738,22 +769,22 @@
               <button
                 type="button"
                 @click="showQuickModal = false"
-                class="flex-1 rounded-xl border border-gray-300 bg-white py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                class="flex-1 rounded-xl border border-gray-300 bg-white py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:outline-hidden"
               >
                 ยกเลิก (Esc)
               </button>
               <button
                 type="button"
                 @click="resetQuickCountModal"
-                class="flex-1 rounded-xl border border-amber-300 bg-amber-50 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-2xs"
+                class="flex-1 rounded-xl border border-amber-300 bg-amber-50 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-2xs focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-hidden"
                 title="รีเซ็ตค่ากลับเป็น 1 ตัว และคืนสถานะยังไม่ระบุ"
               >
-                <RotateCcw class="h-3.5 w-3.5" />
+                <RotateCcw class="h-3.5 w-3.5" aria-hidden="true" />
                 <span>รีเซ็ตค่า</span>
               </button>
               <button
                 type="submit"
-                class="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                class="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-colors cursor-pointer flex items-center justify-center gap-1 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-hidden"
               >
                 <span>บันทึก (Enter)</span>
               </button>
@@ -767,28 +798,34 @@
     <Teleport to="body">
       <div
         v-if="showBatchModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="batch-modal-title"
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
           class="absolute inset-0 bg-black/50 backdrop-blur-xs"
           @click="showBatchModal = false"
+          aria-hidden="true"
         ></div>
         <div
           class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up"
         >
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <div class="h-9 w-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+              <div class="h-9 w-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center" aria-hidden="true">
                 <Zap class="h-5 w-5" />
               </div>
               <div>
-                <h3 class="text-lg font-bold text-gray-800">คำนวณจำนวนตัวย้อนหลังอัตโนมัติ</h3>
+                <h3 id="batch-modal-title" class="text-lg font-bold text-gray-800">คำนวณจำนวนตัวย้อนหลังอัตโนมัติ</h3>
                 <p class="text-xs text-gray-500">ช่วยปรับยอดจำนวนตัว (itemCount) จากยอดขาย ÷ ราคาเฉลี่ย</p>
               </div>
             </div>
             <button
+              type="button"
               @click="showBatchModal = false"
-              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+              aria-label="ปิดหน้าต่างคำนวณย้อนหลัง"
+              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
             >
               ✕
             </button>
@@ -806,7 +843,7 @@
                   :key="p"
                   type="button"
                   @click="batchAvgPrice = p"
-                  class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer"
+                  class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500"
                   :class="
                     batchAvgPrice === p
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-200'
@@ -819,6 +856,7 @@
                   <input
                     type="number"
                     min="1"
+                    aria-label="ระบุราคาเฉลี่ยต่อตัวเอง"
                     v-model.number="batchAvgPrice"
                     class="w-16 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-center font-bold text-gray-800 focus:outline-none focus:border-indigo-500"
                   />
@@ -896,7 +934,7 @@
               <button
                 type="button"
                 @click="showBatchModal = false"
-                class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:outline-hidden"
               >
                 ยกเลิก
               </button>
@@ -904,9 +942,9 @@
                 type="button"
                 @click="executeBatchCalculation"
                 :disabled="isBatchSaving || batchTargetItems.length === 0"
-                class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
+                class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
               >
-                <Zap class="h-4 w-4" />
+                <Zap class="h-4 w-4" aria-hidden="true" />
                 <span>ยืนยันและอัปเดตข้อมูล</span>
               </button>
             </div>
@@ -919,20 +957,26 @@
     <Teleport to="body">
       <div
         v-if="showModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-modal-title"
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
           class="absolute inset-0 bg-black/50 backdrop-blur-sm"
           @click="closeModal"
+          aria-hidden="true"
         ></div>
         <div
           class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up"
         >
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-gray-800">แก้ไขรายการขาย</h3>
+            <h3 id="edit-modal-title" class="text-lg font-bold text-gray-800">แก้ไขรายการขาย</h3>
             <button
+              type="button"
               @click="closeModal"
-              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer"
+              aria-label="ปิดหน้าต่างแก้ไขรายการขาย"
+              class="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -941,6 +985,7 @@
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 stroke-width="2"
+                aria-hidden="true"
               >
                 <path
                   stroke-linecap="round"
@@ -972,6 +1017,7 @@
               <input
                 type="text"
                 v-model="editForm.customerName"
+                aria-label="ชื่อลูกค้า"
                 required
                 class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
               />
@@ -987,6 +1033,7 @@
                 <input
                   type="number"
                   v-model.number="editForm.amount"
+                  aria-label="ยอดเงิน (บาท)"
                   step="0.01"
                   min="0"
                   required
@@ -1012,7 +1059,8 @@
                     type="button"
                     @click="editForm.itemCount = Math.max(1, (Number(editForm.itemCount) || 1) - 1)"
                     :disabled="editForm.itemCount <= 1"
-                    class="h-9 w-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-base flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer"
+                    aria-label="ลดจำนวน 1 ตัว"
+                    class="h-9 w-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-base flex items-center justify-center transition-colors disabled:opacity-30 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
                   >
                     -
                   </button>
@@ -1022,17 +1070,19 @@
                       v-model.number="editForm.itemCount"
                       step="1"
                       min="1"
+                      aria-label="จำนวนตัว (ตัว)"
                       required
                       class="w-full rounded-lg border-gray-300 pr-9 shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm font-bold text-center"
                     />
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
-                      <span class="text-gray-400 text-xs">ตัว</span>
+                      <span class="text-gray-500 text-xs" aria-hidden="true">ตัว</span>
                     </div>
                   </div>
                   <button
                     type="button"
                     @click="editForm.itemCount = (Number(editForm.itemCount) || 1) + 1"
-                    class="h-9 w-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-base flex items-center justify-center transition-colors cursor-pointer"
+                    aria-label="เพิ่มจำนวน 1 ตัว"
+                    class="h-9 w-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-base flex items-center justify-center transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
                   >
                     +
                   </button>
@@ -1040,14 +1090,15 @@
 
                 <!-- Quick pills in Edit modal -->
                 <div class="flex items-center gap-1 pt-1">
-                  <span class="text-[11px] text-gray-400">ด่วน:</span>
+                  <span class="text-[11px] text-gray-500 font-semibold">ด่วน:</span>
                   <button
                     v-for="num in [1, 2, 3, 4, 5, 6]"
                     :key="num"
                     type="button"
+                    :aria-label="'เลือกจำนวน ' + num + ' ตัว'"
                     @click="editForm.itemCount = num"
-                    class="px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer"
-                    :class="editForm.itemCount === num ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                    class="px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-hidden"
+                    :class="editForm.itemCount === num ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                   >
                     {{ num }}
                   </button>
@@ -1059,13 +1110,13 @@
               <button
                 type="button"
                 @click="closeModal"
-                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:outline-hidden"
               >
                 ยกเลิก
               </button>
               <button
                 type="submit"
-                class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors cursor-pointer"
+                class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
               >
                 บันทึกการแก้ไข
               </button>
@@ -1081,7 +1132,7 @@
 // Icons
 import { Wallet, ShoppingBag, ArrowLeft, Calendar, Search, Zap, RotateCcw } from "lucide-vue-next";
 import { useRouter } from "vue-router";
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
 import { th } from "date-fns/locale";
@@ -1759,8 +1810,26 @@ const formatThaiDateDisplay = (dateStr) => {
   return formatThaiDate(new Date(dateStr));
 };
 
+// Keyboard accessibility: dismiss open modal on Escape key
+const handleKeydown = (e) => {
+  if (e.key === "Escape") {
+    if (showQuickModal.value) {
+      showQuickModal.value = false;
+    } else if (showBatchModal.value) {
+      showBatchModal.value = false;
+    } else if (showModal.value) {
+      closeModal();
+    }
+  }
+};
+
 // Init
 onMounted(() => {
+  window.addEventListener("keydown", handleKeydown);
   fetchSales();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>

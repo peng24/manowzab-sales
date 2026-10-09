@@ -13,7 +13,7 @@
               <Calendar class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 ภาพรวมยอดขาย
               </p>
               <h1 class="text-lg md:text-xl font-black text-gray-900 leading-tight">
@@ -37,7 +37,7 @@
                 ]"
                 :key="range.key"
                 @click="selectedTimeRange = range.key"
-                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer text-xs"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer text-xs focus-visible:ring-2 focus-visible:ring-blue-500"
                 :class="
                   selectedTimeRange === range.key
                     ? 'bg-white font-bold text-blue-600 shadow-xs'
@@ -52,7 +52,7 @@
 
               <button
                 @click="selectedTimeRange = 'selectMonth'"
-                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs focus-visible:ring-2 focus-visible:ring-blue-500"
                 :class="
                   selectedTimeRange === 'selectMonth'
                     ? 'bg-blue-600 font-bold text-white shadow-xs'
@@ -64,7 +64,7 @@
 
               <button
                 @click="selectedTimeRange = 'selectYear'"
-                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs focus-visible:ring-2 focus-visible:ring-blue-500"
                 :class="
                   selectedTimeRange === 'selectYear'
                     ? 'bg-blue-600 font-bold text-white shadow-xs'
@@ -76,7 +76,7 @@
 
               <button
                 @click="selectedTimeRange = 'custom'"
-                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs"
+                class="rounded-lg px-2.5 py-1.5 transition-all duration-150 cursor-pointer flex items-center gap-1 text-xs focus-visible:ring-2 focus-visible:ring-blue-500"
                 :class="
                   selectedTimeRange === 'custom'
                     ? 'bg-blue-600 font-bold text-white shadow-xs'
@@ -101,6 +101,7 @@
             </span>
             <select
               v-model="selectedMonth"
+              aria-label="เลือกเดือนเฉพาะ"
               class="rounded-lg border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
               <option
@@ -113,6 +114,7 @@
             </select>
             <select
               v-model="selectedYear"
+              aria-label="เลือกปี พ.ศ. เฉพาะ"
               class="rounded-lg border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
@@ -128,6 +130,7 @@
             </span>
             <select
               v-model="selectedYear"
+              aria-label="เลือกปี พ.ศ. เฉพาะ"
               class="rounded-lg border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
             >
               <option v-for="year in yearRange" :key="year" :value="year">
@@ -147,6 +150,7 @@
               <input
                 type="date"
                 v-model="customStartDate"
+                aria-label="ตั้งแต่วันที่"
                 class="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
               />
             </div>
@@ -156,13 +160,14 @@
               <input
                 type="date"
                 v-model="customEndDate"
+                aria-label="ถึงวันที่"
                 class="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-xs focus:border-blue-500 focus:ring-blue-500 cursor-pointer"
               />
             </div>
 
             <button
               @click="fetchData"
-              class="rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-700 shadow-xs transition-colors cursor-pointer"
+              class="rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-700 shadow-xs transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-hidden"
             >
               ค้นหา
             </button>
