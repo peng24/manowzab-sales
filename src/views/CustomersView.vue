@@ -721,6 +721,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (searchTimeout) clearTimeout(searchTimeout);
+  customerStore.clearSearchResults();
 });
 
 const loadMoreCustomers = () => {

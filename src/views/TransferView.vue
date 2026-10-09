@@ -856,6 +856,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (unsubscribe) unsubscribe();
+  if (searchTimeout) clearTimeout(searchTimeout);
+  customerStore.clearSearchResults();
   document.removeEventListener("click", handleClickOutside);
 });
 </script>

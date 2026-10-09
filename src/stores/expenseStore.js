@@ -413,6 +413,16 @@ export const useExpenseStore = defineStore("expense", {
         this.loading = false;
       }
     },
+
+    /**
+     * Clear all expense data from store state (e.g. on logout)
+     */
+    clearExpenses() {
+      this.expenses = [];
+      this.categories = [];
+      this.selectedCategory = "all";
+      this.loading = false;
+    },
   },
 });
 

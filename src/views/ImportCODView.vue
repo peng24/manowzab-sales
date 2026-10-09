@@ -282,7 +282,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import ExcelJS from "exceljs";
 import Swal from "sweetalert2";
@@ -623,6 +623,10 @@ const clearData = () => {
   previewItems.value = [];
   processedFilesCount.value = 0;
 };
+
+onUnmounted(() => {
+  clearData();
+});
 
 const formatDate = formatThaiDateOptionalTime;
 

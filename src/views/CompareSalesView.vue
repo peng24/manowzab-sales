@@ -366,7 +366,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import {
   TrendingUp,
   RotateCw,
@@ -503,6 +503,11 @@ const loadComparisonData = async () => {
 
 onMounted(() => {
   loadComparisonData();
+});
+
+onUnmounted(() => {
+  allSales.value = [];
+  allExpenses.value = [];
 });
 
 // Data Filtering & Analysis Computation

@@ -274,6 +274,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useSalesStore } from "../stores/salesStore.js";
 import { useCustomerStore } from "../stores/customerStore.js";
+import { useExpenseStore } from "../stores/expenseStore.js";
 import { formatThaiDate, formatThaiDateTime } from "../utils/dateUtils.js";
 import {
   LayoutDashboard,
@@ -290,6 +291,7 @@ import {
 const router = useRouter();
 const salesStore = useSalesStore();
 const customerStore = useCustomerStore();
+const expenseStore = useExpenseStore();
 
 const todayThaiDate = computed(() => formatThaiDate(new Date()));
 
@@ -311,6 +313,7 @@ const handleLogout = async () => {
     // Clean up store data and unsubscribe listeners
     customerStore.unsubscribeCustomers();
     salesStore.clearSales();
+    expenseStore.clearExpenses();
 
     await signOut(auth);
     router.replace("/login");

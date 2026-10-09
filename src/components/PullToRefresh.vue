@@ -61,6 +61,7 @@ const isPulling = ref(false)
 const isRefreshing = ref(false)
 const pullDistance = ref(0)
 const startY = ref(0)
+let resetTimeout = null
 
 // Constants
 const threshold = 80 // Minimum pull distance to trigger refresh
@@ -107,7 +108,8 @@ const handleTouchEnd = async () => {
       console.error('Refresh error:', error)
     } finally {
       // Reset state
-      setTimeout(() => {
+      if (resetTimeout) clearTimeout(resetTimeout)
+      resetTimeout = setTimeout(() => {
         isRefreshing.value = false
         pullDistance.value = 0
       }, 300)
@@ -128,6 +130,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (resetTimeout) {
+    clearTimeout(resetTimeout)
+    resetTimeout = null
+  }
   if (containerRef.value) {
     containerRef.value.removeEventListener('touchstart', handleTouchStart)
     containerRef.value.removeEventListener('touchmove', handleTouchMove)
