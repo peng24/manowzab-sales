@@ -282,3 +282,13 @@ Business-savvy non-engineers: team leads, product owners, business partners. The
 | User asks to review, audit, sanity-check code or a plan | **scrutinize** |
 | User asks to document a fix, write a post-mortem/RCA | **post-mortem** |
 | User asks to write for management, make something less technical, write a status update | **management-talk** |
+
+---
+
+## Auto-Deploy Rule (กฎการอัปเดตขึ้นระบบอัตโนมัติ)
+
+- **นโยบาย Test ผ่านแล้วอัพเลย:** ทุกครั้งที่มีการแก้ไขโค้ด ฟีเจอร์ หรือแก้บั๊ก เมื่อตรวจสอบและรัน `npm run build` ผ่านเรียบร้อยแล้ว:
+  1. อัปเกรดเวอร์ชันใน `package.json` (bump patch เช่น 1.5.1 -> 1.5.2)
+  2. Commit และ Push ขึ้น GitHub (`origin main`)
+  3. รัน `npm run deploy` ขึ้นระบบจริง (GitHub Pages) ทันทีโดยอัตโนมัติทุกครั้ง
+  4. สรุปผลการอัปเดตและการขึ้นระบบให้ผู้ใช้ทราบ โดยไม่ต้องรอให้ผู้ใช้สั่ง "อัพเลย" ซ้ำอีก
