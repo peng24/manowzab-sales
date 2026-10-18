@@ -138,7 +138,7 @@
                   <div
                     class="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold"
                   >
-                    {{ customer.name.charAt(0).toUpperCase() }}
+                    {{ (customer.name || customer.id || "?").charAt(0).toUpperCase() }}
                   </div>
                   <div class="ml-4">
                     <router-link
@@ -582,6 +582,8 @@ import {
   getDoc,
   query,
   where,
+  orderBy,
+  limit,
   getDocs,
   getCountFromServer,
 } from "firebase/firestore";
@@ -622,9 +624,48 @@ const sourceSearch = ref("");
 const targetSearch = ref("");
 const showSourceDropdown = ref(false);
 const showTargetDropdown = ref(false);
+const extraMergeCustomers = ref([]);
 
 const sourceSalesCount = ref(0);
 const loadingSalesCount = ref(false);
+
+// Combined pool of paginated customers + any server-searched customers for Merge modal
+const allKnownCustomers = computed(() => {
+  const map = new Map();
+  customers.value.forEach((c) => {
+    const key = c.name || c.id;
+    if (key) map.set(key, c);
+  });
+  extraMergeCustomers.value.forEach((c) => {
+    const key = c.name || c.id;
+    if (key) map.set(key, c);
+  });
+  return Array.from(map.values());
+});
+
+const fetchMergeSearchCandidates = async (searchText) => {
+  const qVal = (searchText || "").trim();
+  if (!qVal) return;
+  try {
+    const customersRef = collection(db, "customers");
+    const q = query(
+      customersRef,
+      orderBy("name"),
+      where("name", ">=", qVal),
+      where("name", "<=", qVal + "\uf8ff"),
+      limit(20)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const found = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const mergedMap = new Map(extraMergeCustomers.value.map((c) => [c.name || c.id, c]));
+      found.forEach((c) => mergedMap.set(c.name || c.id, c));
+      extraMergeCustomers.value = Array.from(mergedMap.values());
+    }
+  } catch (err) {
+    console.error("Error searching merge candidates:", err);
+  }
+};
 
 // --- Computed ---
 const filteredCustomers = computed(() => {
@@ -634,23 +675,29 @@ const filteredCustomers = computed(() => {
 
 const filteredSourceOptions = computed(() => {
   const queryVal = sourceSearch.value.trim().toLowerCase();
-  if (!queryVal) return customers.value;
-  return customers.value.filter(c => c.name.toLowerCase().includes(queryVal));
+  if (!queryVal) return allKnownCustomers.value;
+  return allKnownCustomers.value.filter((c) =>
+    (c.name || "").toLowerCase().includes(queryVal)
+  );
 });
 
 const filteredTargetOptions = computed(() => {
   const queryVal = targetSearch.value.trim().toLowerCase();
-  const baseList = customers.value.filter(c => c.name !== mergeSource.value);
+  const baseList = allKnownCustomers.value.filter(
+    (c) => c.name !== mergeSource.value
+  );
   if (!queryVal) return baseList;
-  return baseList.filter(c => c.name.toLowerCase().includes(queryVal));
+  return baseList.filter((c) =>
+    (c.name || "").toLowerCase().includes(queryVal)
+  );
 });
 
 const sourceProfile = computed(() => {
-  return customers.value.find(c => c.name === mergeSource.value) || null;
+  return allKnownCustomers.value.find((c) => c.name === mergeSource.value) || null;
 });
 
 const targetProfile = computed(() => {
-  return customers.value.find(c => c.name === mergeTarget.value) || null;
+  return allKnownCustomers.value.find((c) => c.name === mergeTarget.value) || null;
 });
 
 const mergedTargetPreview = computed(() => {
@@ -680,6 +727,9 @@ const mergedTargetPreview = computed(() => {
 
 // --- Watcher for Search Query with Debounce ---
 let searchTimeout = null;
+let mergeSourceTimeout = null;
+let mergeTargetTimeout = null;
+
 watch(searchQuery, (newVal) => {
   if (searchTimeout) clearTimeout(searchTimeout);
   const cleaned = newVal.trim();
@@ -690,6 +740,24 @@ watch(searchQuery, (newVal) => {
   searchTimeout = setTimeout(() => {
     customerStore.searchCustomers(cleaned);
   }, 300);
+});
+
+watch(sourceSearch, (newVal) => {
+  if (mergeSourceTimeout) clearTimeout(mergeSourceTimeout);
+  const cleaned = (newVal || "").trim();
+  if (!cleaned) return;
+  mergeSourceTimeout = setTimeout(() => {
+    fetchMergeSearchCandidates(cleaned);
+  }, 250);
+});
+
+watch(targetSearch, (newVal) => {
+  if (mergeTargetTimeout) clearTimeout(mergeTargetTimeout);
+  const cleaned = (newVal || "").trim();
+  if (!cleaned) return;
+  mergeTargetTimeout = setTimeout(() => {
+    fetchMergeSearchCandidates(cleaned);
+  }, 250);
 });
 
 // --- Watcher for Sales Count ---
@@ -721,6 +789,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (searchTimeout) clearTimeout(searchTimeout);
+  if (mergeSourceTimeout) clearTimeout(mergeSourceTimeout);
+  if (mergeTargetTimeout) clearTimeout(mergeTargetTimeout);
   customerStore.clearSearchResults();
 });
 
@@ -835,6 +905,7 @@ const deleteCustomer = async (customer) => {
     if (result.isConfirmed) {
       try {
         await deleteDoc(doc(db, "customers", customer.id));
+        extraMergeCustomers.value = [];
         await customerStore.fetchCustomers(true); // Refresh customer list
         await Swal.fire({
           icon: "success",
@@ -860,6 +931,12 @@ const deleteCustomer = async (customer) => {
 // --- Merge Actions ---
 const openMergeModal = (customer = null) => {
   if (customer) {
+    const key = customer.name || customer.id;
+    if (key) {
+      const mergedMap = new Map(extraMergeCustomers.value.map((c) => [c.name || c.id, c]));
+      mergedMap.set(key, customer);
+      extraMergeCustomers.value = Array.from(mergedMap.values());
+    }
     mergeSource.value = customer.name;
     sourceSearch.value = customer.name;
   } else {
@@ -917,6 +994,7 @@ const handleMergeSubmit = async () => {
   isMerging.value = true;
   try {
     const res = await salesStore.mergeCustomers(mergeSource.value, mergeTarget.value);
+    extraMergeCustomers.value = [];
     await customerStore.fetchCustomers(true); // Refresh customer list
     await Swal.fire({
       icon: "success",

@@ -66,7 +66,7 @@
         </div>
 
         <button
-          @click="loadData"
+          @click="loadData(true)"
           :disabled="loading"
           class="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
         >
@@ -827,6 +827,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import Swal from "sweetalert2";
 import { formatCurrency } from "../utils/formatUtils.js";
+import { toDate } from "../utils/dateUtils.js";
 import { useSalesStore } from "../stores/salesStore.js";
 import { useExpenseStore } from "../stores/expenseStore.js";
 import {
@@ -880,28 +881,18 @@ const generalDonations = ref(0);
 const withholdingTax = ref(0);
 const paidPnd94Tax = ref(0);
 
-// --- Data Fetching ---
-const loadData = async () => {
+// --- Data Fetching (Always fetch full selected year so annual VAT & e-Payment trackers are accurate in both P.N.D.90 & P.N.D.94) ---
+const loadData = async (forceRefresh = false) => {
   loading.value = true;
   try {
-    let filter = {};
-
-    if (selectedForm.value === "pnd94") {
-      // Mid-Year: Jan 1 to Jun 30
-      const startDate = new Date(selectedYear.value, 0, 1);
-      const endDate = new Date(selectedYear.value, 5, 30, 23, 59, 59, 999);
-      filter = {
-        mode: "custom",
-        startDate,
-        endDate,
-      };
-    } else {
-      // Full Year: Jan 1 to Dec 31
-      filter = {
-        mode: "selectYear",
-        year: selectedYear.value,
-      };
+    if (forceRefresh === true) {
+      salesStore.invalidateCache();
     }
+
+    const filter = {
+      mode: "selectYear",
+      year: selectedYear.value,
+    };
 
     await Promise.all([
       salesStore.fetchSales(filter),
@@ -915,27 +906,56 @@ const loadData = async () => {
 };
 
 onMounted(() => {
-  loadData();
+  loadData(false);
 });
 
-watch([selectedYear, selectedForm], () => {
-  loadData();
+watch(selectedYear, () => {
+  loadData(false);
 });
 
 // --- Sales & Expense Aggregations ---
+const formSales = computed(() => {
+  if (selectedForm.value === "pnd94") {
+    return salesStore.sales.filter((item) => {
+      const d = toDate(item.dateTime || item.date);
+      return d && d.getFullYear() === selectedYear.value && d.getMonth() <= 5;
+    });
+  }
+  return salesStore.sales;
+});
+
+const formExpenses = computed(() => {
+  if (selectedForm.value === "pnd94") {
+    return expenseStore.expenses.filter((item) => {
+      const d = toDate(item.dateTime || item.date);
+      return d && d.getFullYear() === selectedYear.value && d.getMonth() <= 5;
+    });
+  }
+  return expenseStore.expenses;
+});
+
 const formRevenue = computed(() => {
-  return salesStore.sales.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  return formSales.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 });
 
 const formActualExpenses = computed(() => {
-  return expenseStore.expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const recorded = formExpenses.value.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  );
+  if (!expenseStore.autoOverheadEnabled || expenseStore.autoOverheadRate <= 0) {
+    return recorded;
+  }
+  const itemCount = formSales.value.reduce(
+    (sum, sale) => sum + (Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1),
+    0
+  );
+  return recorded + itemCount * expenseStore.autoOverheadRate;
 });
 
 // Full year aggregations for VAT & e-Payment warnings
 const fullYearRevenue = computed(() => {
-  if (selectedForm.value === "pnd90") return formRevenue.value;
-  // If in P.N.D.94 mode, formRevenue is 6 months; we calculate VAT tracking proportionally or based on loaded
-  return formRevenue.value;
+  return salesStore.sales.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 });
 
 const transferSales = computed(() => {

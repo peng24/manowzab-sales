@@ -352,7 +352,9 @@ export const useExpenseStore = defineStore("expense", {
      * Set filters and reload expenses
      */
     async setFilter(newFilters) {
-      this.filters = { ...this.filters, ...newFilters };
+      const { category, ...dateFilters } = newFilters || {};
+      this.filters = { ...this.filters, ...dateFilters };
+      this.selectedCategory = category !== undefined ? category : "all";
       await this.fetchExpenses();
     },
 

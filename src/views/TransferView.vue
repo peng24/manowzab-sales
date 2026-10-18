@@ -688,6 +688,7 @@ const saveTransfer = async () => {
       customerName: sanitizedCustomerName,
       amount: Number(formData.value.amount),
       itemCount: Math.max(1, Math.floor(Number(formData.value.itemCount) || 1)),
+      isItemCountSet: true,
       slipUrl: formData.value.slipUrl || null,
     };
 
@@ -730,7 +731,7 @@ const saveTransfer = async () => {
 
 // --- Edit Functions ---
 const openEditModal = (req) => {
-  const dateObj = toDate(req.dateTime);
+  const dateObj = toDate(req.dateTime || req.date) || new Date();
 
   editData.value = {
     id: req.id,
@@ -761,6 +762,7 @@ const submitEdit = async () => {
       customerName: sanitizedCustomerName,
       amount: Number(editData.value.amount),
       itemCount: Math.max(1, Math.floor(Number(editData.value.itemCount) || 1)),
+      isItemCountSet: true,
       slipUrl: editData.value.slipUrl || null,
     });
 

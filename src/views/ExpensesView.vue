@@ -809,7 +809,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
+import { format } from "date-fns";
 import { useExpenseStore } from "../stores/expenseStore";
 import { formatThaiDateTime, formatThaiDate, formatThaiShortDate, toDate } from "../utils/dateUtils";
 import Swal from "sweetalert2";
@@ -840,7 +841,7 @@ import ThaiDatePicker from "../components/ThaiDatePicker.vue";
 
 const expenseStore = useExpenseStore();
 
-const todayStr = new Date().toISOString().split("T")[0];
+const todayStr = format(new Date(), "yyyy-MM-dd");
 
 const formData = reactive({
   id: null,
@@ -1091,7 +1092,7 @@ const resetForm = () => {
   const keepDate = formData.date;
   const keepCategory = formData.category;
   formData.id = null;
-  formData.date = keepDate || new Date().toISOString().split("T")[0];
+  formData.date = keepDate || format(new Date(), "yyyy-MM-dd");
   formData.category = keepCategory || (expenseStore.categories.length > 0 ? expenseStore.categories[0].name : "");
   formData.title = formData.category === "ค่าขนส่ง/บรรจุภัณฑ์" ? "ค่าส่งของ Flash Express" : "";
   formData.amount = null;
@@ -1102,7 +1103,7 @@ const resetForm = () => {
 const startEdit = (item) => {
   formData.id = item.id;
   const d = toDate(item.dateTime);
-  formData.date = d ? d.toISOString().split("T")[0] : todayStr;
+  formData.date = d ? format(d, "yyyy-MM-dd") : todayStr;
   formData.title = item.title || "";
   formData.category = item.category || "";
   formData.amount = item.amount;
@@ -1114,7 +1115,7 @@ const handleSaveExpense = async () => {
   submitting.value = true;
   try {
     const expenseData = {
-      dateTime: new Date(formData.date),
+      dateTime: toDate(formData.date) || new Date(),
       title: formData.title,
       category: formData.category,
       amount: formData.amount,
@@ -1209,8 +1210,8 @@ const formattedDateRangeLabel = computed(() => {
     return `ปีนี้ (พ.ศ. ${now.getFullYear() + 543})`;
   }
   if (mode === "custom") {
-    const startText = customStartDate.value ? formatThaiShortDate(new Date(customStartDate.value)) : "-";
-    const endText = customEndDate.value ? formatThaiShortDate(new Date(customEndDate.value)) : "-";
+    const startText = customStartDate.value ? formatThaiShortDate(customStartDate.value) : "-";
+    const endText = customEndDate.value ? formatThaiShortDate(customEndDate.value) : "-";
     return `${startText} ถึง ${endText}`;
   }
   return "รายการทั้งหมด";
@@ -1259,15 +1260,20 @@ const setFilterMode = async (mode) => {
       mode,
       month: selectedMonth.value,
       year: selectedYear.value,
+      category: selectedCategoryFilter.value,
     });
   } else if (mode === "custom") {
     await expenseStore.setFilter({
       mode,
       startDate: customStartDate.value,
       endDate: customEndDate.value,
+      category: selectedCategoryFilter.value,
     });
   } else {
-    await expenseStore.setFilter({ mode });
+    await expenseStore.setFilter({
+      mode,
+      category: selectedCategoryFilter.value,
+    });
   }
 };
 
@@ -1277,6 +1283,7 @@ const onSelectMonthChange = async () => {
       mode: "selectMonth",
       month: selectedMonth.value,
       year: selectedYear.value,
+      category: selectedCategoryFilter.value,
     });
   }
 };
@@ -1287,6 +1294,7 @@ const onCustomDateChange = async () => {
       mode: "custom",
       startDate: customStartDate.value,
       endDate: customEndDate.value,
+      category: selectedCategoryFilter.value,
     });
   }
 };
@@ -1400,10 +1408,16 @@ const handleDeleteCategory = async (cat) => {
 };
 
 onMounted(async () => {
+  selectedCategoryFilter.value = "all";
+  expenseStore.selectedCategory = "all";
   await expenseStore.fetchCategories();
   if (expenseStore.categories.length > 0 && !formData.category) {
     formData.category = expenseStore.categories[0].name;
   }
   await expenseStore.fetchExpenses();
+});
+
+onUnmounted(() => {
+  expenseStore.selectedCategory = "all";
 });
 </script>

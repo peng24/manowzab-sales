@@ -268,10 +268,13 @@ export async function getAllExpenses(filter = {}) {
           start = startOfDay(now);
           end = endOfDay(now);
           break;
-        case "thisWeek":
-          start = startOfWeek(now, { weekStartsOn: 1 });
-          end = endOfWeek(now, { weekStartsOn: 1 });
+        case "thisWeek": {
+          const startObj = startDate ? toDate(startDate) : null;
+          const endObj = endDate ? toDate(endDate) : null;
+          start = startObj ? startOfDay(startObj) : startOfWeek(now, { weekStartsOn: 1 });
+          end = endObj ? endOfDay(endObj) : endOfWeek(now, { weekStartsOn: 1 });
           break;
+        }
         case "thisMonth":
           start = startOfMonth(now);
           end = endOfMonth(now);

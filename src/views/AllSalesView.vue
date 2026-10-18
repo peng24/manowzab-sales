@@ -1231,62 +1231,6 @@ const isItemVerified = (sale) => {
 
 // --- Computed Properties ---
 
-// Summary Statistics
-const salesStats = computed(() => {
-  return sales.value.reduce(
-    (acc, sale) => {
-      const amt = Number(sale.amount) || 0;
-      const items = Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1;
-      acc.totalSales += amt;
-      acc.totalOrders += 1;
-      acc.totalItems += items;
-      if (sale.type === "COD") {
-        acc.codAmount += amt;
-        acc.codCount += 1;
-      } else {
-        acc.transferAmount += amt;
-        acc.transferCount += 1;
-      }
-      if (items === 1) {
-        acc.oneItemCount += 1;
-      } else {
-        acc.multiItemCount += 1;
-      }
-      if (isItemVerified(sale)) {
-        acc.verifiedCount += 1;
-      } else {
-        acc.unverifiedCount += 1;
-      }
-      return acc;
-    },
-    {
-      totalSales: 0,
-      totalOrders: 0,
-      totalItems: 0,
-      transferAmount: 0,
-      codAmount: 0,
-      transferCount: 0,
-      codCount: 0,
-      oneItemCount: 0,
-      multiItemCount: 0,
-      verifiedCount: 0,
-      unverifiedCount: 0,
-    }
-  );
-});
-
-const totalSales = computed(() => salesStats.value.totalSales);
-const totalOrders = computed(() => salesStats.value.totalOrders);
-const totalItems = computed(() => salesStats.value.totalItems);
-const transferAmount = computed(() => salesStats.value.transferAmount);
-const codAmount = computed(() => salesStats.value.codAmount);
-const transferCount = computed(() => salesStats.value.transferCount);
-const codCount = computed(() => salesStats.value.codCount);
-const oneItemCount = computed(() => salesStats.value.oneItemCount);
-const multiItemCount = computed(() => salesStats.value.multiItemCount);
-const verifiedCount = computed(() => salesStats.value.verifiedCount);
-const unverifiedCount = computed(() => salesStats.value.unverifiedCount);
-
 // Filtered sales based on Search, Payment Type, & Item Count Filter
 const filteredSales = computed(() => {
   let list = sales.value;
@@ -1327,6 +1271,77 @@ const filteredSales = computed(() => {
   return list;
 });
 
+// Badge counts across all loaded sales in the period (so filter pills always show available counts)
+const badgeCounts = computed(() => {
+  return sales.value.reduce(
+    (acc, sale) => {
+      const items = Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1;
+      if (sale.type === "COD") {
+        acc.codCount += 1;
+      } else {
+        acc.transferCount += 1;
+      }
+      if (items === 1) {
+        acc.oneItemCount += 1;
+      } else {
+        acc.multiItemCount += 1;
+      }
+      if (isItemVerified(sale)) {
+        acc.verifiedCount += 1;
+      } else {
+        acc.unverifiedCount += 1;
+      }
+      return acc;
+    },
+    {
+      transferCount: 0,
+      codCount: 0,
+      oneItemCount: 0,
+      multiItemCount: 0,
+      verifiedCount: 0,
+      unverifiedCount: 0,
+    }
+  );
+});
+
+// Summary Statistics (reactive to active search/type/item filters)
+const salesStats = computed(() => {
+  return filteredSales.value.reduce(
+    (acc, sale) => {
+      const amt = Number(sale.amount) || 0;
+      const items = Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1;
+      acc.totalSales += amt;
+      acc.totalOrders += 1;
+      acc.totalItems += items;
+      if (sale.type === "COD") {
+        acc.codAmount += amt;
+      } else {
+        acc.transferAmount += amt;
+      }
+      return acc;
+    },
+    {
+      totalSales: 0,
+      totalOrders: 0,
+      totalItems: 0,
+      transferAmount: 0,
+      codAmount: 0,
+    }
+  );
+});
+
+const totalSales = computed(() => salesStats.value.totalSales);
+const totalOrders = computed(() => salesStats.value.totalOrders);
+const totalItems = computed(() => salesStats.value.totalItems);
+const transferAmount = computed(() => salesStats.value.transferAmount);
+const codAmount = computed(() => salesStats.value.codAmount);
+const transferCount = computed(() => badgeCounts.value.transferCount);
+const codCount = computed(() => badgeCounts.value.codCount);
+const oneItemCount = computed(() => badgeCounts.value.oneItemCount);
+const multiItemCount = computed(() => badgeCounts.value.multiItemCount);
+const verifiedCount = computed(() => badgeCounts.value.verifiedCount);
+const unverifiedCount = computed(() => badgeCounts.value.unverifiedCount);
+
 // Reset page on filter changes
 watch([searchQuery, typeFilter, countFilter], () => {
   currentPage.value = 1;
@@ -1348,14 +1363,14 @@ const paginatedSales = computed(() => {
   return filteredSales.value.slice(startIndex.value, endIndex.value);
 });
 
-// Batch calculation targets & preview
+// Batch calculation targets & preview (scoped to currently filtered sales)
 const batchTargetItems = computed(() => {
   if (batchScope.value === "onesOnly") {
-    return sales.value.filter(
+    return filteredSales.value.filter(
       (s) => !isItemVerified(s)
     );
   }
-  return sales.value;
+  return filteredSales.value;
 });
 
 const batchPreviewItems = computed(() => {
@@ -1376,7 +1391,7 @@ const batchPreviewItems = computed(() => {
 const batchPreviewNewTotalItems = computed(() => {
   const price = batchAvgPrice.value > 0 ? batchAvgPrice.value : 50;
   const targetIds = new Set(batchTargetItems.value.map((s) => s.id));
-  return sales.value.reduce((sum, s) => {
+  return filteredSales.value.reduce((sum, s) => {
     if (targetIds.has(s.id)) {
       const amt = Number(s.amount) || 0;
       const estCount = Math.max(1, Math.round(amt / price));
@@ -1430,11 +1445,11 @@ const fetchSales = async () => {
 
     sales.value = await getAllSales({
       mode: filterMode.value,
-      startDate: customStartDate.value ? new Date(customStartDate.value) : null,
-      endDate: customEndDate.value ? new Date(customEndDate.value) : null,
+      startDate: customStartDate.value ? toDate(customStartDate.value) : null,
+      endDate: customEndDate.value ? toDate(customEndDate.value) : null,
       month: selectedMonth.value,
       year: selectedYear.value,
-      limitCount: filterMode.value === "all" ? null : 300,
+      limitCount: null,
     });
   } catch (error) {
     console.error("Error fetching sales:", error);
@@ -1781,8 +1796,7 @@ const saveEdit = async () => {
       isItemCountSet: true,
     };
 
-    await updateSale(editingId.value, updateData);
-    salesStore.invalidateCache();
+    await salesStore.updateSale(editingId.value, updateData);
 
     // Update Local
     const index = sales.value.findIndex((s) => s.id === editingId.value);
@@ -1799,7 +1813,7 @@ const saveEdit = async () => {
     closeModal();
   } catch (error) {
     console.error("Update error:", error);
-    Swal.fire("Error", "บันทึกไม่สำเร็จ", "error");
+    Swal.fire("Error", error.message || "บันทึกไม่สำเร็จ", "error");
   }
 };
 
@@ -1807,7 +1821,7 @@ const saveEdit = async () => {
 const formatDate = formatThaiDateTime;
 const formatThaiDateDisplay = (dateStr) => {
   if (!dateStr) return "เลือกวันที่";
-  return formatThaiDate(new Date(dateStr));
+  return formatThaiDate(dateStr);
 };
 
 // Keyboard accessibility: dismiss open modal on Escape key

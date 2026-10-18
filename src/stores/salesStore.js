@@ -13,6 +13,35 @@ import {
 } from "../services/salesService.js";
 import { toDate } from "../utils/dateUtils.js";
 
+function formatLocalDateKey(d) {
+  if (!d) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function normalizeSalesFilter(f = {}) {
+  const mode = f.mode || "all";
+  const usesMonth = mode === "month" || mode === "selectMonth";
+  const usesYear = usesMonth || mode === "year" || mode === "selectYear";
+  const usesDates = mode === "custom" || mode === "thisWeek";
+  const startObj = usesDates && f.startDate ? toDate(f.startDate) : null;
+  const endObj = usesDates && f.endDate ? toDate(f.endDate) : null;
+
+  return {
+    mode,
+    month: usesMonth && f.month !== undefined && f.month !== null ? Number(f.month) : null,
+    year: usesYear && f.year !== undefined && f.year !== null ? Number(f.year) : null,
+    startDate: formatLocalDateKey(startObj),
+    endDate: formatLocalDateKey(endObj),
+    limitCount: f.limitCount || null,
+  };
+}
+
+let inFlightSalesPromise = null;
+let inFlightSalesFilterKey = null;
+
 export const useSalesStore = defineStore("sales", {
   state: () => ({
     sales: [],
@@ -166,48 +195,58 @@ export const useSalesStore = defineStore("sales", {
      */
     async fetchSales(customFilters = null) {
       const filters = customFilters || this.filters;
-      const isSameFilter =
-        this.loadedFilters &&
-        this.loadedFilters.mode === filters.mode &&
-        this.loadedFilters.month === filters.month &&
-        this.loadedFilters.year === filters.year &&
-        String(this.loadedFilters.startDate) === String(filters.startDate) &&
-        String(this.loadedFilters.endDate) === String(filters.endDate) &&
-        this.loadedFilters.limitCount === filters.limitCount;
+      const normalizedReq = normalizeSalesFilter(filters);
+      const reqKey = JSON.stringify(normalizedReq);
+      const loadedKey = this.loadedFilters ? JSON.stringify(this.loadedFilters) : null;
+      const isSameFilter = loadedKey === reqKey;
 
       const cacheTimeout = 5 * 60 * 1000; // 5 minutes in ms
-      const isCacheValid = 
-        this.sales.length > 0 && 
-        this.lastFetchTime && 
-        (new Date() - this.lastFetchTime < cacheTimeout);
+      const isCacheValid =
+        this.lastFetchTime !== null &&
+        new Date() - this.lastFetchTime < cacheTimeout;
 
       if (isSameFilter && isCacheValid) {
         return this.sales;
       }
 
-      this.loading = true;
-
-      try {
-        const salesData = await getAllSales(filters);
-
-        this.sales = salesData;
-        this.lastFetchTime = new Date();
-        this.loadedFilters = { ...filters };
-
-        // Fetch latest import time with 10-min cache to avoid duplicate queries
-        const importCacheTimeout = 10 * 60 * 1000;
-        if (!this.lastImportedTime || !this.lastImportFetchTime || (new Date() - this.lastImportFetchTime > importCacheTimeout)) {
-          this.lastImportedTime = await getLatestImportTime();
-          this.lastImportFetchTime = new Date();
-        }
-
-        return salesData;
-      } catch (error) {
-        console.error("Error fetching sales in store:", error);
-        throw error;
-      } finally {
-        this.loading = false;
+      if (inFlightSalesPromise && inFlightSalesFilterKey === reqKey) {
+        return inFlightSalesPromise;
       }
+
+      this.loading = true;
+      inFlightSalesFilterKey = reqKey;
+
+      inFlightSalesPromise = (async () => {
+        try {
+          const salesData = await getAllSales(filters);
+
+          this.sales = salesData;
+          this.lastFetchTime = new Date();
+          this.loadedFilters = normalizedReq;
+
+          // Fetch latest import time with 10-min cache to avoid duplicate queries
+          const importCacheTimeout = 10 * 60 * 1000;
+          if (
+            !this.lastImportedTime ||
+            !this.lastImportFetchTime ||
+            new Date() - this.lastImportFetchTime > importCacheTimeout
+          ) {
+            this.lastImportedTime = await getLatestImportTime();
+            this.lastImportFetchTime = new Date();
+          }
+
+          return salesData;
+        } catch (error) {
+          console.error("Error fetching sales in store:", error);
+          throw error;
+        } finally {
+          this.loading = false;
+          inFlightSalesPromise = null;
+          inFlightSalesFilterKey = null;
+        }
+      })();
+
+      return inFlightSalesPromise;
     },
 
     /**
@@ -217,6 +256,8 @@ export const useSalesStore = defineStore("sales", {
       this.lastFetchTime = null;
       this.lastImportFetchTime = null;
       this.loadedFilters = null;
+      inFlightSalesPromise = null;
+      inFlightSalesFilterKey = null;
     },
 
     /**

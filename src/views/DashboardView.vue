@@ -1,5 +1,5 @@
 <template>
-  <PullToRefresh :on-refresh="fetchData">
+  <PullToRefresh :on-refresh="handlePullRefresh">
     <div class="container mx-auto max-w-7xl py-0">
       <!-- Header & Filter Card -->
       <div
@@ -705,13 +705,14 @@ const getDateRange = () => {
         start: startOfYear(now),
         end: endOfYear(now),
       };
-    case "custom":
-      const startObj = customStartDate.value ? new Date(customStartDate.value) : now;
-      const endObj = customEndDate.value ? new Date(customEndDate.value) : now;
+    case "custom": {
+      const startObj = customStartDate.value ? toDate(customStartDate.value) || now : now;
+      const endObj = customEndDate.value ? toDate(customEndDate.value) || now : now;
       return {
         start: startOfDay(startObj),
         end: endOfDay(endObj),
       };
+    }
     case "allTime":
       return {
         start: null,
@@ -725,8 +726,12 @@ const getDateRange = () => {
   }
 };
 
-const fetchData = async () => {
+const fetchData = async (forceRefresh = false) => {
   try {
+    if (forceRefresh === true) {
+      salesStore.invalidateCache();
+    }
+
     const { start, end } = getDateRange();
 
     // Prepare filter for salesStore & expenseStore
@@ -775,10 +780,11 @@ const fetchData = async () => {
         filter = { mode: "thisMonth" };
     }
 
-    // Fetch sales using the store
-    await salesStore.fetchSales(filter);
-    // Fetch expenses using the store
-    await expenseStore.setFilter(filter);
+    // Fetch sales and expenses in parallel (salesStore deduplicates the concurrent call from expenseStore)
+    await Promise.all([
+      salesStore.fetchSales(filter),
+      expenseStore.setFilter(filter),
+    ]);
 
     // Get sales with dates from store for charting
     const txs = salesStore.salesWithDates;
@@ -801,6 +807,10 @@ const fetchData = async () => {
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
   }
+};
+
+const handlePullRefresh = async () => {
+  await fetchData(true);
 };
 
 const prepareChartData = (transactions, start, end) => {

@@ -67,10 +67,19 @@ let resetTimeout = null
 const threshold = 80 // Minimum pull distance to trigger refresh
 const maxPullDistance = 120 // Maximum pull distance for visual effect
 
+// Helper to get current scroll position from main layout container or window
+const getScrollTop = () => {
+  const scrollContainer = containerRef.value?.closest('main')
+  if (scrollContainer) {
+    return scrollContainer.scrollTop
+  }
+  return window.scrollY || document.documentElement.scrollTop || 0
+}
+
 // Touch Event Handlers
 const handleTouchStart = (e) => {
   // Only allow pull-to-refresh at the top of the page
-  if (window.scrollY !== 0) return
+  if (getScrollTop() > 0) return
   
   startY.value = e.touches[0].clientY
   isPulling.value = true
@@ -79,11 +88,17 @@ const handleTouchStart = (e) => {
 const handleTouchMove = (e) => {
   if (!isPulling.value || isRefreshing.value) return
   
+  if (getScrollTop() > 0) {
+    isPulling.value = false
+    pullDistance.value = 0
+    return
+  }
+
   const currentY = e.touches[0].clientY
   const distance = currentY - startY.value
   
   // Only pull down (positive distance) and only at top of page
-  if (distance > 0 && window.scrollY === 0) {
+  if (distance > 0) {
     // Prevent default scroll behavior while pulling
     e.preventDefault()
     

@@ -128,7 +128,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-vue-next";
-import { formatThaiDate } from "../utils/dateUtils.js";
+import { formatThaiDate, toDate } from "../utils/dateUtils.js";
 
 const props = defineProps({
   modelValue: {
@@ -179,8 +179,8 @@ watch(
   () => props.modelValue,
   (newVal) => {
     if (newVal) {
-      const d = new Date(newVal);
-      if (!isNaN(d.getTime())) {
+      const d = toDate(newVal);
+      if (d) {
         currentMonth.value = d.getMonth();
         currentYear.value = d.getFullYear();
       }
@@ -192,8 +192,8 @@ watch(
 // Computed Display Text
 const thaiFormattedDate = computed(() => {
   if (!props.modelValue) return "เลือกวันที่";
-  const dateObj = new Date(props.modelValue);
-  if (isNaN(dateObj.getTime())) return "เลือกวันที่";
+  const dateObj = toDate(props.modelValue);
+  if (!dateObj) return "เลือกวันที่";
   return formatThaiDate(dateObj);
 });
 

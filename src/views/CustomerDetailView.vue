@@ -256,16 +256,12 @@ const props = defineProps({
 
 // State
 const loading = ref(true);
-const sales = ref([]);
+const allCustomerSales = ref([]);
 const currentPage = ref(1);
 const pageSize = 10;
 const selectedFilter = ref("all");
 const totalSpent = ref(0);
 const totalOrders = ref(0);
-
-// Pagination Cursors
-const pageCursors = ref({ 1: null });
-const hasMore = ref(true);
 
 // Date Filter Options
 const dateFilters = [
@@ -285,14 +281,15 @@ const totalPages = computed(() => {
   return Math.ceil(totalOrders.value / pageSize) || 1;
 });
 
+const sales = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return allCustomerSales.value.slice(start, start + pageSize);
+});
+
 // Methods
-const fetchCustomerSales = async (isRefresh = false) => {
+const fetchCustomerSales = async () => {
   loading.value = true;
-  if (isRefresh) {
-    currentPage.value = 1;
-    pageCursors.value = { 1: null };
-    hasMore.value = true;
-  }
+  currentPage.value = 1;
 
   try {
     const now = new Date();
@@ -312,34 +309,17 @@ const fetchCustomerSales = async (isRefresh = false) => {
 
     const decodedCustomerName = props.name ? decodeURIComponent(props.name) : "";
 
-    if (currentPage.value === 1) {
-      // Single query for Page 1: fetch all items (up to 200) for stats + page 1 slice
-      const { items: allItems, lastDoc } = await getSalesByCustomerName(decodedCustomerName, {
-        cutoffDate,
-        limitCount: 200,
-      });
-      totalOrders.value = allItems.length;
-      totalSpent.value = allItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const { items: allItems } = await getSalesByCustomerName(decodedCustomerName, {
+      cutoffDate,
+      limitCount: 500,
+    });
 
-      sales.value = allItems.slice(0, pageSize);
-      hasMore.value = allItems.length > pageSize;
-    } else {
-      // Subsequent pages fetch with cursor pagination
-      const { items, lastDoc } = await getSalesByCustomerName(decodedCustomerName, {
-        cutoffDate,
-        limitCount: pageSize,
-        lastDoc: pageCursors.value[currentPage.value],
-      });
-
-      sales.value = items;
-
-      if (lastDoc && items.length === pageSize) {
-        pageCursors.value[currentPage.value + 1] = lastDoc;
-        hasMore.value = true;
-      } else {
-        hasMore.value = false;
-      }
-    }
+    allCustomerSales.value = allItems || [];
+    totalOrders.value = allCustomerSales.value.length;
+    totalSpent.value = allCustomerSales.value.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0),
+      0
+    );
   } catch (error) {
     console.error("Error fetching customer sales:", error);
   } finally {
@@ -348,16 +328,14 @@ const fetchCustomerSales = async (isRefresh = false) => {
 };
 
 const nextPage = () => {
-  if (currentPage.value < totalPages.value && hasMore.value) {
+  if (currentPage.value < totalPages.value) {
     currentPage.value++;
-    fetchCustomerSales();
   }
 };
 
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
-    fetchCustomerSales();
   }
 };
 

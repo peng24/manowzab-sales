@@ -8,7 +8,12 @@ import { Timestamp } from "firebase/firestore";
  */
 export const toDate = (dateField) => {
   if (!dateField) return null;
+  if (dateField instanceof Date) return isNaN(dateField.getTime()) ? null : dateField;
   if (dateField.toDate) return dateField.toDate(); // Firebase Timestamp
+  if (typeof dateField === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateField)) {
+    const [y, m, day] = dateField.split("-").map(Number);
+    return new Date(y, m - 1, day);
+  }
   const d = new Date(dateField);
   return isNaN(d.getTime()) ? null : d;
 };

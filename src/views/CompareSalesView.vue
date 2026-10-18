@@ -14,7 +14,7 @@
 
       <div class="flex items-center gap-2">
         <button
-          @click="loadComparisonData"
+          @click="loadComparisonData(true)"
           class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-all flex items-center gap-1.5 cursor-pointer"
         >
           <RotateCw class="h-4 w-4 text-slate-400" :class="{ 'animate-spin': loading }" />
@@ -388,10 +388,14 @@ import { formatThaiDate, toDate } from "../utils/dateUtils.js";
 // Services & Store
 import { getAllSales } from "../services/salesService.js";
 import { getAllExpenses } from "../services/expenseService.js";
+import { useExpenseStore } from "../stores/expenseStore.js";
+
+const expenseStore = useExpenseStore();
 
 const loading = ref(false);
 const allSales = ref([]);
 const allExpenses = ref([]);
+const loadedYearsCache = new Map();
 
 const thaiMonths = [
   "มกราคม",
@@ -484,28 +488,60 @@ const periodSummaryLabel = computed(() => {
   return `เปรียบเทียบ [ ${labelPeriod1.value} ] vs [ ${labelPeriod2.value} ]`;
 });
 
-// Data Loaders
-const loadComparisonData = async () => {
-  loading.value = true;
-  try {
-    const [salesData, expensesData] = await Promise.all([
-      getAllSales(),
-      getAllExpenses(),
-    ]);
-    allSales.value = salesData || [];
-    allExpenses.value = expensesData || [];
-  } catch (err) {
-    console.error("Error loading comparison data:", err);
-  } finally {
-    loading.value = false;
+// Data Loaders (fetches only the active comparison years instead of full database)
+const loadComparisonData = async (forceRefresh = false) => {
+  if (forceRefresh === true) {
+    loadedYearsCache.clear();
   }
+
+  const activeYears = [...new Set([primaryYear.value, secondaryYear.value])];
+  const missingYears = activeYears.filter((yr) => !loadedYearsCache.has(yr));
+
+  if (missingYears.length > 0) {
+    loading.value = true;
+    try {
+      await Promise.all(
+        missingYears.map(async (yr) => {
+          const [salesData, expensesData] = await Promise.all([
+            getAllSales({ mode: "year", year: yr }),
+            getAllExpenses({ mode: "year", year: yr }),
+          ]);
+          loadedYearsCache.set(yr, {
+            sales: salesData || [],
+            expenses: expensesData || [],
+          });
+        })
+      );
+    } catch (err) {
+      console.error("Error loading comparison data:", err);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  const combinedSales = [];
+  const combinedExpenses = [];
+  activeYears.forEach((yr) => {
+    const cached = loadedYearsCache.get(yr);
+    if (cached) {
+      combinedSales.push(...cached.sales);
+      combinedExpenses.push(...cached.expenses);
+    }
+  });
+  allSales.value = combinedSales;
+  allExpenses.value = combinedExpenses;
 };
 
+watch([primaryYear, secondaryYear], () => {
+  loadComparisonData(false);
+});
+
 onMounted(() => {
-  loadComparisonData();
+  loadComparisonData(false);
 });
 
 onUnmounted(() => {
+  loadedYearsCache.clear();
   allSales.value = [];
   allExpenses.value = [];
 });
@@ -513,13 +549,16 @@ onUnmounted(() => {
 // Data Filtering & Analysis Computation
 const filteredSales = computed(() => {
   if (paymentTypeFilter.value === "all") return allSales.value;
-  return allSales.value.filter((s) => s.type === paymentTypeFilter.value);
+  return allSales.value.filter((s) => {
+    const type = s.type === "COD" ? "COD" : "Transfer";
+    return type === paymentTypeFilter.value;
+  });
 });
 
 // Period 1 Records
 const period1Sales = computed(() => {
   return filteredSales.value.filter((sale) => {
-    const d = toDate(sale.dateTime);
+    const d = toDate(sale.dateTime || sale.date);
     if (!d) return false;
     if (compareMode.value === "YoY") {
       return d.getFullYear() === primaryYear.value;
@@ -533,7 +572,7 @@ const period1Sales = computed(() => {
 
 const period1Expenses = computed(() => {
   return allExpenses.value.filter((exp) => {
-    const d = toDate(exp.date);
+    const d = toDate(exp.dateTime || exp.date);
     if (!d) return false;
     if (compareMode.value === "YoY") {
       return d.getFullYear() === primaryYear.value;
@@ -548,7 +587,7 @@ const period1Expenses = computed(() => {
 // Period 2 Records
 const period2Sales = computed(() => {
   return filteredSales.value.filter((sale) => {
-    const d = toDate(sale.dateTime);
+    const d = toDate(sale.dateTime || sale.date);
     if (!d) return false;
     if (compareMode.value === "YoY") {
       return d.getFullYear() === secondaryYear.value;
@@ -562,7 +601,7 @@ const period2Sales = computed(() => {
 
 const period2Expenses = computed(() => {
   return allExpenses.value.filter((exp) => {
-    const d = toDate(exp.date);
+    const d = toDate(exp.dateTime || exp.date);
     if (!d) return false;
     if (compareMode.value === "YoY") {
       return d.getFullYear() === secondaryYear.value;
@@ -581,11 +620,20 @@ const stats1 = computed(() => {
     0
   );
   const orderCount = period1Sales.value.length;
+  const itemCount = period1Sales.value.reduce(
+    (acc, item) => acc + (Number(item.itemCount) > 0 ? Number(item.itemCount) : 1),
+    0
+  );
   const aov = orderCount > 0 ? salesSum / orderCount : 0;
-  const expenseSum = period1Expenses.value.reduce(
+  const recordedExpenseSum = period1Expenses.value.reduce(
     (acc, item) => acc + Number(item.amount || 0),
     0
   );
+  const overheadCost =
+    expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0
+      ? itemCount * expenseStore.autoOverheadRate
+      : 0;
+  const expenseSum = recordedExpenseSum + overheadCost;
   const netProfit = salesSum - expenseSum;
   const margin = salesSum > 0 ? (netProfit / salesSum) * 100 : 0;
   return {
@@ -605,11 +653,20 @@ const stats2 = computed(() => {
     0
   );
   const orderCount = period2Sales.value.length;
+  const itemCount = period2Sales.value.reduce(
+    (acc, item) => acc + (Number(item.itemCount) > 0 ? Number(item.itemCount) : 1),
+    0
+  );
   const aov = orderCount > 0 ? salesSum / orderCount : 0;
-  const expenseSum = period2Expenses.value.reduce(
+  const recordedExpenseSum = period2Expenses.value.reduce(
     (acc, item) => acc + Number(item.amount || 0),
     0
   );
+  const overheadCost =
+    expenseStore.autoOverheadEnabled && expenseStore.autoOverheadRate > 0
+      ? itemCount * expenseStore.autoOverheadRate
+      : 0;
+  const expenseSum = recordedExpenseSum + overheadCost;
   const netProfit = salesSum - expenseSum;
   const margin = salesSum > 0 ? (netProfit / salesSum) * 100 : 0;
   return {
@@ -652,12 +709,18 @@ const chartLabels = computed(() => {
   if (compareMode.value === "YoY") {
     return thaiMonths.map((m) => m.substring(0, 3));
   }
-  // Days 1 to 31
-  const daysInMonth = new Date(
+  // Days 1 to max days of either compared month
+  const days1 = new Date(
     primaryYear.value,
     primaryMonth.value + 1,
     0
   ).getDate();
+  const days2 = new Date(
+    secondaryYear.value,
+    secondaryMonth.value + 1,
+    0
+  ).getDate();
+  const daysInMonth = Math.max(days1, days2);
   const list = [];
   for (let i = 1; i <= daysInMonth; i++) {
     list.push(`วันที่ ${i}`);
@@ -669,7 +732,7 @@ const series1Data = computed(() => {
   if (compareMode.value === "YoY") {
     const monthTotals = Array(12).fill(0);
     period1Sales.value.forEach((s) => {
-      const d = toDate(s.dateTime);
+      const d = toDate(s.dateTime || s.date);
       if (d) monthTotals[d.getMonth()] += Number(s.amount || 0);
     });
     return monthTotals;
@@ -678,7 +741,7 @@ const series1Data = computed(() => {
   const daysInMonth = chartLabels.value.length;
   const dayTotals = Array(daysInMonth).fill(0);
   period1Sales.value.forEach((s) => {
-    const d = toDate(s.dateTime);
+    const d = toDate(s.dateTime || s.date);
     if (d) {
       const dayIdx = d.getDate() - 1;
       if (dayIdx >= 0 && dayIdx < daysInMonth) {
@@ -693,7 +756,7 @@ const series2Data = computed(() => {
   if (compareMode.value === "YoY") {
     const monthTotals = Array(12).fill(0);
     period2Sales.value.forEach((s) => {
-      const d = toDate(s.dateTime);
+      const d = toDate(s.dateTime || s.date);
       if (d) monthTotals[d.getMonth()] += Number(s.amount || 0);
     });
     return monthTotals;
@@ -702,7 +765,7 @@ const series2Data = computed(() => {
   const daysInMonth = chartLabels.value.length;
   const dayTotals = Array(daysInMonth).fill(0);
   period2Sales.value.forEach((s) => {
-    const d = toDate(s.dateTime);
+    const d = toDate(s.dateTime || s.date);
     if (d) {
       const dayIdx = d.getDate() - 1;
       if (dayIdx >= 0 && dayIdx < daysInMonth) {

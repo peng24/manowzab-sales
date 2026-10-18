@@ -15,11 +15,15 @@ import {
   getDoc,
   startAfter,
   writeBatch,
+  documentId,
+  serverTimestamp,
 } from "firebase/firestore";
 import {
   format,
   startOfDay,
   endOfDay,
+  startOfWeek,
+  endOfWeek,
   startOfMonth,
   endOfMonth,
   startOfYear,
@@ -110,12 +114,13 @@ export async function getAllSales(filter = {}) {
           start = startOfDay(now);
           end = endOfDay(now);
           break;
-        case "thisWeek":
-          if (startDate && endDate) {
-            start = startDate;
-            end = endDate;
-          }
+        case "thisWeek": {
+          const startObj = startDate ? toDate(startDate) : null;
+          const endObj = endDate ? toDate(endDate) : null;
+          start = startObj ? startOfDay(startObj) : startOfWeek(now, { weekStartsOn: 1 });
+          end = endObj ? endOfDay(endObj) : endOfWeek(now, { weekStartsOn: 1 });
           break;
+        }
         case "thisMonth":
           start = startOfMonth(now);
           end = endOfMonth(now);
@@ -148,8 +153,12 @@ export async function getAllSales(filter = {}) {
           break;
         case "custom":
           if (startDate && endDate) {
-            start = startOfDay(new Date(startDate));
-            end = endOfDay(new Date(endDate));
+            const startObj = toDate(startDate);
+            const endObj = toDate(endDate);
+            if (startObj && endObj) {
+              start = startOfDay(startObj);
+              end = endOfDay(endObj);
+            }
           }
           break;
       }
@@ -295,7 +304,6 @@ export async function upsertCustomer(customerData) {
       throw new Error(`ไม่สามารถอัปเดตข้อมูลลูกค้า ${name} ได้ในขณะนี้ เนื่องจากกำลังอยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
     }
 
-    const { serverTimestamp } = await import("firebase/firestore");
     await setDoc(
       customerRef,
       {
@@ -320,7 +328,6 @@ export async function upsertCustomer(customerData) {
  */
 export async function batchImportCODSales(salesItems, onProgress = null) {
   try {
-    const { writeBatch, serverTimestamp } = await import("firebase/firestore");
     const BATCH_SIZE = 200; // Safe chunk size (200 sales + 200 customer updates = 400 ops max)
 
     const allOperations = [];
@@ -377,6 +384,36 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
       });
     });
 
+    // Preserve already-verified itemCount / isItemCountSet on re-imported COD orders
+    const uniqueSalesIds = [
+      ...new Set(
+        allOperations
+          .filter((op) => op.type === "sales" && !op.data.isItemCountSet)
+          .map((op) => op.id)
+      ),
+    ];
+    const existingVerifiedMap = new Map();
+    const ID_CHUNK_SIZE = 30;
+    for (let i = 0; i < uniqueSalesIds.length; i += ID_CHUNK_SIZE) {
+      const idSlice = uniqueSalesIds.slice(i, i + ID_CHUNK_SIZE);
+      if (idSlice.length > 0) {
+        const existingQuery = query(
+          collection(db, "sales"),
+          where(documentId(), "in", idSlice)
+        );
+        const existingSnap = await getDocs(existingQuery);
+        existingSnap.forEach((docSnap) => {
+          const d = docSnap.data();
+          if (d.isItemCountSet === true || (Number(d.itemCount) || 1) > 1) {
+            existingVerifiedMap.set(docSnap.id, {
+              itemCount: Math.max(1, Math.floor(Number(d.itemCount) || 1)),
+              isItemCountSet: true,
+            });
+          }
+        });
+      }
+    }
+
     // 2. Process in chunks
     const chunks = [];
     for (let i = 0; i < allOperations.length; i += BATCH_SIZE) {
@@ -391,7 +428,15 @@ export async function batchImportCODSales(salesItems, onProgress = null) {
       for (const op of chunk) {
         if (op.type === "sales") {
           const docRef = doc(db, "sales", op.id);
-          batch.set(docRef, op.data, { merge: true });
+          const preserved = existingVerifiedMap.get(op.id);
+          const payload = preserved
+            ? {
+                ...op.data,
+                itemCount: preserved.itemCount,
+                isItemCountSet: preserved.isItemCountSet,
+              }
+            : op.data;
+          batch.set(docRef, payload, { merge: true });
         } else if (op.type === "customer") {
           const docRef = doc(db, "customers", op.id);
           batch.set(docRef, op.data, { merge: true });
@@ -479,8 +524,6 @@ export async function getLatestImportTime() {
  * @returns {Promise<{salesCount: number}>} Number of sales updated
  */
 export async function mergeCustomers(sourceName, targetName) {
-  const { writeBatch, doc, getDoc, getDocs, collection, query, where } = await import("firebase/firestore");
-  
   if (!sourceName || !targetName) {
     throw new Error("ทั้งชื่อลูกค้าต้นทางและปลายทางมีความจำเป็น");
   }
@@ -575,8 +618,8 @@ export async function mergeCustomers(sourceName, targetName) {
     console.error("Error merging customers in service:", error);
     // Guarantee unlock both customer documents on error
     const unlockBatch = writeBatch(db);
-    unlockBatch.update(sourceRef, { isMerging: false }).catch(() => {});
-    unlockBatch.update(targetRef, { isMerging: false }).catch(() => {});
+    unlockBatch.update(sourceRef, { isMerging: false });
+    unlockBatch.update(targetRef, { isMerging: false });
     await unlockBatch.commit().catch(() => {});
     throw error;
   }
