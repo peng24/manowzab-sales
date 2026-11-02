@@ -1,6 +1,7 @@
 <template>
   <PullToRefresh :on-refresh="handlePullRefresh">
     <div class="container mx-auto max-w-7xl py-0">
+      <p v-if="salesStore.loadError || expenseStore.loadError" role="alert" class="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">ข้อมูลโหลดไม่ครบ กรุณารีเฟรชก่อนใช้ยอดสรุป: {{ salesStore.loadError || expenseStore.loadError }} <button @click="fetchData(true)" class="underline">ลองอีกครั้ง</button></p>
       <!-- Header & Filter Card -->
       <div
         class="mb-3.5 rounded-2xl border border-gray-100 bg-white p-3.5 md:p-4 shadow-sm"

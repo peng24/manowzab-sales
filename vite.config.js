@@ -11,6 +11,15 @@ const buildTime = new Date().toISOString();
 
 export default defineConfig({
   plugins: [vue()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (/[\\/]node_modules[\\/](?:@firebase|firebase)[\\/]/.test(id)) return "firebase";
+        },
+      },
+    },
+  },
   base: "/manowzab-sales/", // สำหรับ GitHub Pages
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),

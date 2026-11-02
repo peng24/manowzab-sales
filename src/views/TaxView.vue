@@ -24,7 +24,7 @@
             ระบบคำนวณและวางแผนภาษีสรรพากร
           </h1>
           <p class="text-xs text-gray-500 mt-0.5">
-            คำนวณตามสูตรและประมวลรัษฎากร 100% พร้อมตารางตัวเลขสำหรับนำไปยื่น e-Filing (rd.go.th)
+            ประมาณการภาษีบุคคลธรรมดาขายสินค้าออนไลน์แบบซื้อมาขายไป รวมโอนและ COD จากร้านนี้
           </p>
         </div>
       </div>
@@ -85,7 +85,7 @@
         <span class="text-base">{{ selectedForm === 'pnd94' ? '📄' : '📜' }}</span>
         <span>
           <strong>กำลังดู: {{ selectedForm === 'pnd94' ? 'แบบ ภ.ง.ด. 94 (ภาษีเงินได้บุคคลธรรมดาครึ่งปี)' : 'แบบ ภ.ง.ด. 90 (ภาษีเงินได้บุคคลธรรมดาประจำปี)' }}</strong>
-          — {{ selectedForm === 'pnd94' ? 'สรุปรายได้และรายจ่ายช่วง 6 เดือนแรก (1 ม.ค. – 30 มิ.ย.) หักค่าลดหย่อนกึ่งหนึ่ง ยื่น ก.ค. - ก.ย.' : 'สรุปรายได้และรายจ่ายทั้งปี (1 ม.ค. – 31 ธ.ค.) ยื่น ม.ค. - มี.ค. ของปีถัดไป' }}
+          — {{ selectedForm === 'pnd94' ? 'สรุปรายได้และรายจ่ายช่วง 6 เดือนแรก (1 ม.ค. – 30 มิ.ย.) ใช้ยอดจ่ายจริงครึ่งปีและค่าลดหย่อนตามประเภท ยื่น ก.ค. - ก.ย.' : 'สรุปรายได้และรายจ่ายทั้งปี (1 ม.ค. – 31 ธ.ค.) ยื่น ม.ค. - มี.ค. ของปีถัดไป' }}
         </span>
       </div>
       <span class="hidden sm:inline-block rounded-full bg-white px-2 py-0.5 text-[11px] font-bold shadow-xs border">
@@ -101,22 +101,23 @@
       </div>
     </div>
 
+    <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-800">โหลดข้อมูลไม่ครบ จึงไม่แสดงผลภาษี: {{ loadError }} <button @click="loadData()" class="underline">ลองอีกครั้ง</button></div>
     <div v-else class="space-y-4 animate-fade-in-up">
       <!-- 2. Legal Thresholds & Warning Trackers (VAT 1.8M & e-Payment) -->
       <div class="grid gap-3.5 grid-cols-1 md:grid-cols-2">
         <!-- VAT 1.8 Million Threshold Tracker -->
         <div
           class="rounded-2xl border bg-white p-4 md:p-5 shadow-sm transition-all relative overflow-hidden"
-          :class="vatProgressPercent >= 100 ? 'border-rose-300 bg-rose-50/20' : (vatProgressPercent >= 80 ? 'border-amber-300 bg-amber-50/20' : 'border-gray-200')"
+          :class="vatExceeded ? 'border-rose-300 bg-rose-50/20' : (vatProgressPercent >= 80 ? 'border-amber-300 bg-amber-50/20' : 'border-gray-200')"
         >
           <div class="flex items-start justify-between">
             <div>
               <div class="flex items-center gap-2">
                 <span
                   class="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                  :class="vatProgressPercent >= 100 ? 'bg-rose-100 text-rose-700' : (vatProgressPercent >= 80 ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')"
+                  :class="vatExceeded ? 'bg-rose-100 text-rose-700' : (vatProgressPercent >= 80 ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')"
                 >
-                  ภาษีมูลค่าเพิ่ม (VAT 7%)
+                  ภาษีมูลค่าเพิ่ม (VAT)
                 </span>
                 <span class="text-xs font-semibold text-gray-500">เกณฑ์ 1.8 ล้านบาท/ปี</span>
               </div>
@@ -127,7 +128,7 @@
             </div>
             <div
               class="rounded-xl p-2.5"
-              :class="vatProgressPercent >= 100 ? 'bg-rose-100 text-rose-600' : (vatProgressPercent >= 80 ? 'bg-amber-100 text-amber-600' : 'bg-blue-50 text-blue-600')"
+              :class="vatExceeded ? 'bg-rose-100 text-rose-600' : (vatProgressPercent >= 80 ? 'bg-amber-100 text-amber-600' : 'bg-blue-50 text-blue-600')"
             >
               <ShieldAlert v-if="vatProgressPercent >= 80" class="h-6 w-6" />
               <ShieldCheck v-else class="h-6 w-6" />
@@ -137,15 +138,15 @@
           <!-- Progress Bar -->
           <div class="mt-3">
             <div class="flex justify-between text-xs font-semibold mb-1">
-              <span :class="vatProgressPercent >= 100 ? 'text-rose-600 font-bold' : (vatProgressPercent >= 80 ? 'text-amber-600 font-bold' : 'text-gray-600')">
-                {{ vatProgressPercent >= 100 ? '⚠️ เกินเกณฑ์ 1.8 ล้านแล้ว' : (vatProgressPercent >= 80 ? '⚡ ใกล้ถึงเกณฑ์ 1.8 ล้าน' : '✅ ปลอดภัย ยังไม่ถึงเกณฑ์') }}
+              <span :class="vatExceeded ? 'text-rose-600 font-bold' : (vatProgressPercent >= 80 ? 'text-amber-600 font-bold' : 'text-gray-600')">
+                {{ vatExceeded ? '⚠️ เกินเกณฑ์ 1.8 ล้านแล้ว' : (vatProgressPercent >= 80 ? '⚡ ใกล้ถึงเกณฑ์ 1.8 ล้าน' : 'รายรับที่บันทึกยังไม่เกินเกณฑ์') }}
               </span>
               <span class="font-bold text-gray-800">{{ vatProgressPercent }}%</span>
             </div>
             <div class="h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
               <div
                 class="h-full transition-all duration-500 rounded-full"
-                :class="vatProgressPercent >= 100 ? 'bg-rose-500' : (vatProgressPercent >= 80 ? 'bg-amber-500' : 'bg-emerald-500')"
+                :class="vatExceeded ? 'bg-rose-500' : (vatProgressPercent >= 80 ? 'bg-amber-500' : 'bg-emerald-500')"
                 :style="{ width: `${Math.min(vatProgressPercent, 100)}%` }"
               ></div>
             </div>
@@ -153,67 +154,26 @@
 
           <!-- Notice / Details -->
           <div class="mt-3 pt-2.5 border-t border-gray-100 text-xs text-gray-600">
-            <p v-if="vatProgressPercent >= 100" class="text-rose-700 font-semibold flex items-center gap-1">
+            <p v-if="vatExceeded" class="text-rose-700 font-semibold flex items-center gap-1">
               <AlertTriangle class="h-4 w-4 shrink-0" />
-              ต้องยื่นจดทะเบียนภาษีมูลค่าเพิ่ม (ภ.พ.01) ภายใน 30 วันนับแต่วันที่ยอดขายเกิน 1.8 ล้านบาท
+              ต้องยื่นจดทะเบียนภาษีมูลค่าเพิ่มภายใน 30 วันนับแต่วันที่รายรับเกิน 1.8 ล้านบาท · กำหนดตามข้อมูลในระบบ {{ vatDeadline }}
             </p>
             <p v-else-if="vatProgressPercent >= 80" class="text-amber-700">
               ยอดขายทั้งปีเหลืออีก <strong class="font-bold">฿{{ formatCurrency(Math.max(0, 1800000 - fullYearRevenue)) }}</strong> จะถึงเกณฑ์ 1.8 ล้าน ควรเตรียมวางแผนภาษีและระบบออกใบกำกับภาษี
             </p>
             <p v-else class="text-gray-500">
-              ยอดขายทั้งปีห่างจากเพดาน <strong>฿{{ formatCurrency(Math.max(0, 1800000 - fullYearRevenue)) }}</strong> ยังไม่ต้องจดทะเบียนภาษีมูลค่าเพิ่ม
+              ยอดขายทั้งปีห่างจากเพดาน <strong>฿{{ formatCurrency(Math.max(0, 1800000 - fullYearRevenue)) }}</strong> ตรวจรายรับทุกช่องทางและสถานะจดทะเบียนเดิมร่วมด้วย
             </p>
           </div>
         </div>
 
-        <!-- e-Payment Bank Reporting Threshold Tracker -->
-        <div class="rounded-2xl border bg-white p-4 md:p-5 shadow-sm transition-all border-gray-200">
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700">
-                  กฎหมาย e-Payment
-                </span>
-                <span class="text-xs font-semibold text-gray-500">เกณฑ์ส่งข้อมูลให้สรรพากร</span>
-              </div>
-              <h3 class="text-lg font-black text-gray-900 mt-1.5">
-                {{ fullYearTransferCount }} รายการโอน
-                <span class="text-xs font-normal text-gray-500">/ ฿{{ formatCurrency(fullYearTransferAmount) }}</span>
-              </h3>
-            </div>
-            <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
-              <CreditCard class="h-6 w-6" />
-            </div>
-          </div>
-
-          <!-- Conditions Checklist -->
-          <div class="mt-3 space-y-2 text-xs">
-            <!-- Condition 1: 3,000 transactions -->
-            <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
-              <div class="flex items-center gap-2">
-                <div class="h-2 w-2 rounded-full" :class="fullYearTransferCount >= 3000 ? 'bg-amber-500' : 'bg-emerald-500'"></div>
-                <span class="font-medium text-gray-700">เงื่อนไข 1: รับโอน 3,000 ครั้งขึ้นไป</span>
-              </div>
-              <span class="font-bold" :class="fullYearTransferCount >= 3000 ? 'text-amber-600' : 'text-gray-600'">
-                {{ fullYearTransferCount }} / 3,000 ครั้ง
-              </span>
-            </div>
-
-            <!-- Condition 2: 400 transactions & 2M THB -->
-            <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
-              <div class="flex items-center gap-2">
-                <div class="h-2 w-2 rounded-full" :class="(fullYearTransferCount >= 400 && fullYearTransferAmount >= 2000000) ? 'bg-amber-500' : 'bg-emerald-500'"></div>
-                <span class="font-medium text-gray-700">เงื่อนไข 2: รับโอน 400 ครั้ง + ยอด 2 ล้านบาท</span>
-              </div>
-              <span class="font-bold" :class="(fullYearTransferCount >= 400 && fullYearTransferAmount >= 2000000) ? 'text-amber-600' : 'text-gray-600'">
-                {{ fullYearTransferCount >= 400 ? '✅ 400+ ครั้ง' : `${fullYearTransferCount}/400 ครั้ง` }} | ฿{{ formatCurrency(fullYearTransferAmount) }}
-              </span>
-            </div>
-          </div>
-
-          <p class="mt-2.5 text-[11px] text-gray-400 leading-normal">
-            * สถาบันการเงินส่งเฉพาะยอดเงินเข้า (ฝาก/โอน) การส่งข้อมูลไม่ได้หมายความว่าต้องเสียภาษีเพิ่ม หากมีการยื่นแบบภาษีถูกต้อง
-          </p>
+        <div class="rounded-2xl border bg-white p-5 text-sm text-gray-700">
+          <h3 class="font-bold">ขอบเขตและหน้าที่ยื่นแบบ</h3>
+          <p class="mt-2">{{ activeCalculation.filingRequired ? 'รายได้ร้านนี้เกินเกณฑ์ต้องยื่นแบบ แม้ภาษีคำนวณได้เป็นศูนย์' : 'รายได้ร้านนี้ยังไม่เกินเกณฑ์ยื่น โปรดตรวจรายได้อื่นและเงินได้คู่สมรสร่วมด้วย' }}</p>
+          <p class="mt-2 text-xs">โสดเกิน 60,000 บาท · สมรสรวมเกิน 120,000 บาท ในช่วงของแบบที่เลือก หากมีเงินเดือนหรือเงินได้อื่นต้องรวมในแบบจริง</p>
+          <p class="mt-2 text-xs">ปีและแบบที่เลือกมีข้อมูลลดหย่อนแยกกัน กรอกยอดจ่ายเฉพาะช่วงนั้น ห้ามนำยอดจ่ายทั้งปีมาใช้ซ้ำกับครึ่งปี</p>
+          <p v-if="rules.annualProvisional && selectedForm === 'pnd90'" class="mt-2 text-xs text-amber-800">สิ้นปี 2569 เป็นประมาณการจากกฎที่ตรวจได้ ณ 2 พ.ย. 2569 ต้องตรวจคู่มือสิ้นปีและมาตรการเพิ่มเติมก่อนยื่น</p>
+          <p class="mt-2 text-xs">การรายงานธุรกรรมของธนาคารต้องใช้ข้อมูลบัญชีจริง จำนวนออเดอร์ในระบบไม่ใช่จำนวนครั้งรับโอน</p>
         </div>
       </div>
 
@@ -253,6 +213,7 @@
           </div>
         </div>
 
+        <p class="mt-3 text-xs text-gray-600">ตามจริงใช้เฉพาะรายจ่ายที่ยืนยันสิทธิหักและระบุหลักฐาน ไม่รวมต้นทุนซักรีดประมาณการ ยังไม่ยืนยัน/ไม่มีหลักฐาน {{ excludedExpenses }} รายการ <RouterLink to="/expenses" class="font-bold text-emerald-800 underline">จัดการรายจ่าย</RouterLink></p>
         <!-- Recommendation Banner -->
         <div
           class="my-4 rounded-xl p-3.5 text-xs font-medium flex items-center justify-between gap-3 flex-wrap"
@@ -263,7 +224,7 @@
             <span>
               <strong>คำแนะนำจากระบบ:</strong>
               วิธี <strong>{{ recommendedMethod === 'actual' ? 'หักค่าใช้จ่ายตามจริง' : 'หักแบบเหมา 60%' }}</strong>
-              ช่วยประหยัดภาษีได้มากกว่าอีกวิธี 
+              {{ taxSavingsDifference === 0 ? 'ให้ภาษีเท่ากันทั้งสองวิธี ส่วนต่าง' : 'ให้ภาษีน้อยกว่าอีกวิธี จากข้อมูลที่ยืนยันแล้ว' }}
               <strong class="text-emerald-700 font-bold text-sm underline ml-1">฿{{ formatCurrency(taxSavingsDifference) }}</strong>
             </span>
           </div>
@@ -297,7 +258,7 @@
               ฿{{ formatCurrency(activeCalculation.netTaxableIncome) }}
             </p>
             <p class="text-[11px] text-gray-400 mt-1">
-              หลังหักค่าใช้จ่าย & ค่าลดหย่อน{{ selectedForm === 'pnd94' ? ' (กึ่งหนึ่ง)' : '' }}
+              หลังหักค่าใช้จ่าย & ค่าลดหย่อน{{ selectedForm === 'pnd94' ? ' ตามสิทธิครึ่งปี' : '' }}
             </p>
           </div>
 
@@ -318,7 +279,7 @@
               ฿{{ formatCurrency(Math.abs(activeCalculation.finalBalance)) }}
             </p>
             <p class="text-[11px] text-white/90 mt-1">
-              {{ activeCalculation.finalBalance >= 0 ? (activeCalculation.usedFlat05PercentRule ? '(คิดจากภาษีเหมา 0.5% ม.48(2))' : '(คำนวณตามอัตราก้าวหน้า)') : '✅ ได้รับสิทธิขอคืนภาษี' }}
+              {{ activeCalculation.finalBalance >= 0 ? (activeCalculation.usedFlat05PercentRule ? '(คิดจากภาษีเหมา 0.5% ม.48(2))' : '(คำนวณตามอัตราก้าวหน้า)') : 'ชำระไว้เกินโดยประมาณ ต้องตรวจแบบจริง' }}
             </p>
           </div>
         </div>
@@ -347,7 +308,7 @@
               <span class="font-bold text-gray-900">฿{{ formatCurrency(activeCalculation.incomeAfterExpense) }}</span>
             </div>
             <div class="flex items-center justify-between py-1 border-b border-gray-200/60 font-medium text-rose-600">
-              <span>4. หัก: ค่าลดหย่อนรวม{{ selectedForm === 'pnd94' ? ' (หักกึ่งหนึ่งตามกฎหมาย)' : '' }}</span>
+              <span>4. หัก: ค่าลดหย่อนรวม{{ selectedForm === 'pnd94' ? ' (ตามประเภทสิทธิครึ่งปี)' : '' }}</span>
               <span class="font-bold">- ฿{{ formatCurrency(activeAllowancesTotal) }}</span>
             </div>
             <div v-if="activeCalculation.donationsDeduction > 0" class="flex items-center justify-between py-1 border-b border-gray-200/60 font-medium text-rose-600">
@@ -367,7 +328,7 @@
                 8. ภาษีคำนวณวิธีที่ 2: แบบเหมา 0.5% (เงินได้ × 0.005 ตาม ม.48(2))
               </span>
               <span class="font-bold">
-                {{ activeCalculation.method2Waived ? '฿' + formatCurrency(formRevenue * 0.005) + ' (ยกเว้น: ไม่เกิน 5,000 บ.)' : '฿' + formatCurrency(formRevenue * 0.005) }}
+                {{ activeCalculation.method2Waived ? '฿' + formatCurrency(activeCalculation.rawMethod2Tax) + ' (ยกเว้น: ไม่เกิน 5,000 บ.)' : '฿' + formatCurrency(activeCalculation.rawMethod2Tax) }}
               </span>
             </div>
             <div class="flex items-center justify-between py-1 border-b border-gray-200/60 font-bold text-gray-800 bg-gray-50 px-2 rounded">
@@ -403,7 +364,7 @@
               </h3>
             </div>
             <p class="text-xs text-gray-600 mt-0.5">
-              นำตัวเลขในช่องเหล่านี้ไปกรอกในระบบ e-Filing {{ selectedForm === 'pnd94' ? 'แบบ ภ.ง.ด. 94' : 'แบบ ภ.ง.ด. 90' }} ได้ทันที
+              สรุปเพื่อตรวจเทียบ e-Filing (ไม่ใช่หมายเลขช่องจริง) {{ selectedForm === 'pnd94' ? 'แบบ ภ.ง.ด. 94' : 'แบบ ภ.ง.ด. 90' }} ตรวจสิทธิและตัวเลขในแบบจริงก่อนยื่น
             </p>
           </div>
           <a
@@ -451,7 +412,7 @@
               รายการลดหย่อนภาษีตามกฎหมาย (Tax Allowances & Deductions)
             </h3>
             <p class="text-xs text-gray-500">
-              {{ selectedForm === 'pnd94' ? 'ระบบคำนวณหักกึ่งหนึ่ง (1/2) ให้อัตโนมัติตามเกณฑ์ ภ.ง.ด. 94' : 'คำนวณตามเกณฑ์สรรพากรฉบับเต็มสำหรับ ภ.ง.ด. 90' }}
+              กรอกเฉพาะยอดจ่ายจริงที่เข้าเงื่อนไขและมีหลักฐาน ในช่วงของแบบที่เลือก
             </p>
           </div>
           <div class="text-right">
@@ -460,6 +421,13 @@
           </div>
         </div>
 
+        <div class="my-3 space-y-2 text-xs text-gray-700">
+          <label>สถานภาพ <select v-model="inputs.maritalStatus" class="rounded-lg border-gray-300 text-xs"><option value="single">โสด</option><option value="marriedNoIncome">สมรส คู่สมรสไม่มีเงินได้</option><option value="marriedSeparate">สมรส ต่างฝ่ายมีเงินได้ แยกยื่น</option></select></label>
+          <label class="block">ประกันสังคม <select v-model="inputs.socialSecurityType" class="rounded-lg border-gray-300 text-xs"><option value="39">ม.39</option><option value="40">ม.40</option><option value="33">ม.33 (ตรวจเงินเดือนในแบบจริงด้วย)</option></select></label>
+          <label class="block">ดอกเบี้ยบ้าน: ผู้ให้กู้ <select v-model="inputs.homeLoanLender" class="rounded-lg border-gray-300 text-xs"><option value="bank">ธนาคาร/ผู้ให้กู้ทั่วไปตามเกณฑ์</option><option value="eligibleFund">กองทุนที่ได้สิทธิเต็มตามคู่มือ</option></select> ผู้กู้ร่วมกรอกเฉพาะสิทธิของตน</label>
+          <p>บุตรสองช่องห้ามนับซ้ำคน ตรวจอายุ/การศึกษา/เงินได้และเพดานบุตรบุญธรรม · บิดามารดาตรวจรายได้และไม่ใช้สิทธิซ้ำพี่น้อง · ประกันชีวิตตรวจกรมธรรม์ตั้งแต่ 10 ปีตามเงื่อนไข</p>
+          <p>บริจาค: ตรวจผู้รับและช่วงเวลามาตรการ พร้อมหลักฐาน/e-Donation ตามปี ก่อนกรอกยอดที่ใช้สิทธิได้ · Thai ESGX ซื้อใหม่ปี 2569 รวมวงเงินกับ Thai ESG ส่วน LTF สับเปลี่ยนและสิทธิพิเศษอื่นให้ตรวจเพิ่มในแบบจริง</p>
+        </div>
         <!-- Allowances Grid -->
         <div class="grid gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 text-xs">
           <!-- 1. Personal Allowance -->
@@ -479,18 +447,18 @@
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
               <label class="font-bold text-gray-800">2. คู่สมรส (ไม่มีเงินได้)</label>
-              <input type="checkbox" v-model="hasSpouseAllowance" class="rounded text-emerald-600 h-4 w-4 cursor-pointer" />
+              <input type="checkbox" :disabled="inputs.maritalStatus !== 'marriedNoIncome'" v-model="hasSpouseAllowance" class="rounded text-emerald-600 h-4 w-4 cursor-pointer" />
             </div>
             <div class="mt-2 text-sm font-bold text-gray-900 bg-gray-50 p-2 rounded-lg border border-gray-200">
               {{ hasSpouseAllowance ? '฿' + formatCurrency(selectedForm === 'pnd94' ? 30000 : 60000) : '฿0' }}
             </div>
-            <p class="text-[10px] text-gray-400 mt-1">จดทะเบียนสมรสและไม่มีรายได้</p>
+            <p class="text-[10px] text-gray-400 mt-1">ตรวจคุณสมบัติคู่สมรสตามแบบที่เลือก</p>
           </div>
 
           <!-- 3. First Child (30,000 / child) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">3. บุตรคนแรก ({{ selectedForm === 'pnd94' ? '15,000' : '30,000' }} บ./คน)</label>
+              <label for="tax-firstChildCount" class="font-bold text-gray-800">3. บุตรที่ได้สิทธิปกติ ({{ selectedForm === 'pnd94' ? '15,000' : '30,000' }} บ./คน)</label>
               <span class="font-bold text-emerald-700">฿{{ formatCurrency(firstChildCount * (selectedForm === 'pnd94' ? 15000 : 30000)) }}</span>
             </div>
             <div class="mt-2 flex items-center gap-2">
@@ -498,7 +466,7 @@
                 type="number"
                 min="0"
                 max="10"
-                v-model.number="firstChildCount"
+                id="tax-firstChildCount" v-model.number="firstChildCount"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
               />
               <span class="text-gray-500 shrink-0">คน</span>
@@ -508,15 +476,15 @@
           <!-- 4. Second Child Born 2018+ (60,000 / child) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">4. บุตรคนที่ 2 ขึ้นไป (เกิดปี 61+)</label>
-              <span class="font-bold text-emerald-700">฿{{ formatCurrency(secondChildCount * (selectedForm === 'pnd94' ? 30000 : 60000)) }}</span>
+              <label for="tax-secondChildCount" class="font-bold text-gray-800">4. บุตรคนที่ 2 ขึ้นไป (เกิดปี 61+)</label>
+              <span class="font-bold text-emerald-700">฿{{ formatCurrency(secondChildCount * (selectedForm === 'pnd94' ? 45000 : 60000)) }}</span>
             </div>
             <div class="mt-2 flex items-center gap-2">
               <input
                 type="number"
                 min="0"
                 max="10"
-                v-model.number="secondChildCount"
+                id="tax-secondChildCount" v-model.number="secondChildCount"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
               />
               <span class="text-gray-500 shrink-0">คน</span>
@@ -526,34 +494,34 @@
           <!-- 5. Parents Care (30,000 / parent, max 4) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">5. อุปการะบิดามารดา (อายุ 60+)</label>
+              <label for="tax-parentsCareCount" class="font-bold text-gray-800">5. อุปการะบิดามารดา (อายุ 60+)</label>
               <span class="font-bold text-emerald-700">฿{{ formatCurrency(parentsCareCount * (selectedForm === 'pnd94' ? 15000 : 30000)) }}</span>
             </div>
             <div class="mt-2 flex items-center gap-2">
               <input
                 type="number"
                 min="0"
-                max="4"
-                v-model.number="parentsCareCount"
+                :max="inputs.maritalStatus === 'marriedNoIncome' ? 4 : 2"
+                id="tax-parentsCareCount" v-model.number="parentsCareCount"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
               />
-              <span class="text-gray-500 shrink-0">คน (สูงสุด 4)</span>
+              <span class="text-gray-500 shrink-0">คน (ตามสิทธิของตนและคู่สมรส)</span>
             </div>
           </div>
 
           <!-- 6. Social Security (max 9,000) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">6. ประกันสังคม (ม.33/39/40)</label>
-              <span class="text-[10px] text-gray-400">สูงสุด {{ selectedForm === 'pnd94' ? '4,500' : '9,000' }}</span>
+              <label for="tax-socialSecurity" class="font-bold text-gray-800">6. ประกันสังคม (ม.33/39/40)</label>
+              <span class="text-[10px] text-gray-500">ตามประเภทและยอดจ่ายจริง</span>
             </div>
             <div class="mt-2">
               <input
                 type="number"
                 min="0"
-                :max="selectedForm === 'pnd94' ? 4500 : 9000"
+                :max="rules.socialSecurityAnnualCaps[inputs.socialSecurityType] * (selectedForm === 'pnd94' ? .5 : 1)"
                 step="500"
-                v-model.number="socialSecurity"
+                id="tax-socialSecurity" v-model.number="socialSecurity"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="ตามจ่ายจริง"
               />
@@ -563,7 +531,7 @@
           <!-- 7. Life & Health Insurance (max 100,000) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">7. ประกันชีวิต + สุขภาพตนเอง</label>
+              <label for="tax-lifeInsurance" class="font-bold text-gray-800">7. เบี้ยประกันชีวิตที่เข้าเงื่อนไข</label>
               <span class="text-[10px] text-gray-400">สูงสุด 100,000</span>
             </div>
             <div class="mt-2">
@@ -572,7 +540,7 @@
                 min="0"
                 max="100000"
                 step="1000"
-                v-model.number="lifeInsurance"
+                id="tax-lifeInsurance" v-model.number="lifeInsurance"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="ตามจ่ายจริง"
               />
@@ -582,7 +550,7 @@
           <!-- 8. Parents Health Insurance (max 15,000) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">8. ประกันสุขภาพบิดามารดา</label>
+              <label for="tax-parentHealthInsurance" class="font-bold text-gray-800">8. ประกันสุขภาพบิดามารดา</label>
               <span class="text-[10px] text-gray-400">สูงสุด 15,000</span>
             </div>
             <div class="mt-2">
@@ -591,7 +559,7 @@
                 min="0"
                 max="15000"
                 step="500"
-                v-model.number="parentHealthInsurance"
+                id="tax-parentHealthInsurance" v-model.number="parentHealthInsurance"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="ตามจ่ายจริง"
               />
@@ -601,7 +569,7 @@
           <!-- 9. Retirement Funds SSF / RMF / Pension -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">9. กองทุนเกษียณ (SSF/RMF/บำนาญ)</label>
+              <label for="tax-retirementFunds" class="font-bold text-gray-800">9. กองทุน RMF (เพดาน 30% ของเงินได้)</label>
               <span class="text-[10px] text-gray-400">รวมไม่เกิน 500k</span>
             </div>
             <div class="mt-2">
@@ -610,26 +578,29 @@
                 min="0"
                 max="500000"
                 step="5000"
-                v-model.number="retirementFunds"
+                id="tax-retirementFunds" v-model.number="retirementFunds"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="ยอดซื้อกองทุน"
               />
             </div>
           </div>
 
+          <label v-for="f in additionalFields" :key="f.key" class="p-3 rounded-xl border border-gray-200 bg-white">
+            <span class="font-bold text-gray-800">{{ f.label }}</span><input type="number" min="0" step="0.01" :id="`tax-${f.key}`" v-model.number="inputs[f.key]" :disabled="f.disabled" class="mt-2 w-full rounded-lg border-gray-300 text-xs disabled:bg-gray-100" /><span class="mt-1 block text-xs text-gray-600">{{ f.help }}</span>
+          </label>
           <!-- 10. Thai ESG Funds (max 300,000) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">10. กองทุน Thai ESG</label>
-              <span class="text-[10px] text-gray-400">สูงสุด 300,000</span>
+              <label for="tax-thaiESGFunds" class="font-bold text-gray-800">10. กองทุน Thai ESG</label>
+              <span class="text-[10px] text-gray-400">สูงสุด {{ formatCurrency(rules.thaiESGCap) }} และ 30%</span>
             </div>
             <div class="mt-2">
               <input
                 type="number"
                 min="0"
-                max="300000"
+                :max="rules.thaiESGCap"
                 step="5000"
-                v-model.number="thaiESGFunds"
+                id="tax-thaiESGFunds" v-model.number="thaiESGFunds"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="วงเงินพิเศษ Thai ESG"
               />
@@ -639,7 +610,7 @@
           <!-- 11. Home Loan Interest (max 100,000) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">11. ดอกเบี้ยกู้ยืมซื้อบ้าน</label>
+              <label for="tax-homeLoanInterest" class="font-bold text-gray-800">11. ดอกเบี้ยกู้ยืมซื้อบ้าน</label>
               <span class="text-[10px] text-gray-400">สูงสุด 100,000</span>
             </div>
             <div class="mt-2">
@@ -648,7 +619,7 @@
                 min="0"
                 max="100000"
                 step="1000"
-                v-model.number="homeLoanInterest"
+                id="tax-homeLoanInterest" v-model.number="homeLoanInterest"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="ตามหนังสือรับรอง"
               />
@@ -658,7 +629,7 @@
           <!-- 12. Donations 2x (e-Donation) -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">12. บริจาคการศึกษา/รพ.รัฐ (2 เท่า)</label>
+              <label for="tax-educationDonations" class="font-bold text-gray-800">12. บริจาคที่ตรวจสิทธิสองเท่าแล้ว</label>
               <span class="text-[10px] text-gray-400">หักได้ 2 เท่า</span>
             </div>
             <div class="mt-2">
@@ -666,7 +637,7 @@
                 type="number"
                 min="0"
                 step="500"
-                v-model.number="educationDonations"
+                id="tax-educationDonations" v-model.number="educationDonations"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
                 placeholder="ยอดเงินบริจาคจริง"
               />
@@ -676,7 +647,7 @@
           <!-- 13. General Donations -->
           <div class="p-3 rounded-xl border border-gray-200 bg-white">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-gray-800">13. เงินบริจาคทั่วไป</label>
+              <label for="tax-generalDonations" class="font-bold text-gray-800">13. เงินบริจาคทั่วไป</label>
               <span class="text-[10px] text-gray-400">ตามจริง</span>
             </div>
             <div class="mt-2">
@@ -684,9 +655,9 @@
                 type="number"
                 min="0"
                 step="500"
-                v-model.number="generalDonations"
+                id="tax-generalDonations" v-model.number="generalDonations"
                 class="w-full rounded-lg border-gray-300 py-1 px-2.5 text-xs font-bold text-gray-900"
-                placeholder="ตามใบเสร็จ"
+                placeholder="ยอดที่มีสิทธิตามเกณฑ์ e-Donation"
               />
             </div>
           </div>
@@ -694,7 +665,7 @@
           <!-- 14. Withholding Tax Credit (50 ทวิ) -->
           <div class="p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-emerald-900">14. ภาษีถูกหัก ณ ที่จ่าย (50 ทวิ)</label>
+              <label for="tax-withholdingTax" class="font-bold text-emerald-900">14. ภาษีถูกหัก ณ ที่จ่าย (50 ทวิ)</label>
               <span class="text-[10px] text-emerald-700 font-bold">เครดิตภาษี</span>
             </div>
             <div class="mt-2">
@@ -702,7 +673,7 @@
                 type="number"
                 min="0"
                 step="500"
-                v-model.number="withholdingTax"
+                id="tax-withholdingTax" v-model.number="withholdingTax"
                 class="w-full rounded-lg border-emerald-300 py-1 px-2.5 text-xs font-bold text-emerald-900 bg-white"
                 placeholder="ตามหนังสือรับรอง 50 ทวิ"
               />
@@ -712,7 +683,7 @@
           <!-- 15. Paid P.N.D.94 Mid-Year Tax (Only for P.N.D.90) -->
           <div v-if="selectedForm === 'pnd90'" class="p-3 rounded-xl border border-blue-200 bg-blue-50/40">
             <div class="flex items-center justify-between">
-              <label class="font-bold text-blue-900">15. ภาษีที่จ่ายตาม ภ.ง.ด. 94 แล้ว</label>
+              <label for="tax-paidPnd94Tax" class="font-bold text-blue-900">15. ภาษีที่จ่ายตาม ภ.ง.ด. 94 แล้ว</label>
               <span class="text-[10px] text-blue-700 font-bold">หักภาษีสิ้นปี</span>
             </div>
             <div class="mt-2">
@@ -720,7 +691,7 @@
                 type="number"
                 min="0"
                 step="500"
-                v-model.number="paidPnd94Tax"
+                id="tax-paidPnd94Tax" v-model.number="paidPnd94Tax"
                 class="w-full rounded-lg border-blue-300 py-1 px-2.5 text-xs font-bold text-blue-900 bg-white"
                 placeholder="ยอดภาษีครึ่งปีที่จ่ายแล้ว"
               />
@@ -784,7 +755,7 @@
                 <span class="rounded bg-indigo-200/80 px-2 py-0.5 text-[10px]">1 ก.ค. - 30 ก.ย.</span>
               </div>
               <p class="text-indigo-800/90 mt-1 text-[11px]">
-                สำหรับผู้มีเงินได้ 40(5) – 40(8) ที่ได้รับระหว่าง 1 ม.ค. – 30 มิ.ย. ยื่นภายใน 1 ก.ค. – 30 ก.ย. (ออนไลน์ได้ถึงต้น ต.ค.)
+                สำหรับผู้มีเงินได้ 40(5) – 40(8) ที่ได้รับระหว่าง 1 ม.ค. – 30 มิ.ย. ยื่นภายใน 1 ก.ค. – 30 ก.ย. (ออนไลน์ตรวจวันขยายเวลาตามประกาศปีที่ยื่น)
               </p>
             </div>
 
@@ -794,7 +765,7 @@
                 <span class="rounded bg-emerald-200/80 px-2 py-0.5 text-[10px]">1 ม.ค. - 31 มี.ค.</span>
               </div>
               <p class="text-emerald-800/90 mt-1 text-[11px]">
-                สำหรับเงินได้ทุกประเภทตลอดทั้งปี 1 ม.ค. – 31 ธ.ค. ยื่นภายในเดือน ม.ค. – มี.ค. ของปีถัดไป (ออนไลน์ได้ถึง 8 เม.ย.) โดยนำภาษีครึ่งปีที่ชำระแล้วมาหักกลบลบหนี้ได้
+                สำหรับเงินได้ทุกประเภทตลอดทั้งปี 1 ม.ค. – 31 ธ.ค. ยื่นภายในเดือน ม.ค. – มี.ค. ของปีถัดไป (ออนไลน์ตรวจวันขยายเวลาตามประกาศปีที่ยื่น) โดยนำภาษีครึ่งปีที่ชำระแล้วมาหักกลบลบหนี้ได้
               </p>
             </div>
           </div>
@@ -807,15 +778,8 @@
             <h3 class="text-sm font-black text-gray-900">คำแนะนำ: เมื่อไหร่ควรจดนิติบุคคล (บริษัท/หจก.)?</h3>
           </div>
           <div class="text-xs text-gray-600 space-y-2 leading-relaxed">
-            <p>
-              📌 <strong>เกณฑ์กำไร:</strong> เมื่อมีกำไรสุทธิเกิน <span class="font-bold text-blue-700">750,000 – 1,000,000 บาท/ปี</span> บุคคลธรรมดาจะเริ่มเสียภาษีที่ฐาน 20-25% ขณะที่นิติบุคคล (SME) เสียภาษีเพียง 15% (กำไร 300,001-3,000,000 บาท) และ 300,000 บาทแรกได้รับการยกเว้นภาษี
-            </p>
-            <p>
-              📌 <strong>ความน่าเชื่อถือ:</strong> การเป็นนิติบุคคลช่วยสร้างเครดิตในการขอกู้สินเชื่อธุรกิจ และสามารถหักค่าใช้จ่ายตามจริงได้ครอบคลุมกว่า
-            </p>
-            <p class="text-[11px] text-gray-400 pt-1 border-t border-gray-100">
-              * ควรคำนึงถึงค่าทำบัญชีและค่าสอบบัญชีรายปี (ประมาณ 15,000 - 30,000 บาท/ปี) ร่วมด้วย
-            </p>
+            <p>ควรเปรียบเทียบภาษีของกิจการ ภาษีเจ้าของ และค่าทำบัญชีร่วมกัน อัตราภาษีขั้นสูงสุดของบุคคลธรรมดาไม่ใช่อัตราภาษีเฉลี่ย จึงไม่ใช้กำไรถึงจำนวนหนึ่งเป็นเกณฑ์แนะนำจดบริษัทอัตโนมัติ</p>
+            <p><a href="https://www.rd.go.th/fileadmin/tax_pdf/pit/2569/Ins94_160669.pdf" target="_blank" rel="noopener noreferrer" class="underline">คู่มือ ภ.ง.ด.94 ปี 2569</a> · <a href="https://www.rd.go.th/fileadmin/tax_pdf/pit/2568/Ins90_241268.pdf" target="_blank" rel="noopener noreferrer" class="underline">คู่มือ ภ.ง.ด.90 ปี 2568</a> · <a href="https://www.rd.go.th/2375.html" target="_blank" rel="noopener noreferrer" class="underline">เกณฑ์ค่าใช้จ่าย</a></p>
           </div>
         </div>
       </div>
@@ -824,12 +788,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, watch, onUnmounted } from "vue";
 import Swal from "sweetalert2";
 import { formatCurrency } from "../utils/formatUtils.js";
 import { toDate } from "../utils/dateUtils.js";
-import { useSalesStore } from "../stores/salesStore.js";
-import { useExpenseStore } from "../stores/expenseStore.js";
+import { getAllSales } from "../services/salesService.js";
+import { getAllExpenses } from "../services/expenseService.js";
+import { addDays } from "date-fns";
+import { TAX_YEARS, taxRules, emptyTaxInputs, calculateRetailTax, isInTaxPeriod, sumTaxExpenses, vatStatus, money, nonNegative } from "../utils/taxUtils.js";
 import {
   Calculator,
   Calendar,
@@ -846,326 +812,89 @@ import {
   Copy,
 } from "lucide-vue-next";
 
-const salesStore = useSalesStore();
-const expenseStore = useExpenseStore();
-
-const currentYear = new Date().getFullYear();
+const currentYear = Math.min(new Date().getFullYear(), Math.max(...TAX_YEARS));
 const selectedYear = ref(currentYear);
-const selectedForm = ref("pnd90"); // 'pnd90' (Full year) or 'pnd94' (Mid year)
-const loading = ref(false);
-
-const yearOptions = computed(() => {
-  const years = [];
-  for (let y = currentYear - 3; y <= currentYear + 1; y++) {
-    years.push(y);
-  }
-  return years;
-});
-
-// Deduction Method State: 'flat' (60%) or 'actual'
+const selectedForm = ref("pnd90");
+const yearOptions = TAX_YEARS;
+const loading = ref(false), loadError = ref("");
 const expenseDeductionMethod = ref("flat");
-
-// --- Allowances Form State ---
-const hasSpouseAllowance = ref(false);
-const firstChildCount = ref(0);
-const secondChildCount = ref(0);
-const parentsCareCount = ref(0);
-const socialSecurity = ref(0);
-const lifeInsurance = ref(0);
-const parentHealthInsurance = ref(0);
-const retirementFunds = ref(0);
-const thaiESGFunds = ref(0);
-const homeLoanInterest = ref(0);
-const educationDonations = ref(0);
-const generalDonations = ref(0);
-const withholdingTax = ref(0);
-const paidPnd94Tax = ref(0);
-
-// --- Data Fetching (Always fetch full selected year so annual VAT & e-Payment trackers are accurate in both P.N.D.90 & P.N.D.94) ---
-const loadData = async (forceRefresh = false) => {
-  loading.value = true;
+const yearlySales = ref([]), yearlyExpenses = ref([]);
+const profiles = reactive({});
+watch([selectedYear, selectedForm], () => {
+  const key = `${selectedYear.value}:${selectedForm.value}`;
+  if (!profiles[key]) profiles[key] = emptyTaxInputs();
+}, { immediate: true, flush: "sync" });
+const inputs = computed(() => profiles[`${selectedYear.value}:${selectedForm.value}`]);
+const rules = computed(() => taxRules(selectedYear.value));
+const field = key => computed({ get: () => inputs.value[key], set: value => { inputs.value[key] = value; } });
+const hasSpouseAllowance = field("spouseAllowance");
+const firstChildCount = field("ordinaryChildren"), secondChildCount = field("additionalChildren");
+const parentsCareCount = field("parents"), socialSecurity = field("socialSecurity");
+const lifeInsurance = field("lifeInsurance"), parentHealthInsurance = field("parentHealthInsurance");
+const retirementFunds = field("rmf"), thaiESGFunds = field("thaiESG");
+const homeLoanInterest = field("homeLoanInterest"), educationDonations = field("doubleDonations");
+const generalDonations = field("generalDonations"), withholdingTax = field("withholdingTax"), paidPnd94Tax = field("paidPnd94Tax");
+let generation = 0;
+const loadData = async () => {
+  const request = ++generation, year = selectedYear.value;
+  loading.value = true; loadError.value = "";
   try {
-    if (forceRefresh === true) {
-      salesStore.invalidateCache();
-    }
-
-    const filter = {
-      mode: "selectYear",
-      year: selectedYear.value,
-    };
-
-    await Promise.all([
-      salesStore.fetchSales(filter),
-      expenseStore.setFilter(filter),
-    ]);
+    const filter = { mode: "selectYear", year };
+    // Local atomic snapshot: another page's filter cannot change a tax result.
+    const [sales, expenses] = await Promise.all([getAllSales(filter), getAllExpenses(filter)]);
+    if (request !== generation) return;
+    yearlySales.value = sales.filter(s => isInTaxPeriod(s.dateTime || s.date, year));
+    yearlyExpenses.value = expenses.filter(e => isInTaxPeriod(e.dateTime || e.date, year));
   } catch (error) {
-    console.error("Error loading tax data:", error);
+    if (request === generation) loadError.value = error.message || "โหลดข้อมูลไม่สำเร็จ";
   } finally {
-    loading.value = false;
+    if (request === generation) loading.value = false;
   }
 };
-
-onMounted(() => {
-  loadData(false);
-});
-
-watch(selectedYear, () => {
-  loadData(false);
-});
-
-// --- Sales & Expense Aggregations ---
-const formSales = computed(() => {
-  if (selectedForm.value === "pnd94") {
-    return salesStore.sales.filter((item) => {
-      const d = toDate(item.dateTime || item.date);
-      return d && d.getFullYear() === selectedYear.value && d.getMonth() <= 5;
-    });
+watch(selectedYear, loadData, { immediate: true });
+onUnmounted(() => { generation++; });
+const formSales = computed(() => yearlySales.value.filter(s => isInTaxPeriod(s.dateTime || s.date, selectedYear.value, selectedForm.value)));
+const formExpenses = computed(() => yearlyExpenses.value.filter(e => isInTaxPeriod(e.dateTime || e.date, selectedYear.value, selectedForm.value)));
+const formRevenue = computed(() => money(formSales.value.reduce((sum, s) => sum + nonNegative(s.amount), 0)));
+const formActualExpenses = computed(() => sumTaxExpenses(formExpenses.value));
+const excludedExpenses = computed(() => formExpenses.value.filter(e => e.isAuto || !e.taxDeductible || !String(e.taxEvidence || "").trim()).length);
+const fullYearRevenue = computed(() => money(yearlySales.value.reduce((sum, s) => sum + nonNegative(s.amount), 0)));
+const vat = computed(() => vatStatus(fullYearRevenue.value));
+const vatProgressPercent = computed(() => vat.value.percent);
+const vatExceeded = computed(() => vat.value.exceeded);
+const vatCrossingDate = computed(() => {
+  let sum = 0;
+  for (const sale of [...yearlySales.value].sort((a, b) => toDate(a.dateTime || a.date) - toDate(b.dateTime || b.date))) {
+    sum += nonNegative(sale.amount);
+    if (sum > 1800000) return toDate(sale.dateTime || sale.date);
   }
-  return salesStore.sales;
+  return null;
 });
-
-const formExpenses = computed(() => {
-  if (selectedForm.value === "pnd94") {
-    return expenseStore.expenses.filter((item) => {
-      const d = toDate(item.dateTime || item.date);
-      return d && d.getFullYear() === selectedYear.value && d.getMonth() <= 5;
-    });
-  }
-  return expenseStore.expenses;
-});
-
-const formRevenue = computed(() => {
-  return formSales.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-});
-
-const formActualExpenses = computed(() => {
-  const recorded = formExpenses.value.reduce(
-    (sum, item) => sum + (Number(item.amount) || 0),
-    0
-  );
-  if (!expenseStore.autoOverheadEnabled || expenseStore.autoOverheadRate <= 0) {
-    return recorded;
-  }
-  const itemCount = formSales.value.reduce(
-    (sum, sale) => sum + (Number(sale.itemCount) > 0 ? Number(sale.itemCount) : 1),
-    0
-  );
-  return recorded + itemCount * expenseStore.autoOverheadRate;
-});
-
-// Full year aggregations for VAT & e-Payment warnings
-const fullYearRevenue = computed(() => {
-  return salesStore.sales.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-});
-
-const transferSales = computed(() => {
-  return salesStore.sales.filter((s) => s.type !== "COD");
-});
-
-const fullYearTransferCount = computed(() => transferSales.value.length);
-
-const fullYearTransferAmount = computed(() => {
-  return transferSales.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-});
-
-// VAT 1.8M Progress
-const vatProgressPercent = computed(() => {
-  if (fullYearRevenue.value <= 0) return 0;
-  return Math.min(Math.round((fullYearRevenue.value / 1800000) * 100), 999);
-});
-
-// --- Active Allowances Total (Considering PND90 vs PND94 Half-Rule) ---
-const activeAllowancesTotal = computed(() => {
-  const isHalf = selectedForm.value === "pnd94";
-  const factor = isHalf ? 0.5 : 1.0;
-
-  let sum = 60000 * factor; // Personal allowance
-  if (hasSpouseAllowance.value) sum += 60000 * factor;
-  sum += (Number(firstChildCount.value) || 0) * 30000 * factor;
-  sum += (Number(secondChildCount.value) || 0) * 60000 * factor;
-  sum += (Number(parentsCareCount.value) || 0) * 30000 * factor;
-
-  const ssCap = isHalf ? 4500 : 9000;
-  sum += Math.min(Number(socialSecurity.value) || 0, ssCap);
-
-  const lifeCap = isHalf ? 50000 : 100000;
-  sum += Math.min(Number(lifeInsurance.value) || 0, lifeCap);
-
-  const parentHealthCap = isHalf ? 7500 : 15000;
-  sum += Math.min(Number(parentHealthInsurance.value) || 0, parentHealthCap);
-
-  // Retirement funds capped at 500,000
-  sum += Math.min(Number(retirementFunds.value) || 0, 500000);
-
-  // Thai ESG capped at 300,000
-  sum += Math.min(Number(thaiESGFunds.value) || 0, 300000);
-
-  const homeCap = isHalf ? 50000 : 100000;
-  sum += Math.min(Number(homeLoanInterest.value) || 0, homeCap);
-
-  return Math.round(sum);
-});
-
-// --- Official RD Tax Calculations Helper Function ---
-const calculateTaxForMethod = (deductionType) => {
-  const revenue = formRevenue.value;
-  let deductedExpense = 0;
-
-  if (deductionType === "flat") {
-    // 60% flat rate for Section 40(8) commerce
-    deductedExpense = revenue * 0.6;
-  } else {
-    // Actual recorded business expenses
-    deductedExpense = formActualExpenses.value;
-  }
-
-  const incomeAfterExpense = Math.max(0, revenue - deductedExpense);
-  const incomeAfterAllowances = Math.max(0, incomeAfterExpense - activeAllowancesTotal.value);
-
-  // Donations deduction: max 10% of income after allowances
-  const maxDonationsAllowed = incomeAfterAllowances * 0.10;
-  const rawDonationsDeduction =
-    (Number(educationDonations.value) || 0) * 2 + (Number(generalDonations.value) || 0);
-  const donationsDeduction = Math.min(rawDonationsDeduction, maxDonationsAllowed);
-
-  const netTaxableIncome = Math.max(0, incomeAfterAllowances - donationsDeduction);
-
-  // Progressive Tax Calculation (0 - 35%)
-  let progressiveTax = 0;
-  let highestRate = 0;
-
-  if (netTaxableIncome > 0) {
-    let remaining = netTaxableIncome;
-
-    // 0 - 150,000 @ 0%
-    const step1 = Math.min(remaining, 150000);
-    remaining -= step1;
-    if (step1 > 0) highestRate = 0;
-
-    // 150,001 - 300,000 @ 5% (max 150,000)
-    if (remaining > 0) {
-      const step2 = Math.min(remaining, 150000);
-      progressiveTax += step2 * 0.05;
-      remaining -= step2;
-      highestRate = 5;
-    }
-
-    // 300,001 - 500,000 @ 10% (max 200,000)
-    if (remaining > 0) {
-      const step3 = Math.min(remaining, 200000);
-      progressiveTax += step3 * 0.10;
-      remaining -= step3;
-      highestRate = 10;
-    }
-
-    // 500,001 - 750,000 @ 15% (max 250,000)
-    if (remaining > 0) {
-      const step4 = Math.min(remaining, 250000);
-      progressiveTax += step4 * 0.15;
-      remaining -= step4;
-      highestRate = 15;
-    }
-
-    // 750,001 - 1,000,000 @ 20% (max 250,000)
-    if (remaining > 0) {
-      const step5 = Math.min(remaining, 250000);
-      progressiveTax += step5 * 0.20;
-      remaining -= step5;
-      highestRate = 20;
-    }
-
-    // 1,000,001 - 2,000,000 @ 25% (max 1,000,000)
-    if (remaining > 0) {
-      const step6 = Math.min(remaining, 1000000);
-      progressiveTax += step6 * 0.25;
-      remaining -= step6;
-      highestRate = 25;
-    }
-
-    // 2,000,001 - 5,000,000 @ 30% (max 3,000,000)
-    if (remaining > 0) {
-      const step7 = Math.min(remaining, 3000000);
-      progressiveTax += step7 * 0.30;
-      remaining -= step7;
-      highestRate = 30;
-    }
-
-    // > 5,000,000 @ 35%
-    if (remaining > 0) {
-      progressiveTax += remaining * 0.35;
-      highestRate = 35;
-    }
-  }
-
-  // Method 2: 0.5% flat minimum tax rule under Section 48(2)
-  // Law rule: If Method 2 <= 5,000 THB, it is exempt by law!
-  const rawMethod2Tax = revenue * 0.005;
-  const method2Waived = rawMethod2Tax <= 5000;
-  const effectiveMethod2Tax = method2Waived ? 0 : rawMethod2Tax;
-
-  const usedFlat05PercentRule = effectiveMethod2Tax > progressiveTax;
-  const taxBeforeCredits = usedFlat05PercentRule ? effectiveMethod2Tax : progressiveTax;
-
-  // Subtract Tax Credits: Withholding Tax (50 ทวิ) + Paid PND94 Tax
-  const totalCredits = (Number(withholdingTax.value) || 0) + (selectedForm.value === "pnd90" ? (Number(paidPnd94Tax.value) || 0) : 0);
-  const finalBalance = Math.round(taxBeforeCredits - totalCredits);
-
-  return {
-    deductedExpenseAmount: Math.round(deductedExpense),
-    incomeAfterExpense: Math.round(incomeAfterExpense),
-    donationsDeduction: Math.round(donationsDeduction),
-    netTaxableIncome: Math.round(netTaxableIncome),
-    progressiveTax: Math.round(progressiveTax),
-    rawMethod2Tax: Math.round(rawMethod2Tax),
-    method2Waived,
-    highestBracketPercent: highestRate,
-    usedFlat05PercentRule,
-    taxBeforeCredits: Math.round(taxBeforeCredits),
-    finalBalance,
-  };
-};
-
+const vatDeadline = computed(() => vatCrossingDate.value ? addDays(vatCrossingDate.value, 30).toLocaleDateString("th-TH", {timeZone: "Asia/Bangkok"}) : "");
+const calculateTaxForMethod = method => calculateRetailTax({ year: selectedYear.value, form: selectedForm.value, revenue: formRevenue.value, actualExpenses: formActualExpenses.value, method, inputs: inputs.value });
 const flatCalculation = computed(() => calculateTaxForMethod("flat"));
 const actualCalculation = computed(() => calculateTaxForMethod("actual"));
-
-const activeCalculation = computed(() => {
-  return expenseDeductionMethod.value === "flat"
-    ? flatCalculation.value
-    : actualCalculation.value;
-});
-
-// Determine which method saves more tax
-const recommendedMethod = computed(() => {
-  return actualCalculation.value.finalBalance < flatCalculation.value.finalBalance
-    ? "actual"
-    : "flat";
-});
-
-const taxSavingsDifference = computed(() => {
-  return Math.abs(flatCalculation.value.finalBalance - actualCalculation.value.finalBalance);
-});
-
-// e-Filing Line-by-Line Copy Fields
+const activeCalculation = computed(() => expenseDeductionMethod.value === "flat" ? flatCalculation.value : actualCalculation.value);
+const activeAllowancesTotal = computed(() => activeCalculation.value.allowances.total);
+const recommendedMethod = computed(() => actualCalculation.value.taxBeforeCredits < flatCalculation.value.taxBeforeCredits ? "actual" : "flat");
+const taxSavingsDifference = computed(() => money(Math.abs(flatCalculation.value.taxBeforeCredits - actualCalculation.value.taxBeforeCredits)));
+const additionalFields = computed(() => [
+  { key: "healthInsurance", label: "ประกันสุขภาพตนเอง", help: "ไม่เกิน 25,000 บาท ใช้เพดานร่วมกับประกันชีวิต" },
+  { key: "ssf", label: "SSF", help: rules.value.ssfCap ? "30% ของเงินได้ ไม่เกิน 200,000 รวมเพดานเกษียณ" : "ซื้อใหม่หลังปี 2567 ไม่ได้สิทธินี้", disabled: !rules.value.ssfCap },
+  { key: "pensionInsurance", label: "เบี้ยประกันชีวิตแบบบำนาญ", help: "เติมสิทธิประกันชีวิตที่เหลือ ก่อนคิดสิทธิบำนาญ 15% ไม่เกิน 200,000" },
+  { key: "otherRetirement", label: "เงินสะสมเกษียณอื่นที่ตรวจสิทธิแล้ว", help: "เฉพาะยอดที่ผ่านเพดานเฉพาะประเภทแล้ว รวม RMF/SSF/บำนาญไม่เกิน 500,000" },
+]);
 const eFilingFields = computed(() => {
-  const calc = activeCalculation.value;
-  const list = [
-    { step: "ช่อง 1", label: "เงินได้พึงประเมิน 40(8)", value: formRevenue.value },
-    { step: "ช่อง 2", label: `หักค่าใช้จ่าย (${expenseDeductionMethod.value === 'flat' ? 'เหมา 60%' : 'ตามจริง'})`, value: calc.deductedExpenseAmount },
-    { step: "ช่อง 3", label: "เงินได้หลังหักค่าใช้จ่าย", value: calc.incomeAfterExpense },
-    { step: "ช่อง 4", label: "หักค่าลดหย่อนรวม", value: activeAllowancesTotal.value },
-    { step: "ช่อง 5", label: "เงินได้สุทธิ", value: calc.netTaxableIncome },
-    { step: "ช่อง 6", label: "ภาษีที่คำนวณได้", value: calc.taxBeforeCredits },
-    { step: "ช่อง 7", label: "หัก: ภาษีหัก ณ ที่จ่าย (50 ทวิ)", value: Number(withholdingTax.value) || 0 },
+  const c = activeCalculation.value;
+  const rows = [
+    ["เงินได้ขายสินค้าออนไลน์ 40(8)", formRevenue.value], ["หักค่าใช้จ่าย", c.deductedExpenseAmount],
+    ["เงินได้หลังหักค่าใช้จ่าย", c.incomeAfterExpense], ["ค่าลดหย่อนและยกเว้นรวม", c.allowances.total],
+    ["บริจาคสองเท่าที่ใช้สิทธิได้", c.doubleDonationDeduction], ["บริจาคทั่วไปที่ใช้สิทธิได้", c.generalDonationDeduction],
+    ["เงินได้สุทธิ", c.netTaxableIncome], ["ภาษีก่อนเครดิต", c.taxBeforeCredits], ["ภาษีหัก ณ ที่จ่ายของรายได้ที่นำมาคำนวณ", money(inputs.value.withholdingTax)],
   ];
-
-  if (selectedForm.value === "pnd90") {
-    list.push({ step: "ช่อง 8", label: "หัก: ภาษีที่ชำระตาม ภ.ง.ด. 94", value: Number(paidPnd94Tax.value) || 0 });
-    list.push({ step: "ช่อง 9", label: calc.finalBalance >= 0 ? "ภาษีที่ต้องชำระเพิ่มเติม" : "ภาษีที่ชำระไว้เกิน (ขอคืน)", value: Math.abs(calc.finalBalance) });
-  } else {
-    list.push({ step: "ช่อง 8", label: calc.finalBalance >= 0 ? "ภาษีครึ่งปีที่ต้องชำระ" : "ภาษีที่ชำระไว้เกิน", value: Math.abs(calc.finalBalance) });
-  }
-
-  return list;
+  if (selectedForm.value === "pnd90") rows.push(["ภาษี ภ.ง.ด.94 ที่ชำระจริง", money(inputs.value.paidPnd94Tax)]);
+  rows.push([c.finalBalance < 0 ? "ชำระไว้เกินโดยประมาณ" : "ต้องชำระโดยประมาณ", Math.abs(c.finalBalance)]);
+  return rows.map(([label, value]) => ({ step: "รายการสรุป", label, value }));
 });
 
 // Copy to Clipboard

@@ -7,7 +7,6 @@ import {
   orderBy,
   limit,
   getDocs,
-  addDoc,
   doc,
   updateDoc,
   deleteDoc,
@@ -15,11 +14,10 @@ import {
   getDoc,
   startAfter,
   writeBatch,
-  documentId,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
 import {
-  format,
   startOfDay,
   endOfDay,
   startOfWeek,
@@ -31,6 +29,7 @@ import {
   subMonths,
 } from "date-fns";
 import { toDate, toFirestoreTimestamp } from "../utils/dateUtils.js";
+import { normalizeCOD, classifyCOD } from "../utils/codUtils.js";
 import { sanitizeCustomerId } from "../utils/formatUtils.js";
 import { measureExecution } from "../utils/perfTracker.js";
 
@@ -146,9 +145,9 @@ export async function getAllSales(filter = {}) {
         case "year":
         case "selectYear":
           if (year !== null) {
-            const d = new Date(year, 0);
-            start = startOfYear(d);
-            end = endOfYear(d);
+            start = new Date(`${Number(year)}-01-01T00:00:00+07:00`);
+            end = new Date(`${Number(year) + 1}-01-01T00:00:00+07:00`);
+            end = new Date(end.getTime() - 1);
           }
           break;
         case "custom":
@@ -197,73 +196,53 @@ export async function getAllSales(filter = {}) {
  * @param {string} saleData.orderNo - Order number (optional)
  * @returns {Promise<Object>} Created sale document with ID
  */
+function validateSale(data) {
+  const timestamp = toFirestoreTimestamp(data.dateTime || data.date);
+  if (!timestamp || !Number.isFinite(Number(data.amount)) || Number(data.amount) <= 0) throw new Error("วันที่และยอดเงินต้องถูกต้องและมากกว่า 0");
+  if (data.itemCount !== undefined && (!Number.isInteger(Number(data.itemCount)) || Number(data.itemCount) < 1)) throw new Error("จำนวนตัวต้องเป็นจำนวนเต็มอย่างน้อย 1");
+  return timestamp;
+}
+function assertCustomerAvailable(snapshot) {
+  if (snapshot.exists() && snapshot.data().isMerging) throw new Error("ลูกค้าอยู่ระหว่างรวมบัญชี กรุณารอแล้วลองอีกครั้ง");
+}
 export async function createSale(saleData) {
-  try {
-    const timestamp = toFirestoreTimestamp(saleData.dateTime || saleData.date);
-
-    if (saleData.customerName) {
-      const cleanCustomerId = sanitizeCustomerId(saleData.customerName);
-      const customerRef = doc(db, "customers", cleanCustomerId);
-      const cSnap = await getDoc(customerRef);
-      if (cSnap.exists() && cSnap.data().isMerging) {
-        throw new Error(`ไม่สามารถเพิ่มรายการขายได้ เนื่องจากลูกค้า "${saleData.customerName}" อยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
+  const { requestId, ...data } = saleData;
+  if (!requestId || !/^[a-zA-Z0-9-]{10,100}$/.test(requestId)) throw new Error("ไม่พบรหัสคำขอบันทึก กรุณาเปิดฟอร์มใหม่");
+  const timestamp = validateSale(data);
+  const customerName = sanitizeCustomerId(data.customerName);
+  const saleRef = doc(db, "sales", `TRF_${requestId}`);
+  return runTransaction(db, async tx => {
+    const existing = await tx.get(saleRef);
+    if (existing.exists()) {
+      const old = existing.data();
+      if (Number(old.amount) !== Number(data.amount) || old.orderNo !== data.orderNo || old.customerName !== customerName
+        || toDate(old.dateTime)?.getTime() !== timestamp.toDate().getTime() || Number(old.itemCount) !== Number(data.itemCount)) {
+        throw new Error("คำขอนี้บันทึกแล้วแต่ข้อมูลในฟอร์มเปลี่ยน กรุณาตรวจประวัติและเปิดฟอร์มใหม่");
       }
+      return { ...old, id: saleRef.id };
     }
-
-    const salesRef = collection(db, "sales");
-    const docRef = await addDoc(salesRef, {
-      ...saleData,
-      dateTime: timestamp,
-      date: timestamp,
-      createdAt: new Date(),
-    });
-
-    return {
-      id: docRef.id,
-      ...saleData,
-      dateTime: timestamp ? (timestamp.toDate ? timestamp.toDate() : timestamp) : null,
-      date: timestamp ? (timestamp.toDate ? timestamp.toDate() : timestamp) : null,
-    };
-  } catch (error) {
-    console.error("Error creating sale:", error);
-    throw error;
-  }
+    const customerRef = customerName ? doc(db, "customers", customerName) : null;
+    if (customerRef) assertCustomerAvailable(await tx.get(customerRef));
+    const payload = { ...data, customerName, amount: Number(data.amount), dateTime: timestamp, date: timestamp, createdAt: serverTimestamp() };
+    tx.set(saleRef, payload);
+    if (customerRef) tx.set(customerRef, { name: customerName, lastUpdate: serverTimestamp() }, { merge: true });
+    return { ...payload, id: saleRef.id };
+  });
 }
 
-/**
- * Update an existing sale
- * @param {string} id - Document ID
- * @param {Object} data - Updated data
- * @returns {Promise<void>}
- */
 export async function updateSale(id, data) {
-  try {
-    const updatePayload = { ...data };
-    
-    if (data.dateTime || data.date) {
-      const ts = toFirestoreTimestamp(data.dateTime || data.date);
-      updatePayload.dateTime = ts;
-      updatePayload.date = ts;
-    }
-
-    if (data.customerName) {
-      const cleanCustomerId = sanitizeCustomerId(data.customerName);
-      const customerRef = doc(db, "customers", cleanCustomerId);
-      const cSnap = await getDoc(customerRef);
-      if (cSnap.exists() && cSnap.data().isMerging) {
-        throw new Error(`ไม่สามารถแก้ไขรายการขายได้ เนื่องจากลูกค้า "${data.customerName}" อยู่ระหว่างกระบวนการรวมบัญชีลูกค้า (Merging)`);
-      }
-    }
-
-    const saleDoc = doc(db, "sales", id);
-    await updateDoc(saleDoc, {
-      ...updatePayload,
-      updatedAt: new Date(),
-    });
-  } catch (error) {
-    console.error("Error updating sale:", error);
-    throw error;
-  }
+  const saleRef = doc(db, "sales", id);
+  return runTransaction(db, async tx => {
+    const previous = await tx.get(saleRef);
+    if (!previous.exists()) throw new Error("ไม่พบรายการขาย");
+    const combined = { ...previous.data(), ...data };
+    const timestamp = validateSale(combined);
+    const name = sanitizeCustomerId(combined.customerName);
+    const names = [...new Set([sanitizeCustomerId(previous.data().customerName), name].filter(Boolean))];
+    for (const customer of names) assertCustomerAvailable(await tx.get(doc(db, "customers", customer)));
+    tx.update(saleRef, { ...data, customerName: name, dateTime: timestamp, date: timestamp, amount: Number(combined.amount), updatedAt: serverTimestamp() });
+    if (name) tx.set(doc(db, "customers", name), { name, lastUpdate: serverTimestamp() }, { merge: true });
+  });
 }
 
 /**
@@ -319,145 +298,57 @@ export async function upsertCustomer(customerData) {
   }
 }
 
-/**
- * Import a batch of COD sales and upsert customer profiles.
- * Safe chunking: 200 items (max 400 operations) per batch.
- * @param {Array} salesItems - Array of raw sale objects to import
- * @param {Function} onProgress - Progress callback (index, total)
- * @returns {Promise<void>}
- */
+/** Preview both historical date-based COD IDs and new stable IDs before import. */
+export async function previewCODSales(items) {
+  // Read by order number, including historical date-based document IDs.
+  const orders = [...new Set(items.map(i => String(i.orderNo || i.trackingNo || "").trim()).filter(Boolean))];
+  const existing = [];
+  for (let i = 0; i < orders.length; i += 30) {
+    const snapshot = await getDocs(query(collection(db, "sales"), where("orderNo", "in", orders.slice(i, i + 30))));
+    existing.push(...snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
+  }
+  return classifyCOD(items, existing);
+}
+
 export async function batchImportCODSales(salesItems, onProgress = null) {
+  const preview = await previewCODSales(salesItems);
+  if (preview.some(i => i.importStatus === "invalid" || i.importStatus === "conflict")) throw new Error("พบข้อมูลผิดหรือขัดแย้ง กรุณาตรวจตัวอย่างรายการใหม่ก่อนบันทึก");
+  let inserted = 0, skipped = 0, completed = 0;
   try {
-    const BATCH_SIZE = 200; // Safe chunk size (200 sales + 200 customer updates = 400 ops max)
-
-    const allOperations = [];
-    const customerUpdates = new Map();
-
-    // 1. Prepare operations
-    for (const item of salesItems) {
-      const dateObj = new Date(item.date);
-      const dateSuffix = format(dateObj, "yyyyMMdd");
-
-      // Sales operation (sanitize orderNo to prevent slashes breaking doc path)
-      const cleanOrderNo = String(item.orderNo || "").replace(/\//g, "-");
-      const salesDocId = `COD_${cleanOrderNo}_${dateSuffix}`;
-      const salesData = {
-        type: "COD",
-        orderNo: item.orderNo,
-        customerName: item.customerName,
-        amount: Number(item.amount),
-        date: item.date,
-        dateTime: dateObj,
-        importedAt: serverTimestamp(),
-        fileName: item.sourceFile,
-        itemCount: Math.max(1, Math.floor(Number(item.itemCount) || 1)),
-        isItemCountSet: Boolean(item.isItemCountSet),
-      };
-
-      allOperations.push({
-        type: "sales",
-        id: salesDocId,
-        data: salesData,
-      });
-
-      // Customer operation
-      if (item.customerName && item.customerName.trim().length > 0) {
-        const customerId = sanitizeCustomerId(item.customerName);
-        const customerData = {
-          name: customerId,
-          lastUpdate: serverTimestamp(),
-        };
-
-        if (item.phoneNumber) customerData.phoneNumber = item.phoneNumber;
-        if (item.address) customerData.address = item.address;
-
-        customerUpdates.set(customerId, customerData);
-      }
-    }
-
-    // Add unique customer updates
-    customerUpdates.forEach((data, id) => {
-      allOperations.push({
-        type: "customer",
-        id: id,
-        data: data,
-      });
-    });
-
-    // Preserve already-verified itemCount / isItemCountSet on re-imported COD orders
-    const uniqueSalesIds = [
-      ...new Set(
-        allOperations
-          .filter((op) => op.type === "sales" && !op.data.isItemCountSet)
-          .map((op) => op.id)
-      ),
-    ];
-    const existingVerifiedMap = new Map();
-    const ID_CHUNK_SIZE = 30;
-    for (let i = 0; i < uniqueSalesIds.length; i += ID_CHUNK_SIZE) {
-      const idSlice = uniqueSalesIds.slice(i, i + ID_CHUNK_SIZE);
-      if (idSlice.length > 0) {
-        const existingQuery = query(
-          collection(db, "sales"),
-          where(documentId(), "in", idSlice)
-        );
-        const existingSnap = await getDocs(existingQuery);
-        existingSnap.forEach((docSnap) => {
-          const d = docSnap.data();
-          if (d.isItemCountSet === true || (Number(d.itemCount) || 1) > 1) {
-            existingVerifiedMap.set(docSnap.id, {
-              itemCount: Math.max(1, Math.floor(Number(d.itemCount) || 1)),
-              isItemCountSet: true,
-            });
-          }
-        });
-      }
-    }
-
-    // 2. Process in chunks
-    const chunks = [];
-    for (let i = 0; i < allOperations.length; i += BATCH_SIZE) {
-      chunks.push(allOperations.slice(i, i + BATCH_SIZE));
-    }
-
-    let processedCount = 0;
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      const chunk = chunks[chunkIndex];
-      const batch = writeBatch(db);
-
-      for (const op of chunk) {
-        if (op.type === "sales") {
-          const docRef = doc(db, "sales", op.id);
-          const preserved = existingVerifiedMap.get(op.id);
-          const payload = preserved
-            ? {
-                ...op.data,
-                itemCount: preserved.itemCount,
-                isItemCountSet: preserved.isItemCountSet,
-              }
-            : op.data;
-          batch.set(docRef, payload, { merge: true });
-        } else if (op.type === "customer") {
-          const docRef = doc(db, "customers", op.id);
-          batch.set(docRef, op.data, { merge: true });
+    for (const item of preview) {
+      if (item.importStatus === "duplicate") { skipped++; completed++; onProgress?.(completed, preview.length); continue; }
+      const normalized = normalizeCOD(item);
+      const saleRef = doc(db, "sales", normalized.id);
+      const customerRef = normalized.customerName ? doc(db, "customers", normalized.customerName) : null;
+      const added = await runTransaction(db, async tx => {
+        const existing = await tx.get(saleRef);
+        if (existing.exists()) {
+          const check = classifyCOD([item], [{ ...existing.data(), id: existing.id }])[0];
+          if (check.importStatus !== "duplicate") throw new Error("รายการ COD เปลี่ยนระหว่างบันทึก กรุณาตรวจประวัติ");
+          return false;
         }
-      }
-
-      await batch.commit();
-      processedCount += chunk.length;
-
-      if (onProgress) {
-        // Report approximate items count (half of total operations processed)
-        const completedItems = Math.min(
-          processedCount / 2,
-          salesItems.length
-        );
-        onProgress(Math.floor(completedItems), salesItems.length);
-      }
+        if (customerRef) assertCustomerAvailable(await tx.get(customerRef));
+        tx.set(saleRef, {
+          type: "COD", orderNo: normalized.orderNo, trackingNo: item.trackingNo || "", carrier: normalized.carrier,
+          customerName: normalized.customerName, amount: normalized.amount,
+          dateTime: toFirestoreTimestamp(normalized.date), date: toFirestoreTimestamp(normalized.date),
+          importedAt: serverTimestamp(), fileName: item.sourceFile || "",
+          itemCount: Math.max(1, Math.floor(Number(item.itemCount) || 1)), isItemCountSet: Boolean(item.isItemCountSet),
+        });
+        if (customerRef) {
+          const profile = { name: normalized.customerName, lastUpdate: serverTimestamp() };
+          if (item.phoneNumber) profile.phoneNumber = item.phoneNumber;
+          if (item.address) profile.address = item.address;
+          tx.set(customerRef, profile, { merge: true });
+        }
+        return true;
+      });
+      if (added) inserted++; else skipped++;
+      completed++; onProgress?.(completed, preview.length);
     }
+    return { inserted, skipped };
   } catch (error) {
-    console.error("Error in batchImportCODSales service:", error);
-    throw error;
+    throw new Error(`บันทึกใหม่แล้ว ${inserted} รายการ ข้าม ${skipped} รายการ: ${error.message} สามารถลองนำเข้าใหม่ได้ ระบบตรวจซ้ำก่อนบันทึก`);
   }
 }
 
@@ -524,104 +415,57 @@ export async function getLatestImportTime() {
  * @returns {Promise<{salesCount: number}>} Number of sales updated
  */
 export async function mergeCustomers(sourceName, targetName) {
-  if (!sourceName || !targetName) {
-    throw new Error("ทั้งชื่อลูกค้าต้นทางและปลายทางมีความจำเป็น");
-  }
-  if (sourceName === targetName) {
-    throw new Error("ชื่อลูกค้าต้นทางและปลายทางไม่สามารถเป็นชื่อเดียวกันได้");
-  }
-
-  const cleanSourceId = sanitizeCustomerId(sourceName);
-  const cleanTargetId = sanitizeCustomerId(targetName);
-
-  const sourceRef = doc(db, "customers", cleanSourceId);
-  const targetRef = doc(db, "customers", cleanTargetId);
-
-  // 1. Lock both customers by setting isMerging: true using a batch
-  const lockBatch = writeBatch(db);
-  lockBatch.update(sourceRef, { isMerging: true });
-  lockBatch.update(targetRef, { isMerging: true });
-  await lockBatch.commit();
-
+  const sourceId = sanitizeCustomerId(sourceName), targetId = sanitizeCustomerId(targetName);
+  if (!sourceId || !targetId || sourceId === targetId) throw new Error("ต้องเลือกลูกค้าต่างกันสองราย");
+  sourceName = sourceId; targetName = targetId;
+  const sourceRef = doc(db, "customers", sourceId), targetRef = doc(db, "customers", targetId);
+  const owner = crypto.randomUUID();
+  await runTransaction(db, async tx => {
+    const source = await tx.get(sourceRef), target = await tx.get(targetRef);
+    if (!source.exists() || !target.exists()) throw new Error("ไม่พบลูกค้าต้นทางหรือปลายทาง");
+    const sourceData = source.data(), targetData = target.data();
+    if ([sourceData, targetData].some(d => d.isMerging && Number(d.mergeLeaseUntil) > Date.now())) throw new Error("ลูกค้ากำลังรวมบัญชีอยู่ กรุณารอหรือทำต่อเมื่อการทำงานเดิมสิ้นสุด");
+    if (sourceData.mergeTarget && sourceData.mergeTarget !== targetId) throw new Error("ต้องทำการรวมบัญชีที่ค้างไปยังลูกค้าปลายทางเดิมให้เสร็จก่อน");
+    // An expired target may have belonged to a different migration; do not steal it.
+    if (targetData.mergeTarget && (targetData.mergeTarget !== targetId || targetData.mergeSource !== sourceId)) throw new Error("ปลายทางมีการรวมบัญชีที่ค้าง โปรดทำรายการเดิมต่อก่อน");
+    const lock = { isMerging: true, mergeOwner: owner, mergeSource: sourceId, mergeTarget: targetId, mergeLeaseUntil: Date.now() + 15 * 60000 };
+    tx.update(sourceRef, lock); tx.update(targetRef, lock);
+  });
+  let salesCount = 0;
   try {
-    const [sourceSnap, targetSnap] = await Promise.all([
-      getDoc(sourceRef),
-      getDoc(targetRef),
-    ]);
-
-    if (!sourceSnap.exists()) {
-      throw new Error(`ไม่พบข้อมูลลูกค้าต้นทาง: ${sourceName}`);
-    }
-    if (!targetSnap.exists()) {
-      throw new Error(`ไม่พบข้อมูลลูกค้าปลายทาง: ${targetName}`);
-    }
-
-    const sourceData = sourceSnap.data();
-    const targetData = targetSnap.data();
-
-    // Fetch all sales for source customer
-    const salesRef = collection(db, "sales");
-    const salesQuery = query(salesRef, where("customerName", "==", sourceName));
-    const salesSnap = await getDocs(salesQuery);
-    const salesDocs = salesSnap.docs;
-
-    // Prepare target customer merged data
-    const updatedTargetData = {
-      isMerging: false, // Unlock target
-      lastUpdate: new Date(),
-    };
-    if (!targetData.phoneNumber && sourceData.phoneNumber) {
-      updatedTargetData.phoneNumber = sourceData.phoneNumber;
-    }
-    if (!targetData.address && sourceData.address) {
-      updatedTargetData.address = sourceData.address;
-    }
-    
-    // Notes merging logic
-    const tNote = (targetData.note || "").trim();
-    const sNote = (sourceData.note || "").trim();
-    if (sNote) {
-      if (!tNote) {
-        updatedTargetData.note = sNote;
-      } else if (tNote !== sNote && !tNote.includes(sNote)) {
-        updatedTargetData.note = `${tNote} | ${sNote}`;
-      }
-    }
-
-    const BATCH_SIZE = 400; // Safe size to fit inside 500 limit
-    let batch = writeBatch(db);
-    batch.update(targetRef, updatedTargetData);
-    batch.delete(sourceRef);
-
-    let operationsInBatch = 2; // target update + source delete
-
-    for (let i = 0; i < salesDocs.length; i++) {
-      if (operationsInBatch >= BATCH_SIZE) {
-        await batch.commit();
-        batch = writeBatch(db);
-        operationsInBatch = 0;
-      }
-      const saleDocRef = doc(db, "sales", salesDocs[i].id);
-      batch.update(saleDocRef, {
-        customerName: targetName,
-        updatedAt: new Date(),
+    // Both profiles remain locked until every sale is moved. A retry queries only the remainder.
+    while (true) {
+      const snapshot = await getDocs(query(collection(db, "sales"), where("customerName", "==", sourceName), limit(400)));
+      if (snapshot.empty || snapshot.docs.length === 0) break;
+      await runTransaction(db, async tx => {
+        const source = await tx.get(sourceRef), target = await tx.get(targetRef);
+        if (source.data()?.mergeOwner !== owner || target.data()?.mergeOwner !== owner) throw new Error("สิทธิการรวมบัญชีเปลี่ยน กรุณาลองใหม่");
+        // Read sale versions as well: do not overwrite a concurrent customer correction.
+        const rows = await Promise.all(snapshot.docs.map(row => tx.get(doc(db, "sales", row.id))));
+        for (const row of rows) if (row.exists() && row.data().customerName === sourceName) tx.update(row.ref, { customerName: targetName, updatedAt: serverTimestamp() });
+        const lease = { mergeLeaseUntil: Date.now() + 15 * 60000 };
+        tx.update(sourceRef, lease); tx.update(targetRef, lease);
       });
-      operationsInBatch++;
+      salesCount += snapshot.docs.length;
     }
-
-    if (operationsInBatch > 0) {
-      await batch.commit();
-    }
-
-    return { salesCount: salesDocs.length };
+    await runTransaction(db, async tx => {
+      const source = await tx.get(sourceRef), target = await tx.get(targetRef);
+      if (source.data()?.mergeOwner !== owner || target.data()?.mergeOwner !== owner) throw new Error("สิทธิการรวมบัญชีเปลี่ยน กรุณาลองใหม่");
+      const sourceData = source.data(), targetData = target.data();
+      const targetPatch = {};
+      for (const key of ["phoneNumber", "address"]) if (!targetData[key] && sourceData[key]) targetPatch[key] = sourceData[key];
+      const notes = [...new Set([targetData.note, sourceData.note].filter(Boolean))];
+      if (notes.length) targetPatch.note = notes.join(" | ");
+      tx.update(targetRef, { ...targetPatch, isMerging: false, mergeOwner: null, mergeSource: null, mergeTarget: null, mergeLeaseUntil: 0, lastUpdate: serverTimestamp() });
+      tx.delete(sourceRef);
+    });
+    return { salesCount };
   } catch (error) {
-    console.error("Error merging customers in service:", error);
-    // Guarantee unlock both customer documents on error
-    const unlockBatch = writeBatch(db);
-    unlockBatch.update(sourceRef, { isMerging: false });
-    unlockBatch.update(targetRef, { isMerging: false });
-    await unlockBatch.commit().catch(() => {});
-    throw error;
+    await runTransaction(db, async tx => {
+      const snapshots = await Promise.all([tx.get(sourceRef), tx.get(targetRef)]);
+      for (const snap of snapshots) if (snap.exists() && snap.data().mergeOwner === owner) tx.update(snap.ref, { isMerging: false, mergeOwner: null, mergeLeaseUntil: 0 });
+    }).catch(() => {});
+    throw new Error(`รวมบัญชียังไม่เสร็จ ย้ายแล้ว ${salesCount} รายการ โปรดลองรวมไปปลายทางเดิมอีกครั้ง: ${error.message}`);
   }
 }
 

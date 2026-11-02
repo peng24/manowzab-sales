@@ -1,5 +1,6 @@
 <template>
   <div class="container mx-auto max-w-6xl py-1 md:py-2">
+    <p v-if="expenseStore.loadError" role="alert" class="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">โหลดรายจ่ายไม่สำเร็จ: {{ expenseStore.loadError }}</p>
     <!-- Header -->
     <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
@@ -135,6 +136,10 @@
         </div>
 
         <!-- Submit Button -->
+        <div class="col-span-full rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs">
+          <label class="flex items-start gap-2"><input type="checkbox" v-model="formData.taxDeductible" class="mt-0.5 rounded" /><span>ยืนยันว่าเป็นรายจ่ายที่หักภาษีตามจริงได้ มีหลักฐาน ไม่ซ้ำรายการอื่น และปรับต้นทุนสินค้า/สินทรัพย์ตามเกณฑ์แล้ว</span></label>
+          <label v-if="formData.taxDeductible" class="mt-2 block">เลขที่เอกสารหรือที่เก็บหลักฐาน<input type="text" v-model="formData.taxEvidence" required class="mt-1 w-full rounded-lg border-gray-300" placeholder="เช่น ใบเสร็จเลขที่ / ชื่อไฟล์เอกสาร" /></label>
+        </div>
         <div class="md:col-span-3 flex justify-end gap-3 mt-2">
           <button
             v-if="isEditing"
@@ -851,6 +856,8 @@ const formData = reactive({
   amount: null,
   paymentMethod: "Transfer",
   note: "",
+  taxDeductible: false,
+  taxEvidence: "",
 });
 
 const isEditing = computed(() => !!formData.id);
@@ -1098,6 +1105,7 @@ const resetForm = () => {
   formData.amount = null;
   formData.paymentMethod = "Transfer";
   formData.note = "";
+  formData.taxDeductible = false; formData.taxEvidence = "";
 };
 
 const startEdit = (item) => {
@@ -1109,9 +1117,12 @@ const startEdit = (item) => {
   formData.amount = item.amount;
   formData.paymentMethod = item.paymentMethod || "Transfer";
   formData.note = item.note || "";
+  formData.taxDeductible = item.taxDeductible === true;
+  formData.taxEvidence = item.taxEvidence || "";
 };
 
 const handleSaveExpense = async () => {
+  if (submitting.value) return;
   submitting.value = true;
   try {
     const expenseData = {
@@ -1121,6 +1132,8 @@ const handleSaveExpense = async () => {
       amount: formData.amount,
       paymentMethod: formData.paymentMethod,
       note: formData.note,
+      taxDeductible: formData.taxDeductible,
+      taxEvidence: formData.taxEvidence,
     };
 
     if (isEditing.value) {
@@ -1255,6 +1268,7 @@ const sortedDailySummary = computed(() => {
 });
 
 const setFilterMode = async (mode) => {
+  try {
   if (mode === "selectMonth") {
     await expenseStore.setFilter({
       mode,
@@ -1275,9 +1289,11 @@ const setFilterMode = async (mode) => {
       category: selectedCategoryFilter.value,
     });
   }
+  } catch { /* The load error is displayed above the expense list. */ }
 };
 
 const onSelectMonthChange = async () => {
+  try {
   if (expenseStore.filters.mode === "selectMonth") {
     await expenseStore.setFilter({
       mode: "selectMonth",
@@ -1286,9 +1302,11 @@ const onSelectMonthChange = async () => {
       category: selectedCategoryFilter.value,
     });
   }
+  } catch { /* Shared load error is visible above. */ }
 };
 
 const onCustomDateChange = async () => {
+  try {
   if (expenseStore.filters.mode === "custom") {
     await expenseStore.setFilter({
       mode: "custom",
@@ -1297,15 +1315,16 @@ const onCustomDateChange = async () => {
       category: selectedCategoryFilter.value,
     });
   }
+  } catch { /* Shared load error is visible above. */ }
 };
 
 const onCategoryFilterChange = async () => {
-  await expenseStore.setCategoryFilter(selectedCategoryFilter.value);
+  await expenseStore.setCategoryFilter(selectedCategoryFilter.value).catch(() => {});
 };
 
 const setCategoryFilter = async (categoryName) => {
   selectedCategoryFilter.value = categoryName;
-  await expenseStore.setCategoryFilter(categoryName);
+  await expenseStore.setCategoryFilter(categoryName).catch(() => {});
 };
 
 const moveCategory = async (index, direction) => {
@@ -1414,7 +1433,7 @@ onMounted(async () => {
   if (expenseStore.categories.length > 0 && !formData.category) {
     formData.category = expenseStore.categories[0].name;
   }
-  await expenseStore.fetchExpenses();
+  await expenseStore.fetchExpenses().catch(() => {});
 });
 
 onUnmounted(() => {

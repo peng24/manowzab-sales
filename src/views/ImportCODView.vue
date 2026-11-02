@@ -49,14 +49,14 @@
               วางไฟล์ลงที่นี่ได้เลย
             </p>
             <p class="text-xs text-gray-400">
-              รองรับไฟล์ .xlsx, .xls (ระบบอ่านวันที่จากคอลัมน์ในไฟล์ หรือชื่อไฟล์ YYYYMMDD_...)
+              รองรับไฟล์ .xlsx (ไฟล์ .xls ต้องบันทึกเป็น .xlsx ก่อน) (ระบบอ่านวันที่จากคอลัมน์ในไฟล์ หรือชื่อไฟล์ YYYYMMDD_...)
             </p>
           </div>
           <input
             type="file"
             class="hidden"
             multiple
-            accept=".xlsx, .xls"
+            accept=".xlsx"
             @change="handleFileUpload"
           />
         </label>
@@ -74,6 +74,9 @@
       </div>
     </div>
 
+    <div v-if="importErrors.length" role="alert" class="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800"><p v-for="message in importErrors" :key="message">{{ message }}</p><p>กรุณาเลือกไฟล์ที่แก้ไขแล้วใหม่ก่อนบันทึก</p></div>
+    <p v-if="previewItems.length" class="mb-4 text-sm text-gray-700">พร้อมนำเข้า {{ readyItems.length }} รายการ · รายการซ้ำจะข้าม · รายการขัดแย้งต้องตรวจประวัติก่อน ไม่เขียนทับข้อมูลเดิม</p>
+    <p class="mb-4 text-xs text-gray-600">วันที่ขาย COD สำหรับภาษีใช้วันที่รับเงินในรายงาน หรือวันที่โอนในชื่อไฟล์ YYYYMMDD ไม่ใช้วันรับพัสดุ โปรดตรวจว่าเป็นยอดขายก่อนหักค่าบริการขนส่ง</p>
     <!-- Summary Stats (3 Cards) -->
     <div
       v-if="previewItems.length > 0"
@@ -130,7 +133,7 @@
       <div class="flex items-center gap-3">
         <button
           @click="confirmImport"
-          :disabled="isSaving"
+          :disabled="isSaving || processing || blockedItems || !readyItems.length || importErrors.length > 0"
           class="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <svg
@@ -154,7 +157,7 @@
             ></path>
           </svg>
           <span v-if="isSaving">กำลังบันทึกข้อมูล...</span>
-          <span v-else>ยืนยันการนำเข้า {{ previewItems.length }} รายการ (Confirm Save)</span>
+          <span v-else>ยืนยันการนำเข้า {{ readyItems.length }} รายการใหม่ (Confirm Save)</span>
         </button>
       </div>
     </div>
@@ -221,7 +224,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
               v-for="(item, index) in previewItems"
-              :key="item.orderNo"
+              :key="`${item.orderNo}-${index}`"
               class="hover:bg-gray-50 transition-colors"
             >
               <!-- Index Number -->
@@ -248,6 +251,7 @@
               <!-- Order No -->
               <td class="px-4 py-3 whitespace-nowrap text-xs font-semibold text-gray-900 font-mono">
                 {{ item.orderNo }}
+                <span class="mt-1 block text-xs font-normal" :class="item.importStatus === 'new' ? 'text-emerald-700' : 'text-red-700'">{{ item.importMessage }}</span>
               </td>
 
               <!-- Customer Name -->
@@ -284,7 +288,7 @@
 <script setup>
 import { ref, computed, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import ExcelJS from "exceljs";
+import { previewCODSales } from "../services/salesService.js";
 import Swal from "sweetalert2";
 import { format, parse } from "date-fns";
 import { formatThaiDateOptionalTime } from "../utils/dateUtils.js";
@@ -295,6 +299,9 @@ const router = useRouter();
 const salesStore = useSalesStore();
 
 const processing = ref(false);
+const importErrors = ref([]);
+const readyItems = computed(() => previewItems.value.filter(i => i.importStatus === "new"));
+const blockedItems = computed(() => previewItems.value.some(i => ["invalid", "conflict"].includes(i.importStatus)));
 const isSaving = ref(false);
 const previewItems = ref([]);
 const processedFilesCount = ref(0);
@@ -327,14 +334,17 @@ const readFile = (file) => {
  * Main Logic: Process Excel with ExcelJS
  */
 const processFiles = async (files) => {
-  if (!files || !files.length) return;
+  if (!files || !files.length || processing.value || isSaving.value) return;
 
   processing.value = true;
   processedFilesCount.value = files.length;
   previewItems.value = [];
+  importErrors.value = [];
 
   try {
+    const { default: ExcelJS } = await import("exceljs");
     for (const file of files) {
+      if (!file.name.toLowerCase().endsWith(".xlsx")) { importErrors.value.push(`${file.name}: กรุณาบันทึกเป็น .xlsx ก่อน`); continue; }
       const workbook = new ExcelJS.Workbook();
       let fileDate = parseDateFromFilename(file.name);
 
@@ -349,6 +359,7 @@ const processFiles = async (files) => {
         }
 
         if (!worksheet) {
+          importErrors.value.push(`${file.name}: ไม่พบ Worksheet`);
           Swal.fire({
             icon: "error",
             title: "ไม่พบข้อมูล",
@@ -366,7 +377,7 @@ const processFiles = async (files) => {
           trackingNo: -1,
           phoneNumber: -1,
           address: -1,
-          pickedUpDate: -1,
+          paymentDate: -1,
         };
 
         const newItems = [];
@@ -395,8 +406,8 @@ const processFiles = async (files) => {
                 colMap.phoneNumber = colNumber;
               if (val.includes("address") || val.includes("ที่อยู่"))
                 colMap.address = colNumber;
-              if (val.includes("picked") && val.includes("date"))
-                colMap.pickedUpDate = colNumber;
+              if ((val.includes("transfer") || val.includes("paid") || val.includes("settlement") || val.includes("remittance")) && val.includes("date"))
+                colMap.paymentDate = colNumber;
             });
 
             if (
@@ -426,8 +437,8 @@ const processFiles = async (files) => {
             const addressCell =
               colMap.address !== -1 ? row.getCell(colMap.address) : null;
             const dateCell =
-              colMap.pickedUpDate !== -1
-                ? row.getCell(colMap.pickedUpDate)
+              colMap.paymentDate !== -1
+                ? row.getCell(colMap.paymentDate)
                 : null;
 
             let orderNoVal =
@@ -473,10 +484,12 @@ const processFiles = async (files) => {
             if (!finalOrderNo) return;
             if (finalOrderNo.toLowerCase().includes("order no")) return;
 
-            const amountVal = parseFloat(amountStr.replace(/,/g, "")) || 0;
+            const amountVal = Number(amountStr.replace(/,/g, ""));
 
             newItems.push({
               orderNo: finalOrderNo,
+              trackingNo: trackingNoVal,
+              carrier: "Flash",
               customerName,
               amount: amountVal,
               phoneNumber,
@@ -491,6 +504,7 @@ const processFiles = async (files) => {
         previewItems.value.push(...newItems);
 
         if (headerRowIndex === -1) {
+          importErrors.value.push(`${file.name}: ไม่พบหัวตาราง`);
           Swal.fire({
             icon: "error",
             title: "ไม่พบหัวตาราง",
@@ -498,6 +512,7 @@ const processFiles = async (files) => {
           });
         }
       } catch (err) {
+        importErrors.value.push(`${file.name}: ${err.message}`);
         console.error(`Error processing ${file.name}:`, err);
         Swal.fire({
           icon: "error",
@@ -506,7 +521,9 @@ const processFiles = async (files) => {
         });
       }
     }
+    previewItems.value = await previewCODSales(previewItems.value);
   } catch (error) {
+    importErrors.value.push(error.message);
     console.error("Process error:", error);
     Swal.fire({ icon: "error", title: "System Error", text: error.message });
   } finally {
@@ -516,7 +533,15 @@ const processFiles = async (files) => {
 
 // --- SAVE TO FIREBASE ---
 const confirmImport = async () => {
-  if (previewItems.value.length === 0) return;
+  if (isSaving.value || processing.value || previewItems.value.length === 0 || importErrors.value.length) return;
+  isSaving.value = true;
+  try { previewItems.value = await previewCODSales(previewItems.value); }
+  catch (error) { await Swal.fire({icon: "error", title: "ตรวจรายการซ้ำไม่สำเร็จ", text: error.message}); return; }
+  finally { isSaving.value = false; }
+  if (blockedItems.value || !readyItems.value.length) {
+    await Swal.fire({icon: "warning", title: "ยังไม่มีรายการพร้อมนำเข้า", text: "รายการซ้ำจะถูกข้าม รายการขัดแย้งหรือผิดต้องตรวจแก้ก่อนนำเข้า"});
+    return;
+  }
 
   if (hasInvalidDates.value) {
     Swal.fire({
@@ -530,7 +555,7 @@ const confirmImport = async () => {
   // Confirm Dialog
   const result = await Swal.fire({
     title: "ยืนยันการบันทึก?",
-    html: `ต้องการบันทึกยอดขาย COD ทั้งหมด <b>${previewItems.value.length}</b> รายการ<br>รวมเป็นเงิน <b>฿${formatCurrency(totalAmount.value)}</b> และอัปเดตข้อมูลลูกค้า?`,
+    html: `ต้องการบันทึกยอดขาย COD ทั้งหมด <b>${readyItems.value.length}</b> รายการใหม่<br>รวมเป็นเงิน <b>฿${formatCurrency(totalAmount.value)}</b> และอัปเดตข้อมูลลูกค้า?`,
     icon: "question",
     showCancelButton: true,
     confirmButtonText: "ยืนยัน (Save)",
@@ -560,8 +585,10 @@ const confirmImport = async () => {
 
   try {
     // Prepare sales items (default itemCount: 1, isItemCountSet: false so they can be edited in AllSalesView)
-    const salesItems = previewItems.value.map((item) => ({
+    const salesItems = readyItems.value.map((item) => ({
       orderNo: item.orderNo,
+      trackingNo: item.trackingNo || "",
+      carrier: item.carrier || "Flash",
       customerName: sanitizeCustomerId(item.customerName),
       amount: Number(item.amount),
       date: item.date,
@@ -573,7 +600,7 @@ const confirmImport = async () => {
     }));
 
     // Perform batch import through the store
-    await salesStore.importCODSales(salesItems, (completedCount, totalItems) => {
+    const saved = await salesStore.importCODSales(salesItems, (completedCount, totalItems) => {
       const progressEl = document.getElementById("batch-progress");
       if (progressEl) {
         progressEl.textContent = `Processing: ${completedCount} / ${totalItems}`;
@@ -584,11 +611,12 @@ const confirmImport = async () => {
     await Swal.fire({
       icon: "success",
       title: "บันทึกสำเร็จ! (COD Import Successful)",
-      text: `บันทึกยอดขาย ${previewItems.value.length} รายการเรียบร้อยแล้ว`,
+      text: `บันทึกใหม่ ${saved.inserted} รายการ ข้ามรายการซ้ำระหว่างบันทึก ${saved.skipped} รายการ`,
       timer: 2000,
       showConfirmButton: false,
     });
 
+    isSaving.value = false;
     clearData();
     router.push("/all-sales");
   } catch (error) {
@@ -615,11 +643,13 @@ const parseDateFromFilename = (filename) => {
   const day = parseInt(firstPart.substring(6, 8));
 
   const date = new Date(year, month, day);
-  if (isNaN(date.getTime())) return null;
+  if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
   return date;
 };
 
 const clearData = () => {
+  if (processing.value || isSaving.value) return;
+  importErrors.value = [];
   previewItems.value = [];
   processedFilesCount.value = 0;
 };
@@ -633,7 +663,7 @@ const formatDate = formatThaiDateOptionalTime;
 // --- COMPUTED PROPERTIES ---
 
 const totalAmount = computed(() => {
-  return previewItems.value.reduce((sum, item) => sum + (item.amount || 0), 0);
+  return readyItems.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 });
 
 const hasInvalidDates = computed(() => {

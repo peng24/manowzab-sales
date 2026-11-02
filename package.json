@@ -1,7 +1,7 @@
 {
   "name": "salespilot",
   "private": true,
-  "version": "1.5.4",
+  "version": "1.5.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,8 @@
     "deploy": "gh-pages -d dist",
     "bump:patch": "npm version patch",
     "bump:minor": "npm version minor",
-    "bump:major": "npm version major"
+    "bump:major": "npm version major",
+    "test": "node --test --test-timeout=15000 tests/*.test.js"
   },
   "dependencies": {
     "chart.js": "^4.5.1",

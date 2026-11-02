@@ -567,6 +567,7 @@ const formData = ref({
   slipUrl: "",
 });
 
+const submissionId = ref(crypto.randomUUID());
 const isSubmitting = ref(false);
 const loading = ref(true);
 const requests = ref([]);
@@ -682,6 +683,7 @@ const saveTransfer = async () => {
 
     // 1. Save Sales Data & Upsert Customer via store
     const payload = {
+      requestId: submissionId.value,
       type: "Transfer",
       dateTime: dateObj,
       orderNo: formData.value.orderNo,
@@ -693,6 +695,7 @@ const saveTransfer = async () => {
     };
 
     await salesStore.createSale(payload);
+    submissionId.value = crypto.randomUUID();
 
     // Reset Form (keep date & time for consecutive entries)
     const keepDate = formData.value.date;
@@ -792,7 +795,7 @@ const confirmDelete = async (req) => {
   const result = await Swal.fire({
     icon: "warning",
     title: "ยืนยันการลบ",
-    html: `ต้องการลบรายการ <b>${req.orderNo}</b><br>ลูกค้า: <b>${req.customerName || "ไม่ระบุ"}</b> ยอด ฿${formatCurrency(req.amount)}?`,
+    text: `ต้องการลบรายการ ${req.orderNo} ลูกค้า: ${req.customerName || "ไม่ระบุ"} ยอด ฿${formatCurrency(req.amount)}?`,
     showCancelButton: true,
     showDenyButton: false,
     confirmButtonColor: "#ef4444",

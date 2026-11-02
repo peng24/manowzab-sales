@@ -215,7 +215,7 @@ export async function addExpense(expenseData) {
   try {
     const { dateTime, title, amount, category, paymentMethod = "Transfer", note = "" } = expenseData;
 
-    if (!amount || amount <= 0) {
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       throw new Error("Invalid expense amount");
     }
     if (!category) {
@@ -229,9 +229,12 @@ export async function addExpense(expenseData) {
       category: category.trim(),
       paymentMethod,
       note: note.trim(),
+      taxDeductible: expenseData.taxDeductible === true,
+      taxEvidence: String(expenseData.taxEvidence || "").trim(),
       createdAt: serverTimestamp(),
     };
 
+    if (docData.taxDeductible && !docData.taxEvidence) throw new Error("กรุณาระบุเลขที่หรือที่เก็บหลักฐานรายจ่ายภาษี");
     const expRef = collection(db, "expenses");
     const docRef = await addDoc(expRef, docData);
     return { id: docRef.id, ...docData };
@@ -300,9 +303,8 @@ export async function getAllExpenses(filter = {}) {
         case "year":
         case "selectYear":
           if (year !== null) {
-            const targetDate = new Date(year, 0, 1);
-            start = startOfYear(targetDate);
-            end = endOfYear(targetDate);
+            start = new Date(`${Number(year)}-01-01T00:00:00+07:00`);
+            end = new Date(new Date(`${Number(year) + 1}-01-01T00:00:00+07:00`).getTime() - 1);
           }
           break;
         case "custom":
@@ -360,6 +362,8 @@ export async function updateExpense(id, updateData) {
     if (dataToUpdate.amount !== undefined) {
       dataToUpdate.amount = Number(dataToUpdate.amount);
     }
+    if (dataToUpdate.amount !== undefined && (!Number.isFinite(dataToUpdate.amount) || dataToUpdate.amount <= 0)) throw new Error("ยอดรายจ่ายต้องเป็นตัวเลขมากกว่า 0");
+    if (dataToUpdate.taxDeductible && !String(dataToUpdate.taxEvidence || "").trim()) throw new Error("กรุณาระบุเลขที่หรือที่เก็บหลักฐานรายจ่ายภาษี");
     dataToUpdate.updatedAt = serverTimestamp();
 
     await updateDoc(docRef, dataToUpdate);

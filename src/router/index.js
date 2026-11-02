@@ -2,10 +2,10 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import MainLayout from "../layouts/MainLayout.vue";
-import DashboardView from "../views/DashboardView.vue";
-import TransferView from "../views/TransferView.vue";
-import ImportCODView from "../views/ImportCODView.vue";
-import LoginView from "../views/LoginView.vue";
+
+
+
+
 
 const routes = [
   {
@@ -16,17 +16,17 @@ const routes = [
       {
         path: "",
         name: "Dashboard",
-        component: DashboardView,
+        component: () => import("../views/DashboardView.vue"),
       },
       {
         path: "transfer",
         name: "Transfer",
-        component: TransferView,
+        component: () => import("../views/TransferView.vue"),
       },
       {
         path: "import-cod",
         name: "ImportCOD",
-        component: ImportCODView,
+        component: () => import("../views/ImportCODView.vue"),
       },
       {
         path: "customers",
@@ -64,7 +64,7 @@ const routes = [
   {
     path: "/login",
     name: "Login",
-    component: LoginView,
+    component: () => import("../views/LoginView.vue"),
   },
 ];
 

@@ -6,7 +6,6 @@ import {
   updateSale as updateSaleService,
   deleteSale as deleteSaleService,
   batchImportCODSales,
-  upsertCustomer,
   getLatestImportTime,
   mergeCustomers as mergeCustomersService,
   batchUpdateSaleItemCounts,
@@ -39,12 +38,13 @@ function normalizeSalesFilter(f = {}) {
   };
 }
 
-let inFlightSalesPromise = null;
-let inFlightSalesFilterKey = null;
+const pendingSales = new WeakMap();
 
 export const useSalesStore = defineStore("sales", {
   state: () => ({
     sales: [],
+    requestVersion: 0,
+    loadError: "",
     loading: false,
     filters: {
       mode: "thisMonth",
@@ -205,59 +205,48 @@ export const useSalesStore = defineStore("sales", {
         this.lastFetchTime !== null &&
         new Date() - this.lastFetchTime < cacheTimeout;
 
+      const pending = pendingSales.get(this);
       if (isSameFilter && isCacheValid) {
+        if (pending && pending.key !== reqKey) {
+          this.requestVersion++; pendingSales.delete(this); this.loading = false;
+        }
         return this.sales;
       }
-
-      if (inFlightSalesPromise && inFlightSalesFilterKey === reqKey) {
-        return inFlightSalesPromise;
-      }
-
-      this.loading = true;
-      inFlightSalesFilterKey = reqKey;
-
-      inFlightSalesPromise = (async () => {
+      if (pending?.key === reqKey) return pending.promise;
+      const request = ++this.requestVersion;
+      this.loading = true; this.loadError = "";
+      const promise = (async () => {
         try {
-          const salesData = await getAllSales(filters);
-
+          const salesData = await getAllSales({ ...filters });
+          if (request !== this.requestVersion) return salesData;
           this.sales = salesData;
-          this.lastFetchTime = new Date();
-          this.loadedFilters = normalizedReq;
-
-          // Fetch latest import time with 10-min cache to avoid duplicate queries
-          const importCacheTimeout = 10 * 60 * 1000;
-          if (
-            !this.lastImportedTime ||
-            !this.lastImportFetchTime ||
-            new Date() - this.lastImportFetchTime > importCacheTimeout
-          ) {
-            this.lastImportedTime = await getLatestImportTime();
-            this.lastImportFetchTime = new Date();
+          this.lastFetchTime = new Date(); this.loadedFilters = normalizedReq;
+          if (!this.lastImportFetchTime || Date.now() - this.lastImportFetchTime > 600000) {
+            const latest = await getLatestImportTime();
+            if (request === this.requestVersion) {
+              this.lastImportedTime = latest; this.lastImportFetchTime = new Date();
+            }
           }
-
           return salesData;
         } catch (error) {
-          console.error("Error fetching sales in store:", error);
+          if (request === this.requestVersion) {
+            this.sales = []; this.loadedFilters = null; this.loadError = error.message;
+          }
           throw error;
         } finally {
-          this.loading = false;
-          inFlightSalesPromise = null;
-          inFlightSalesFilterKey = null;
+          if (request === this.requestVersion) {
+            this.loading = false; pendingSales.delete(this);
+          }
         }
       })();
-
-      return inFlightSalesPromise;
+      pendingSales.set(this, { key: reqKey, promise });
+      return promise;
     },
 
-    /**
-     * Invalidate sales cache
-     */
     invalidateCache() {
-      this.lastFetchTime = null;
-      this.lastImportFetchTime = null;
-      this.loadedFilters = null;
-      inFlightSalesPromise = null;
-      inFlightSalesFilterKey = null;
+      this.requestVersion++;
+      this.lastFetchTime = null; this.lastImportFetchTime = null; this.loadedFilters = null;
+      this.loading = false; pendingSales.delete(this);
     },
 
     /**
@@ -267,13 +256,6 @@ export const useSalesStore = defineStore("sales", {
       this.loading = true;
       try {
         const created = await createSaleService(saleData);
-
-        // Upsert customer if name is provided
-        if (saleData.customerName) {
-          await upsertCustomer({
-            name: saleData.customerName,
-          });
-        }
 
         this.invalidateCache();
         return created;
@@ -292,13 +274,6 @@ export const useSalesStore = defineStore("sales", {
       this.loading = true;
       try {
         await updateSaleService(id, updateData);
-
-        // Upsert customer if name is being updated
-        if (updateData.customerName) {
-          await upsertCustomer({
-            name: updateData.customerName,
-          });
-        }
 
         this.invalidateCache();
       } catch (error) {
@@ -331,12 +306,13 @@ export const useSalesStore = defineStore("sales", {
     async importCODSales(salesItems, onProgress = null) {
       this.loading = true;
       try {
-        await batchImportCODSales(salesItems, onProgress);
-        this.invalidateCache();
+        const result = await batchImportCODSales(salesItems, onProgress);
+        return result;
       } catch (error) {
         console.error("Error importing COD sales in store:", error);
         throw error;
       } finally {
+        this.invalidateCache();
         this.loading = false;
       }
     },
@@ -370,6 +346,7 @@ export const useSalesStore = defineStore("sales", {
      */
     clearSales() {
       this.sales = [];
+      this.lastImportedTime = null; this.loadError = "";
       this.invalidateCache();
     },
 
@@ -380,12 +357,12 @@ export const useSalesStore = defineStore("sales", {
       this.loading = true;
       try {
         const result = await mergeCustomersService(sourceName, targetName);
-        this.invalidateCache();
         return result;
       } catch (error) {
         console.error("Error merging customers in store:", error);
         throw error;
       } finally {
+        this.invalidateCache();
         this.loading = false;
       }
     },

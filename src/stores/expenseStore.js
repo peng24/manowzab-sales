@@ -17,6 +17,8 @@ import { toDate } from "../utils/dateUtils.js";
 export const useExpenseStore = defineStore("expense", {
   state: () => ({
     expenses: [],
+    requestVersion: 0,
+    loadError: "",
     categories: [],
     loading: false,
     selectedCategory: "all",
@@ -305,7 +307,7 @@ export const useExpenseStore = defineStore("expense", {
         if (idx !== -1) {
           this.categories[idx] = updated;
         }
-        await this.fetchExpenses();
+        await this.fetchExpenses().catch(() => {});
         return updated;
       } catch (error) {
         console.error("Error in editCategory:", error);
@@ -330,21 +332,23 @@ export const useExpenseStore = defineStore("expense", {
      * Fetch expenses based on filters and sync salesStore
      */
     async fetchExpenses() {
-      this.loading = true;
+      const request = ++this.requestVersion;
+      const filters = { ...this.filters, category: this.selectedCategory };
+      this.loading = true; this.loadError = "";
       try {
         const salesStore = useSalesStore();
         const [items] = await Promise.all([
-          getAllExpenses({
-            ...this.filters,
-            category: this.selectedCategory,
-          }),
-          salesStore.fetchSales({ ...this.filters }),
+          getAllExpenses(filters), salesStore.fetchSales({ ...this.filters }),
         ]);
-        this.expenses = items;
+        if (request === this.requestVersion) this.expenses = items;
+        return items;
       } catch (error) {
-        console.error("Error fetching expenses in store:", error);
+        if (request === this.requestVersion) {
+          this.expenses = []; this.loadError = error.message || "โหลดรายจ่ายไม่สำเร็จ";
+        }
+        throw error;
       } finally {
-        this.loading = false;
+        if (request === this.requestVersion) this.loading = false;
       }
     },
 
@@ -373,7 +377,7 @@ export const useExpenseStore = defineStore("expense", {
       this.loading = true;
       try {
         const newExp = await addExpenseService(expenseData);
-        await this.fetchExpenses();
+        await this.fetchExpenses().catch(() => {});
         return newExp;
       } catch (error) {
         console.error("Error creating expense:", error);
@@ -390,7 +394,7 @@ export const useExpenseStore = defineStore("expense", {
       this.loading = true;
       try {
         const updated = await updateExpenseService(id, updateData);
-        await this.fetchExpenses();
+        await this.fetchExpenses().catch(() => {});
         return updated;
       } catch (error) {
         console.error("Error editing expense:", error);
@@ -420,6 +424,7 @@ export const useExpenseStore = defineStore("expense", {
      * Clear all expense data from store state (e.g. on logout)
      */
     clearExpenses() {
+      this.requestVersion++; this.loadError = "";
       this.expenses = [];
       this.categories = [];
       this.selectedCategory = "all";
